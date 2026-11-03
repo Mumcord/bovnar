@@ -4,22 +4,10 @@
 //! Rust enums cannot be iterated, so "every member" is every raw value
 //! `from_raw` accepts, scanned over a range far wider than any enum.
 //!
-//! Skipped (the unit enums are not mirrored: the Rust binding has no
-//! `PrefixSystem`, `SIPrefix`, `IECPrefix`, `BaseUnit` or `Exponent`, nor the
-//! `UNIT_NATIVE_*`/`CURRENCY_*` bounds built on them; units are handled as
-//! `Unit` values):
-//! - TestSIPrefix: test_none_is_zero, test_kilo, test_milli, test_all_unique,
-//!   test_count, test_quecto_quetta
-//! - TestIECPrefix: test_none_is_zero, test_kibi, test_quebi, test_count,
-//!   test_all_unique
-//! - TestBaseUnit: test_none_is_zero, test_si_base_units, test_digital_units,
-//!   test_named_derived, test_non_si, test_angular_units, test_mass_pressure,
-//!   test_atomic_units, test_area_time_units, test_all_unique,
-//!   test_native_block_closed_against_gendata, test_native_bounds_match_gendata,
-//!   test_currency_block_closed_against_gendata,
-//!   test_no_members_outside_the_two_blocks
-//! - TestExponent: test_positive_exponents, test_negative_exponents,
-//!   test_all_unique
+//! Python's `len(SIPrefix)` and `len(IECPrefix)` count a `_SENTINEL`
+//! member; the Rust enums have none, so their counts are one lower.
+//!
+//! Every Python test is ported.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -232,6 +220,334 @@ mod value_type_family {
     #[test]
     fn test_text_family() {
         assert_eq!(ValueTypeFamily::Utf8 as i32, 1);
+    }
+}
+
+/// A record field of a src/gendata catalogue, read with this binding's own
+/// parser. Same source the C enum is generated from, so a test built on it
+/// compares the two halves rather than one half against a memory of it.
+fn gendata(name: &str, table: &str) -> Vec<Vec<(String, bovnar::Value)>> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../src/gendata")
+        .join(name);
+    let bovnar::Value::Struct(doc) = bovnar::parse(&std::fs::read(path).unwrap()).unwrap() else {
+        panic!("{name} is not a struct");
+    };
+    let (_, bovnar::Value::Array(rows)) = doc.into_iter().find(|(k, _)| k == table).unwrap() else {
+        panic!("{name}: .{table} is not an array");
+    };
+    rows.into_iter()
+        .map(|row| match row {
+            bovnar::Value::Struct(fields) => fields,
+            other => panic!("{name}: row {other:?} is not a struct"),
+        })
+        .collect()
+}
+
+fn field<'a>(row: &'a [(String, bovnar::Value)], key: &str) -> &'a bovnar::Value {
+    &row.iter().find(|(k, _)| k == key).unwrap().1
+}
+
+fn int_field(row: &[(String, bovnar::Value)], key: &str) -> i32 {
+    match field(row, key) {
+        bovnar::Value::Int(i) => i32::try_from(*i).unwrap(),
+        other => panic!(".{key} = {other:?} is not an integer"),
+    }
+}
+
+fn str_field(row: &[(String, bovnar::Value)], key: &str) -> String {
+    match field(row, key) {
+        bovnar::Value::String(s) => s.clone(),
+        other => panic!(".{key} = {other:?} is not a string"),
+    }
+}
+
+mod si_prefix {
+    use super::*;
+    use bovnar::SIPrefix;
+
+    #[test]
+    fn test_none_is_zero() {
+        assert_eq!(SIPrefix::None as i32, 0);
+    }
+
+    #[test]
+    fn test_kilo() {
+        assert_eq!(SIPrefix::Kilo as i32, 15);
+    }
+
+    #[test]
+    fn test_milli() {
+        assert_eq!(SIPrefix::Milli as i32, 10);
+    }
+
+    #[test]
+    fn test_all_unique() {
+        let values: Vec<i32> = members(SIPrefix::from_raw)
+            .iter()
+            .map(|(_, p)| *p as i32)
+            .collect();
+        assert!(all_unique(&values));
+    }
+
+    // Python's 26 counts the `_SENTINEL` member (25); the Rust enum has no
+    // sentinel variant, and 25 is refused as a value.
+    #[test]
+    fn test_count() {
+        assert_eq!(members(SIPrefix::from_raw).len(), 25);
+        assert_eq!(SIPrefix::from_raw(25), None);
+    }
+
+    #[test]
+    fn test_quecto_quetta() {
+        assert_eq!(SIPrefix::Quecto as i32, 1);
+        assert_eq!(SIPrefix::Quetta as i32, 24);
+    }
+}
+
+mod iec_prefix {
+    use super::*;
+    use bovnar::IECPrefix;
+
+    #[test]
+    fn test_none_is_zero() {
+        assert_eq!(IECPrefix::None as i32, 0);
+    }
+
+    #[test]
+    fn test_kibi() {
+        assert_eq!(IECPrefix::Kibi as i32, 1);
+    }
+
+    #[test]
+    fn test_quebi() {
+        assert_eq!(IECPrefix::Quebi as i32, 10);
+    }
+
+    // Python's 12 counts the `_SENTINEL` member (11), as for SIPrefix.
+    #[test]
+    fn test_count() {
+        assert_eq!(members(IECPrefix::from_raw).len(), 11);
+        assert_eq!(IECPrefix::from_raw(11), None);
+    }
+
+    #[test]
+    fn test_all_unique() {
+        let values: Vec<i32> = members(IECPrefix::from_raw)
+            .iter()
+            .map(|(_, p)| *p as i32)
+            .collect();
+        assert!(all_unique(&values));
+    }
+}
+
+mod base_unit {
+    use super::*;
+    use bovnar::BaseUnit;
+    use bovnar::enums::{CURRENCY_COUNT, CURRENCY_FIRST, CURRENCY_LAST};
+    use bovnar::enums::{UNIT_BLOCK_SIZE, UNIT_NATIVE_FIRST, UNIT_NATIVE_LAST};
+
+    #[test]
+    fn test_none_is_zero() {
+        assert_eq!(BaseUnit::None as i32, 0);
+    }
+
+    #[test]
+    fn test_si_base_units() {
+        assert_eq!(BaseUnit::Second as i32, 100002);
+        assert_eq!(BaseUnit::Meter as i32, 100003);
+        assert_eq!(BaseUnit::Gram as i32, 100004);
+        assert_eq!(BaseUnit::Ampere as i32, 100005);
+        assert_eq!(BaseUnit::Kelvin as i32, 100006);
+        assert_eq!(BaseUnit::Mol as i32, 100007);
+        assert_eq!(BaseUnit::Candela as i32, 100008);
+    }
+
+    #[test]
+    fn test_digital_units() {
+        assert_eq!(BaseUnit::Bit as i32, 100000);
+        assert_eq!(BaseUnit::Byte as i32, 100001);
+    }
+
+    #[test]
+    fn test_named_derived() {
+        assert_eq!(BaseUnit::Hertz as i32, 100009);
+        assert_eq!(BaseUnit::Newton as i32, 100010);
+        assert_eq!(BaseUnit::Pascal as i32, 100011);
+        assert_eq!(BaseUnit::Joule as i32, 100012);
+        assert_eq!(BaseUnit::Watt as i32, 100013);
+        assert_eq!(BaseUnit::Volt as i32, 100014);
+        assert_eq!(BaseUnit::Ohm as i32, 100015);
+        assert_eq!(BaseUnit::Farad as i32, 100016);
+    }
+
+    #[test]
+    fn test_non_si() {
+        assert_eq!(BaseUnit::Liter as i32, 100028);
+        assert_eq!(BaseUnit::Minute as i32, 100029);
+        assert_eq!(BaseUnit::Hour as i32, 100030);
+        assert_eq!(BaseUnit::Day as i32, 100031);
+        assert_eq!(BaseUnit::Degree as i32, 100032);
+        assert_eq!(BaseUnit::Celsius as i32, 100033);
+    }
+
+    #[test]
+    fn test_angular_units() {
+        assert_eq!(BaseUnit::Radian as i32, 100034);
+        assert_eq!(BaseUnit::Steradian as i32, 100035);
+    }
+
+    #[test]
+    fn test_mass_pressure() {
+        assert_eq!(BaseUnit::Tonne as i32, 100036);
+        assert_eq!(BaseUnit::Bar as i32, 100037);
+    }
+
+    #[test]
+    fn test_atomic_units() {
+        assert_eq!(BaseUnit::Electronvolt as i32, 100038);
+        assert_eq!(BaseUnit::Dalton as i32, 100039);
+        assert_eq!(BaseUnit::AstronomicalUnit as i32, 100040);
+    }
+
+    #[test]
+    fn test_area_time_units() {
+        assert_eq!(BaseUnit::Hectare as i32, 100041);
+        assert_eq!(BaseUnit::Week as i32, 100042);
+        assert_eq!(BaseUnit::Year as i32, 100043);
+    }
+
+    #[test]
+    fn test_all_unique() {
+        let values: Vec<i32> = BaseUnit::MEMBERS.iter().map(|m| m.1 as i32).collect();
+        assert!(all_unique(&values));
+    }
+
+    /// BaseUnit's native block IS units.bvnr -- every row, and no other.
+    /// The names are checked too, not only the ids: the convention is the
+    /// gendata `.name` upper-cased, and a member spelled differently is a
+    /// member callers cannot find.
+    #[test]
+    fn test_native_block_closed_against_gendata() {
+        let want: BTreeMap<i32, String> = gendata("units.bvnr", "units")
+            .iter()
+            .map(|u| (int_field(u, "id"), str_field(u, "name").to_uppercase()))
+            .collect();
+        let got: BTreeMap<i32, String> = BaseUnit::MEMBERS
+            .iter()
+            .filter(|m| {
+                (UNIT_NATIVE_FIRST..UNIT_NATIVE_FIRST + UNIT_BLOCK_SIZE).contains(&(m.1 as i32))
+            })
+            .map(|m| (m.1 as i32, m.0.to_string()))
+            .collect();
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn test_native_bounds_match_gendata() {
+        let units = gendata("units.bvnr", "units");
+        assert_eq!(UNIT_NATIVE_FIRST, int_field(&units[0], "id"));
+        assert_eq!(UNIT_NATIVE_LAST, int_field(units.last().unwrap(), "id"));
+    }
+
+    /// The currency block IS currencies.bvnr, in order. A code that is
+    /// already a native unit's name takes a trailing underscore (CUP is the
+    /// Cuban Peso and the US cup); the rule is applied rather than the
+    /// exception listed, so a second collision is handled too.
+    #[test]
+    fn test_currency_block_closed_against_gendata() {
+        let units: BTreeSet<String> = gendata("units.bvnr", "units")
+            .iter()
+            .map(|u| str_field(u, "name").to_uppercase())
+            .collect();
+        let codes: Vec<String> = gendata("currencies.bvnr", "currencies")
+            .iter()
+            .map(|c| str_field(c, "code"))
+            .collect();
+        let want: Vec<String> = codes
+            .iter()
+            .map(|c| {
+                if units.contains(c) {
+                    format!("{c}_")
+                } else {
+                    c.clone()
+                }
+            })
+            .collect();
+        let got: Vec<String> = BaseUnit::MEMBERS
+            .iter()
+            .filter(|m| (CURRENCY_FIRST..=CURRENCY_LAST).contains(&(m.1 as i32)))
+            .map(|m| m.0.to_string())
+            .collect();
+        assert_eq!(got, want);
+        assert_eq!(CURRENCY_COUNT as usize, codes.len());
+    }
+
+    /// Nothing but NONE lives between or beyond the two blocks. The Rust enum
+    /// also names the unit profiles' opaque ids (`UCUM_IU`, blocks 20..80 of
+    /// include/bovnar.h, 200000..899999), which Python's BaseUnit leaves out;
+    /// they are the one other range allowed here.
+    #[test]
+    fn test_no_members_outside_the_two_blocks() {
+        let stray: Vec<&str> = BaseUnit::MEMBERS
+            .iter()
+            .filter(|m| {
+                let id = m.1 as i32;
+                id != 0
+                    && !(UNIT_NATIVE_FIRST..=UNIT_NATIVE_LAST).contains(&id)
+                    && !(CURRENCY_FIRST..=CURRENCY_LAST).contains(&id)
+                    && !(2 * UNIT_NATIVE_FIRST..CURRENCY_FIRST).contains(&id)
+            })
+            .map(|m| m.0)
+            .collect();
+        assert_eq!(stray, Vec::<&str>::new());
+    }
+}
+
+mod exponent {
+    use super::*;
+    use bovnar::Exponent;
+
+    #[test]
+    fn test_positive_exponents() {
+        assert_eq!(Exponent::LINEAR.get(), 1);
+        assert_eq!(Exponent::SQUARE.get(), 2);
+        assert_eq!(Exponent::CUBIC.get(), 3);
+        assert_eq!(Exponent::NONIC.get(), 9);
+    }
+
+    #[test]
+    fn test_negative_exponents() {
+        assert_eq!(Exponent::NEG_LINEAR.get(), -1);
+        assert_eq!(Exponent::NEG_SQUARE.get(), -2);
+        assert_eq!(Exponent::NEG_NONIC.get(), -9);
+    }
+
+    #[test]
+    fn test_all_unique() {
+        let named = [
+            Exponent::INVALID,
+            Exponent::LINEAR,
+            Exponent::SQUARE,
+            Exponent::CUBIC,
+            Exponent::QUARTIC,
+            Exponent::QUINTIC,
+            Exponent::SEXTIC,
+            Exponent::SEPTIC,
+            Exponent::OCTIC,
+            Exponent::NONIC,
+            Exponent::NEG_LINEAR,
+            Exponent::NEG_SQUARE,
+            Exponent::NEG_CUBIC,
+            Exponent::NEG_QUARTIC,
+            Exponent::NEG_QUINTIC,
+            Exponent::NEG_SEXTIC,
+            Exponent::NEG_SEPTIC,
+            Exponent::NEG_OCTIC,
+            Exponent::NEG_NONIC,
+        ];
+        let values: Vec<i32> = named.iter().map(|e| e.get()).collect();
+        assert!(all_unique(&values));
     }
 }
 
