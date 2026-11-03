@@ -56,6 +56,14 @@ fn main() {
         .to_path_buf();
     let gen_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR")).join("generated");
     std::fs::create_dir_all(&gen_dir).expect("create OUT_DIR/generated");
+    // The ABI unit test compiles tests/bvnr_abi_dump.c with the same `cc`
+    // compiler as the library, which it can only find knowing the triples.
+    for var in ["TARGET", "HOST"] {
+        println!(
+            "cargo:rustc-env=BVNR_BUILD_{var}={}",
+            env::var(var).expect(var)
+        );
+    }
 
     println!("cargo:rerun-if-changed={}", repo.join("src").display());
     println!("cargo:rerun-if-changed={}", repo.join("include").display());

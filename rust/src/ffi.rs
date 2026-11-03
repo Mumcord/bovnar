@@ -1941,8 +1941,14 @@ pub fn demux_read(
     }
 }
 
-/// Checks every mirrored struct against the compiler's own layout, as printed
-/// by the upstream ABI manifest generator (tests/bvnr_abi_dump.c).
+/// Port of python/tests/test_abi.py: checks every mirrored struct against the
+/// C compiler's own layout, as printed by the upstream ABI manifest generator
+/// (tests/bvnr_abi_dump.c). It lives here rather than in tests/ because the
+/// mirrors are private. The generator is compiled by the compiler the `cc`
+/// crate picks for the library itself, so an MSVC build compares MSVC's
+/// layout. Python's test_all_ctypes_structures_are_covered scans loaded
+/// modules for ctypes Structures; here the manifest-count assertion checks
+/// instead that every struct and field the manifest lists is mirrored.
 #[cfg(all(test, not(target_family = "wasm")))]
 mod abi_tests {
     use super::*;
@@ -2012,18 +2018,44 @@ mod abi_tests {
     #[test]
     fn struct_layouts_match_c() {
         let repo = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
-        let exe = Path::new(env!("OUT_DIR")).join("bvnr_abi_dump");
-        let cc = std::env::var("CC").unwrap_or_else(|_| "cc".into());
-        let status = Command::new(cc)
-            .arg("-std=c99")
-            .arg("-I")
-            .arg(repo.join("include"))
-            .arg(repo.join("tests/bvnr_abi_dump.c"))
-            .arg("-o")
-            .arg(&exe)
-            .status()
-            .expect("run the C compiler");
-        assert!(status.success(), "compiling bvnr_abi_dump.c failed");
+        let out_dir = Path::new(env!("OUT_DIR"));
+        let exe = out_dir.join(if cfg!(windows) {
+            "bvnr_abi_dump.exe"
+        } else {
+            "bvnr_abi_dump"
+        });
+        let compiler = cc::Build::new()
+            .target(env!("BVNR_BUILD_TARGET"))
+            .host(env!("BVNR_BUILD_HOST"))
+            .opt_level(0)
+            .cargo_metadata(false)
+            .get_compiler();
+        if cfg!(target_env = "msvc") {
+            assert!(
+                compiler.is_like_msvc(),
+                "an MSVC build must compare MSVC's layout"
+            );
+        }
+        let mut cmd = compiler.to_command();
+        if compiler.is_like_msvc() {
+            cmd.arg("/I")
+                .arg(repo.join("include"))
+                .arg(repo.join("tests/bvnr_abi_dump.c"))
+                .arg(format!("/Fo{}\\", out_dir.display()))
+                .arg(format!("/Fe{}", exe.display()));
+        } else {
+            cmd.arg("-std=c99")
+                .arg("-I")
+                .arg(repo.join("include"))
+                .arg(repo.join("tests/bvnr_abi_dump.c"))
+                .arg("-o")
+                .arg(&exe);
+        }
+        let status = cmd.status().expect("run the C compiler");
+        assert!(
+            status.success(),
+            "compiling bvnr_abi_dump.c with {cmd:?} failed"
+        );
         let out = Command::new(&exe).output().expect("run bvnr_abi_dump");
         let text = String::from_utf8(out.stdout).unwrap();
 
