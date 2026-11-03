@@ -134,6 +134,23 @@ impl Decimal {
         )
     }
 
+    /// The same value with trailing zeros of the coefficient moved into the
+    /// exponent, but never past `ideal` (Python's ideal exponent of an exact
+    /// quotient).
+    pub(crate) fn reduced_to(mut self, ideal: i64) -> Self {
+        if let Repr::Finite { coeff, exp, .. } = &mut self.0 {
+            let ten = BigUint::from(10u32);
+            while *exp < ideal && !coeff.is_zero() && (&*coeff % &ten).is_zero() {
+                *coeff /= &ten;
+                *exp += 1;
+            }
+            if coeff.is_zero() && *exp < ideal {
+                *exp = ideal;
+            }
+        }
+        self
+    }
+
     /// The coefficient with trailing zeros stripped, for comparing values.
     fn normalised(coeff: &BigUint, exp: i64) -> (BigUint, i64) {
         let ten = BigUint::from(10u32);

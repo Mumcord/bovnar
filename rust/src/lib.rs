@@ -1033,4 +1033,22 @@ pub mod dict_parser {
         }
         Some(if neg { -val } else { val })
     }
+
+    /// [`int_from_base`] without the 128-bit limit: Python's int.
+    pub(crate) fn bigint_from_base(text: &str, base: u32) -> Option<num_bigint::BigInt> {
+        let bytes = text.as_bytes();
+        let (neg, digits) = match bytes.first() {
+            Some(b'+') if base != 64 && base != 85 => (false, &bytes[1..]),
+            Some(b'-') if base != 64 && base != 85 => (true, &bytes[1..]),
+            _ => (false, bytes),
+        };
+        if digits.is_empty() {
+            return None;
+        }
+        let mut val = num_bigint::BigInt::from(0);
+        for &c in digits {
+            val = val * base + char_to_digit(c, base)?;
+        }
+        Some(if neg { -val } else { val })
+    }
 }
