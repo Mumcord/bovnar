@@ -51,7 +51,17 @@ impl DomDoc {
     /// Parses BVNR bytes into a DOM tree; a malformed document is an
     /// [`Error::Parse`] carrying the C error code.
     pub fn parse(data: &[u8]) -> Result<Self> {
-        let handle = ffi::DocHandle::parse(data).ok_or_else(|| {
+        Self::checked(ffi::DocHandle::parse(data))
+    }
+
+    /// [`DomDoc::parse`] under a unit policy: values arrive converted, and a
+    /// document breaking the policy fails with `unit_mismatch`.
+    pub fn parse_with_policy(data: &[u8], policy: &crate::reader::UnitPolicy) -> Result<Self> {
+        Self::checked(ffi::DocHandle::parse_policy(data, &policy.spec()))
+    }
+
+    fn checked(handle: Option<ffi::DocHandle>) -> Result<Self> {
+        let handle = handle.ok_or_else(|| {
             Error::Argument(
                 "bvn_dom_parse() returned NULL (out of memory or input over 4 GiB)".into(),
             )
@@ -131,6 +141,29 @@ impl<'a> DomNode<'a> {
     /// The canonical unit string, empty when the value has none.
     pub fn unit_str(self) -> String {
         self.0.unit_string()
+    }
+
+    /// The value's unit; dimensionless when it has none.
+    pub fn unit(self) -> crate::Unit {
+        crate::Unit(self.0.unit())
+    }
+
+    /// The unit as the document spelled it, when that differs from the
+    /// canonical form or a policy converted the value.
+    pub fn unit_source(self) -> Option<&'a str> {
+        let (u, _) = self.0.unit_source_and_fraction();
+        u.and_then(|b| std::str::from_utf8(b).ok())
+    }
+
+    /// A datetime's verbatim sub-second digits.
+    pub fn datetime_fraction(self) -> Option<&'a str> {
+        let (_, f) = self.0.unit_source_and_fraction();
+        f.and_then(|b| std::str::from_utf8(b).ok())
+    }
+
+    /// The numeric value in coherent SI base units.
+    pub fn value_in_base_units(self) -> f64 {
+        self.0.value_in_base_units()
     }
 
     pub fn is_null(self) -> bool {
@@ -275,6 +308,22 @@ impl<'a> DomNode<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn policy_parse_converts_and_exposes_units() {
+        let doc = b".d = <float:64,k~m> 1.5;";
+        let plain = DomDoc::parse(doc).unwrap();
+        let d = plain.get("d").unwrap();
+        assert_eq!(d.unit().to_string(), "k~m");
+        assert_eq!(d.value_in_base_units(), 1500.0);
+        let policy = crate::UnitPolicy {
+            targets: vec![("m".into(), 0)],
+            ..Default::default()
+        };
+        let conv = DomDoc::parse_with_policy(doc, &policy).unwrap();
+        let d = conv.get("d").unwrap();
+        assert_eq!((d.as_float(), d.unit_str()), (Some(1500.0), "m".into()));
+    }
 
     #[test]
     fn parse_and_walk() {

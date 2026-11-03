@@ -21,7 +21,7 @@ pub use dom::{DomDoc, DomNode, DomType};
 pub use enums::{ErrorCode, Event, TokenType, ValueTypeFamily};
 pub use error::{Error, Result};
 pub use ffi::ValueTypeSpec;
-pub use reader::{EventData, EventPayload, ReadOptions, Reader};
+pub use reader::{EventData, EventPayload, ReadOptions, Reader, UnitPolicy, UnitRule};
 pub use unit::Unit;
 pub use writer::Writer;
 

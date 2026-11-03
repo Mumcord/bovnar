@@ -544,16 +544,138 @@ pub struct EventView<'a> {
     pub data: Option<&'a BvnrData>,
     /// `data.data[..data.length]`, or empty.
     pub raw: &'a [u8],
+    /// A datetime's sub-second digits, or empty.
+    pub frac: &'a [u8],
+    /// The unit as the document spelled it, or empty.
+    pub unit_source: &'a [u8],
+    /// The converted literal when `data.converted`, or empty.
+    pub conv_text: &'a [u8],
+}
+
+impl<'a> EventView<'a> {
+    /// Borrows everything `d` points at for as long as `d` itself.
+    ///
+    /// SAFETY: every pointer/length pair in `d` must describe bytes valid for
+    /// `'a`, as the library guarantees for the duration of a callback.
+    unsafe fn new(event: c_int, d: Option<&'a BvnrData>) -> Self {
+        // SAFETY: guaranteed by the caller.
+        let view = |p: *const c_void, n: u32| unsafe { bytes(p, n) };
+        EventView {
+            event,
+            data: d,
+            raw: d.map_or(&[][..], |d| view(d.data, d.length)),
+            frac: d.map_or(&[][..], |d| view(d.frac_data, d.frac_length)),
+            unit_source: d.map_or(&[][..], |d| view(d.unit_source, d.unit_source_length)),
+            conv_text: d
+                .filter(|d| d.converted)
+                .map_or(&[][..], |d| view(d.conv.text.cast(), d.conv.length)),
+        }
+    }
 }
 
 /// A Rust event handler; returning false stops the read.
 pub type Handler<'h> = &'h mut dyn FnMut(&EventView<'_>) -> bool;
 
+/// A `want_unit` hook: the unit (and base) to deliver a value in, or `None`
+/// to leave it as written.
+pub type WantUnit<'h> = &'h mut dyn FnMut(&EventView<'_>) -> Option<(ValueUnit, u32)>;
+
 /// What the read trampolines reach through `userdata`.
-struct Handlers<'h> {
-    verified: Option<Handler<'h>>,
-    unverified: Option<Handler<'h>>,
-    panic: Option<Box<dyn std::any::Any + Send>>,
+#[derive(Default)]
+pub struct Handlers<'h> {
+    pub verified: Option<Handler<'h>>,
+    pub unverified: Option<Handler<'h>>,
+    pub want_unit: Option<WantUnit<'h>>,
+    /// Per-document callback of `bvnr_doc_stream_read`: (index, ok, error).
+    pub on_document: Option<&'h mut dyn FnMut(u64, bool, c_int) -> bool>,
+    /// The first error `on_error` reported: (code, line, column, byte, offset).
+    pub first_error: Option<(c_int, u64, u64, u32, u64)>,
+    pub panic: Option<Box<dyn std::any::Any + Send>>,
+}
+
+impl<'h> Handlers<'h> {
+    /// Points `flags` at the trampolines for the handlers that are set, with
+    /// `self` as userdata. `self` must stay put while the library uses it.
+    fn install(&mut self, flags: &mut BvnrReadFlags) {
+        flags.on_verified = self
+            .verified
+            .is_some()
+            .then_some(on_verified_trampoline as EventCallbackFn);
+        flags.on_unverified = self
+            .unverified
+            .is_some()
+            .then_some(on_unverified_trampoline as EventCallbackFn);
+        flags.want_unit = self
+            .want_unit
+            .is_some()
+            .then_some(want_unit_trampoline as WantUnitFn);
+        flags.on_error = Some(on_error_trampoline as OnErrorFn);
+        flags.userdata = (self as *mut Self).cast();
+    }
+
+    /// Runs `f` on the handlers, parking a panic instead of unwinding into C.
+    fn guard<R>(&mut self, fallback: R, f: impl FnOnce(&mut Self) -> R) -> R {
+        if self.panic.is_some() {
+            return fallback;
+        }
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| f(self))) {
+            Ok(r) => r,
+            Err(payload) => {
+                self.panic = Some(payload);
+                fallback
+            }
+        }
+    }
+
+    /// Rethrows a panic a handler raised during the last call.
+    fn resume(&mut self) {
+        if let Some(payload) = self.panic.take() {
+            std::panic::resume_unwind(payload);
+        }
+    }
+}
+
+/// SAFETY: `ud` must be the `Handlers` installed for the running call, alive
+/// and otherwise untouched for its duration.
+unsafe fn handlers<'a>(ud: *mut c_void) -> &'a mut Handlers<'a> {
+    // SAFETY: guaranteed by the caller.
+    unsafe { &mut *ud.cast::<Handlers>() }
+}
+
+extern "C" fn want_unit_trampoline(
+    ud: *mut c_void,
+    d: *const BvnrData,
+    want: *mut ValueUnit,
+    want_base: *mut u32,
+) -> bool {
+    // SAFETY: `ud` is the installed `Handlers`; `d` is NULL or valid for the
+    // call, and its pointers describe bytes valid for the call.
+    let (h, view) = unsafe { (handlers(ud), EventView::new(0, d.as_ref())) };
+    let Some((unit, base)) = h.guard(None, |h| h.want_unit.as_mut().and_then(|f| f(&view))) else {
+        return false;
+    };
+    // SAFETY: `want` is writable; `want_base` is NULL or writable.
+    unsafe {
+        *want = unit;
+        if let Some(b) = want_base.as_mut() {
+            *b = base;
+        }
+    }
+    true
+}
+
+extern "C" fn on_error_trampoline(
+    ud: *mut c_void,
+    err: c_int,
+    line: u64,
+    column: u64,
+    byte: u32,
+    offset: u64,
+) {
+    // SAFETY: `ud` is the installed `Handlers`.
+    let h = unsafe { handlers(ud) };
+    h.first_error
+        .get_or_insert((err, line, column, byte, offset));
 }
 
 extern "C" fn on_verified_trampoline(ud: *mut c_void, ev: c_int, d: *const BvnrData) -> bool {
@@ -565,37 +687,107 @@ extern "C" fn on_unverified_trampoline(ud: *mut c_void, ev: c_int, d: *const Bvn
 }
 
 fn dispatch(ud: *mut c_void, ev: c_int, d: *const BvnrData, verified: bool) -> bool {
-    // SAFETY: `ud` is the `Handlers` that `ReaderHandle::read_mem` keeps alive
-    // and otherwise untouched for the whole bvnr_read call.
-    let h = unsafe { &mut *ud.cast::<Handlers>() };
-    if h.panic.is_some() {
+    // SAFETY: `ud` is the installed `Handlers`; the library passes NULL or a
+    // bvnr_data_t whose pointers are valid for this call.
+    let (h, view) = unsafe { (handlers(ud), EventView::new(ev, d.as_ref())) };
+    h.guard(false, |h| {
+        let handler = if verified {
+            &mut h.verified
+        } else {
+            &mut h.unverified
+        };
+        handler.as_mut().is_none_or(|f| f(&view))
+    })
+}
+
+/// A unit policy in Rust terms, marshalled by [`with_policy`].
+#[derive(Default)]
+pub struct PolicySpec {
+    /// (path, unit, base, convert)
+    pub rules: Vec<(String, String, u32, bool)>,
+    /// (unit, base)
+    pub targets: Vec<(String, u32)>,
+    pub base: u32,
+    pub normalise: bool,
+    pub leave_inexact: bool,
+    pub require_unit: bool,
+    pub require_dimension_of: Vec<String>,
+}
+
+/// Builds the C `bvnr_unit_policy_t` for `spec` and runs `f` on it (NULL for
+/// `None`). False when a string holds a NUL byte or a count overflows.
+fn with_policy(spec: Option<&PolicySpec>, f: impl FnOnce(*mut BvnrUnitPolicy) -> bool) -> bool {
+    let Some(spec) = spec else {
+        return f(std::ptr::null_mut());
+    };
+    let c = |t: &str| CString::new(t).ok();
+    let Some(rule_strs) = spec
+        .rules
+        .iter()
+        .map(|(p, u, _, _)| Some((c(p)?, c(u)?)))
+        .collect::<Option<Vec<_>>>()
+    else {
         return false;
-    }
-    // SAFETY: the library passes NULL or a bvnr_data_t valid for this call.
-    let data = unsafe { d.as_ref() };
-    // SAFETY: data/length describe the event's bytes for this call.
-    let raw = data.map_or(&[][..], |d| unsafe { bytes(d.data, d.length) });
-    let view = EventView {
-        event: ev,
-        data,
-        raw,
     };
-    let handler = if verified {
-        &mut h.verified
-    } else {
-        &mut h.unverified
+    let Some(target_strs) = spec
+        .targets
+        .iter()
+        .map(|(u, _)| c(u))
+        .collect::<Option<Vec<_>>>()
+    else {
+        return false;
     };
-    let Some(f) = handler.as_mut() else {
-        return true;
+    let Some(dim_strs) = spec
+        .require_dimension_of
+        .iter()
+        .map(|u| c(u))
+        .collect::<Option<Vec<_>>>()
+    else {
+        return false;
     };
-    // A panic must not unwind into C: park it and rethrow after bvnr_read.
-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| f(&view))) {
-        Ok(go_on) => go_on,
-        Err(payload) => {
-            h.panic = Some(payload);
-            false
-        }
-    }
+    let rules: Vec<BvnrUnitRule> = spec
+        .rules
+        .iter()
+        .zip(&rule_strs)
+        .map(|((_, _, base, convert), (p, u))| BvnrUnitRule {
+            path: p.as_ptr(),
+            unit: u.as_ptr(),
+            base: *base,
+            mode: c_int::from(!convert),
+        })
+        .collect();
+    let targets: Vec<BvnrUnitTarget> = spec
+        .targets
+        .iter()
+        .zip(&target_strs)
+        .map(|((_, base), u)| BvnrUnitTarget {
+            unit: u.as_ptr(),
+            base: *base,
+        })
+        .collect();
+    let dims: Vec<*const c_char> = dim_strs.iter().map(|d| d.as_ptr()).collect();
+    let (Ok(num_rules), Ok(num_targets), Ok(num_dims)) = (
+        u32::try_from(rules.len()),
+        u32::try_from(targets.len()),
+        u32::try_from(dims.len()),
+    ) else {
+        return false;
+    };
+    let mut policy = BvnrUnitPolicy {
+        rules: rules.as_ptr(),
+        num_rules,
+        targets: targets.as_ptr(),
+        num_targets,
+        base: spec.base,
+        normalise: c_int::from(spec.normalise),
+        on_inexact: c_int::from(spec.leave_inexact),
+        require_unit: spec.require_unit,
+        require_dimension_of: dims.as_ptr(),
+        num_require_dimension_of: num_dims,
+    };
+    // Every pointer in `policy` refers into the vectors above, alive until
+    // `f` returns.
+    f(&mut policy)
 }
 
 /// The last error a reader recorded.
@@ -620,29 +812,15 @@ impl ReaderHandle {
     /// `bvnr_open_read_mem` + `bvnr_read` over `data` with the limits in
     /// `flags` (its userdata and callbacks are set here). Returns false when
     /// the library reports an error; a handler panic is resumed afterwards.
-    pub fn read_mem<'h>(
+    pub fn read_mem(
         &mut self,
         data: &[u8],
         mut flags: BvnrReadFlags,
-        verified: Option<Handler<'h>>,
-        unverified: Option<Handler<'h>>,
+        h: &mut Handlers<'_>,
     ) -> bool {
-        let mut handlers = Handlers {
-            verified,
-            unverified,
-            panic: None,
-        };
-        flags.on_verified = handlers
-            .verified
-            .is_some()
-            .then_some(on_verified_trampoline as EventCallbackFn);
-        flags.on_unverified = handlers
-            .unverified
-            .is_some()
-            .then_some(on_unverified_trampoline as EventCallbackFn);
-        flags.userdata = (&raw mut handlers).cast();
-        // SAFETY: the reader is live; `data`, `flags` and `handlers` outlive
-        // both calls, and nothing else touches `handlers` meanwhile.
+        h.install(&mut flags);
+        // SAFETY: the reader is live; `data`, `flags` and `h` outlive both
+        // calls, and nothing else touches `h` meanwhile.
         let ok = unsafe {
             bvnr_open_read_mem(
                 self.0.as_ptr(),
@@ -653,10 +831,27 @@ impl ReaderHandle {
                 &mut flags,
             ) && bvnr_read(self.0.as_ptr())
         };
-        if let Some(payload) = handlers.panic.take() {
-            std::panic::resume_unwind(payload);
-        }
+        h.resume();
         ok
+    }
+
+    /// `bvnr_reader_set_unit_policy`; `None` clears it.
+    pub fn set_unit_policy(&mut self, policy: Option<&PolicySpec>) -> bool {
+        let r = self.0.as_ptr();
+        // SAFETY: the reader is live; the policy is only read during the call.
+        with_policy(policy, |p| unsafe { bvnr_reader_set_unit_policy(r, p) })
+    }
+
+    /// `bvnr_reader_get_recovery_count` and `bvnr_reader_get_skipped_bytes`.
+    pub fn recovery(&self) -> (u64, u64) {
+        let r = self.0.as_ptr();
+        // SAFETY: the reader is live; the getters only read it.
+        unsafe {
+            (
+                bvnr_reader_get_recovery_count(r),
+                bvnr_reader_get_skipped_bytes(r),
+            )
+        }
     }
 
     /// The reader's last error and where it happened.
@@ -725,6 +920,19 @@ impl DocHandle {
         let len = u32::try_from(data.len()).ok()?;
         // SAFETY: `data` is valid for `len` bytes and only read during the call.
         let doc = unsafe { bvn_dom_parse(data.as_ptr().cast_mut().cast(), len) };
+        std::ptr::NonNull::new(doc).map(Self)
+    }
+
+    /// `bvn_dom_parse_policy`: `None` also when the policy cannot be built.
+    pub fn parse_policy(data: &[u8], policy: &PolicySpec) -> Option<Self> {
+        let len = u32::try_from(data.len()).ok()?;
+        let mut doc = std::ptr::null_mut();
+        with_policy(Some(policy), |p| {
+            // SAFETY: `data` is valid for `len` bytes and `p` for the call;
+            // both are only read.
+            doc = unsafe { bvn_dom_parse_policy(data.as_ptr().cast_mut().cast(), len, p) };
+            true
+        });
         std::ptr::NonNull::new(doc).map(Self)
     }
 
@@ -833,6 +1041,34 @@ impl<'a> Node<'a> {
     /// `bvn_dom_get_symbol`.
     pub fn get_symbol(self) -> Option<&'a [u8]> {
         self.get_bytes(bvn_dom_get_symbol)
+    }
+
+    /// `bvn_dom_get_unit`.
+    pub fn unit(self) -> ValueUnit {
+        // SAFETY: the node is live.
+        unsafe { bvn_dom_get_unit(self.ptr()) }
+    }
+
+    /// `bvn_dom_get_value_in_base_units`.
+    pub fn value_in_base_units(self) -> f64 {
+        // SAFETY: the node is live.
+        unsafe { bvn_dom_get_value_in_base_units(self.ptr()) }
+    }
+
+    /// `bvn_dom_get_unit_source` and `bvn_dom_get_datetime_fraction`: the
+    /// unit's spelling and a datetime's sub-second digits, when present.
+    pub fn unit_source_and_fraction(self) -> (Option<&'a [u8]>, Option<&'a [u8]>) {
+        let (mut ul, mut fl) = (0u32, 0u32);
+        // SAFETY: the node is live; the results are NULL or `len` bytes owned
+        // by the document, which outlives 'a.
+        unsafe {
+            let u = bvn_dom_get_unit_source(self.ptr(), &mut ul);
+            let f = bvn_dom_get_datetime_fraction(self.ptr(), &mut fl);
+            (
+                (!u.is_null()).then(|| bytes(u.cast(), ul)),
+                (!f.is_null()).then(|| bytes(f.cast(), fl)),
+            )
+        }
     }
 
     /// `bvn_dom_get_reference`.
@@ -958,6 +1194,56 @@ impl WriterHandle {
         // SAFETY: the writer is live; `d` and the bytes it points at are
         // valid for the call, and the library copies what it keeps.
         unsafe { bvnr_write_event(self.ptr.as_ptr(), event, &mut d) }
+    }
+
+    /// `bvnr_write_event` with every payload field: the literal `data`, the
+    /// value's unit, a datetime's sub-second digits `frac` and the unit's
+    /// spelling `unit_source` (empty for none).
+    pub fn write_event_full(
+        &mut self,
+        event: c_int,
+        token_type: c_int,
+        value_type: ValueTypeSpec,
+        unit: &ValueUnit,
+        [data, frac, unit_source]: [&[u8]; 3],
+    ) -> bool {
+        let (Ok(length), Ok(frac_length), Ok(unit_source_length)) = (
+            u32::try_from(data.len()),
+            u32::try_from(frac.len()),
+            u32::try_from(unit_source.len()),
+        ) else {
+            return false;
+        };
+        let mut d = BvnrData::zeroed();
+        d.type_ = token_type;
+        d.value_type = value_type;
+        d.value_unit = *unit;
+        d.data = data.as_ptr().cast();
+        d.length = length;
+        if !frac.is_empty() {
+            d.frac_data = frac.as_ptr().cast();
+            d.frac_length = frac_length;
+        }
+        if !unit_source.is_empty() {
+            d.unit_source = unit_source.as_ptr().cast();
+            d.unit_source_length = unit_source_length;
+        }
+        // SAFETY: the writer is live; `d` and the bytes it points at are
+        // valid for the call, and the library copies what it keeps.
+        unsafe { bvnr_write_event(self.ptr.as_ptr(), event, &mut d) }
+    }
+
+    /// `bvnr_writer_set_unit_policy`; `None` clears it.
+    pub fn set_unit_policy(&mut self, policy: Option<&PolicySpec>) -> bool {
+        let w = self.ptr.as_ptr();
+        // SAFETY: the writer is live; the policy is only read during the call.
+        with_policy(policy, |p| unsafe { bvnr_writer_set_unit_policy(w, p) })
+    }
+
+    /// `bvnr_writer_unit_flags`.
+    pub fn unit_flags(&self) -> u32 {
+        // SAFETY: the writer is live.
+        unsafe { bvnr_writer_unit_flags(self.ptr.as_ptr()) }
     }
 
     /// `bvnr_write_version`.
