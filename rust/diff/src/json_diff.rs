@@ -653,7 +653,10 @@ struct Mismatch {
     rust: Outcome,
 }
 
-fn load_inputs(opts: &Options) -> Result<(Vec<Case>, Vec<Case>, Vec<Vec<u8>>), String> {
+/// Fixture cases, corpus cases and raw seed inputs.
+type Inputs = (Vec<Case>, Vec<Case>, Vec<Vec<u8>>);
+
+fn load_inputs(opts: &Options) -> Result<Inputs, String> {
     let mut fixtures = Vec::new();
     for dir in &opts.fixtures {
         let mut paths: Vec<_> = fs::read_dir(dir)
