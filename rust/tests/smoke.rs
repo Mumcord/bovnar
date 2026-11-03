@@ -283,3 +283,75 @@ fn dom_parse_reader_reads_a_pipe_of_trickled_bytes() {
     let err = DomDoc::parse_reader(Trickle(b".x = @;")).err();
     assert!(matches!(err, Some(bovnar::Error::Parse { .. })), "{err:?}");
 }
+
+/// A source whose every read fails.
+struct Unreadable;
+
+impl std::io::Read for Unreadable {
+    fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::ConnectionReset,
+            "pipe closed",
+        ))
+    }
+}
+
+#[test]
+fn parse_reader_and_parse_typed_reader_match_their_in_memory_twins() {
+    use bovnar::{parse_reader, parse_typed_reader};
+    let doc = b".a = 1;\n.b = <uint:8>7;\n.s = \"x\";\n.l = [1, 2, 3];\n";
+    assert_eq!(parse_reader(Trickle(doc)).unwrap(), parse(doc).unwrap());
+    assert_eq!(
+        parse_typed_reader(Trickle(doc)).unwrap(),
+        parse_typed(doc).unwrap()
+    );
+    let bad = b".a = @;";
+    assert_eq!(parse_reader(Trickle(bad)), parse(bad));
+    assert_eq!(parse_typed_reader(Trickle(bad)), parse_typed(bad));
+}
+
+#[test]
+fn parse_reader_maps_a_failing_reader_to_an_io_error() {
+    use bovnar::{Error, parse_reader, parse_typed_reader};
+    for err in [
+        parse_reader(Unreadable).unwrap_err(),
+        parse_typed_reader(Unreadable).unwrap_err(),
+    ] {
+        assert_eq!(err.code(), Some(ErrorCode::ReadingFromSourceFd));
+        assert!(matches!(
+            err,
+            Error::Io {
+                io_kind: std::io::ErrorKind::ConnectionReset,
+                ..
+            }
+        ));
+    }
+}
+
+#[test]
+fn write_to_writes_what_to_string_returns() {
+    let value = parse_typed(b".a = <uint:8>7; .s = \"x\"; .l = [1, 2];").unwrap();
+    for pretty in [false, true] {
+        let mut out = Vec::new();
+        bovnar::write_to(&value, pretty, &mut out).unwrap();
+        assert_eq!(out, to_string(&value, pretty).unwrap());
+    }
+    let mut out = Vec::new();
+    let err = bovnar::write_to(&Value::Int(1), false, &mut out);
+    assert_eq!(err, to_string(&Value::Int(1), false).map(|_| ()));
+    assert!(out.is_empty());
+}
+
+#[test]
+fn write_to_maps_a_failing_writer_to_an_io_error() {
+    let value = parse(b".a = 1;").unwrap();
+    let err = bovnar::write_to(&value, false, Full).unwrap_err();
+    assert_eq!(err.code(), Some(ErrorCode::WritingToSink));
+    assert!(matches!(
+        err,
+        bovnar::Error::Io {
+            io_kind: std::io::ErrorKind::StorageFull,
+            ..
+        }
+    ));
+}

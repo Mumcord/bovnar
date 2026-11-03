@@ -1,5 +1,6 @@
-//! Reading a caller's `std::io::Read` for the `*_reader` entry points, the
-//! counterparts of the C library's file-descriptor ones.
+//! Reading a caller's `std::io::Read` for the `*_reader` entry points and
+//! writing to a caller's `std::io::Write` for the `to_writer` / `*_to` ones,
+//! the counterparts of the C library's file-descriptor source and sink.
 //!
 //! The C library takes input from an fd or from memory only: `bvnr_pull_fn`
 //! exists, but `bovnar.h` has no constructor for a source that calls one (the
@@ -7,7 +8,7 @@
 //! here and handed to the memory API, which reads it exactly as the fd source
 //! would, `max_file_size` included.
 
-use std::io::Read;
+use std::io::{Read, Write};
 
 use crate::enums::ErrorCode;
 use crate::error::{Error, Result};
@@ -28,6 +29,14 @@ pub(crate) fn read_capped(mut input: impl Read, cap: Option<u64>) -> Result<Vec<
         Ok(_) => Ok(data),
         Err(e) => Err(Error::io(ErrorCode::ReadingFromSourceFd, &e)),
     }
+}
+
+/// Writes all of `data` to `out` and flushes it. An I/O error is
+/// `writing_to_sink`, the code the C fd sink gives.
+pub(crate) fn write_all(mut out: impl Write, data: &[u8]) -> Result<()> {
+    out.write_all(data)
+        .and_then(|()| out.flush())
+        .map_err(|e| Error::io(ErrorCode::WritingToSink, &e))
 }
 
 #[cfg(test)]

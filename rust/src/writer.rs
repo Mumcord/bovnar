@@ -495,10 +495,8 @@ impl Writer {
         }
         self.finished = true;
         self.check(ffi::WriterHandle::finish)?;
-        if let Some(mut out) = self.out.take() {
-            out.write_all(self.get_output())
-                .and_then(|()| out.flush())
-                .map_err(|e| Error::io(crate::ErrorCode::WritingToSink, &e))?;
+        if let Some(out) = self.out.take() {
+            crate::io::write_all(out, self.get_output())?;
         }
         Ok(())
     }

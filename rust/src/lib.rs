@@ -101,6 +101,22 @@ pub fn parse_typed(data: &[u8]) -> Result<Value> {
     parse_with(data, true)
 }
 
+/// [`parse`] over any [`std::io::Read`], such as a [`std::fs::File`].
+///
+/// Reads `input` to its end and parses it as [`parse`] parses the bytes, as
+/// [`Reader::read_reader`] does with default [`ReadOptions`]: `max_file_size`
+/// is 0 there, so no cap applies. A failing `input` is an [`Error::Io`] with
+/// `reading_from_source_fd`.
+pub fn parse_reader(input: impl std::io::Read) -> Result<Value> {
+    parse(&io::read_capped(input, None)?)
+}
+
+/// [`parse_typed`] over any [`std::io::Read`]. Reads `input` as
+/// [`parse_reader`] does.
+pub fn parse_typed_reader(input: impl std::io::Read) -> Result<Value> {
+    parse_typed(&io::read_capped(input, None)?)
+}
+
 fn parse_with(data: &[u8], typed: bool) -> Result<Value> {
     let mut parser = dict_parser::DictParser::new(typed);
     let mut on_event = |d: &EventData<'_>| {
@@ -477,6 +493,15 @@ fn int_annotation(rows: &[Value]) -> Option<ValueTypeSpec> {
         (ValueTypeFamily::Uint, pos_bits)
     };
     (width > 64).then(|| writer::type_spec(family, width, 10))
+}
+
+/// [`to_string`] into any [`std::io::Write`], such as a [`std::fs::File`].
+///
+/// The document is serialised in memory first, so nothing reaches `out` when
+/// serialising fails; then it is written to `out` and `out` is flushed. A
+/// failing `out` is an [`Error::Io`] with `writing_to_sink`.
+pub fn write_to(value: &Value, pretty: bool, out: impl std::io::Write) -> Result<()> {
+    io::write_all(out, &to_string(value, pretty)?)
 }
 
 /// Writes `.key = [<annotation>] rows;`: a flat
