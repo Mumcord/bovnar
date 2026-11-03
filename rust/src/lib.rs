@@ -13,6 +13,7 @@ mod error;
 mod limits;
 pub(crate) mod num;
 mod types;
+pub mod units;
 mod version;
 
 pub use error::{Error, ErrorKind};
