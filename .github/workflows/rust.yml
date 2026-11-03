@@ -123,6 +123,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The tables are stamped with the last commit that touched the data.
+          fetch-depth: 0
       - name: Generated unit tables match the C data in this tree
         run: python3 -I scripts/gen-tables.py "$GITHUB_WORKSPACE" --check
 
