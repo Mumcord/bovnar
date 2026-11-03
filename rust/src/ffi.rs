@@ -11,7 +11,13 @@
 
 use std::ffi::{CStr, CString, c_char, c_int, c_void};
 
-/// Size of the opaque `bvnr_source_t` / `bvnr_sink_t` storage.
+/// Storage reserved for the opaque `bvnr_source_t` / `bvnr_sink_t`, as in
+/// Python's `structs.py`. C uses `BVNR_SOURCE_RESERVED_SIZE` /
+/// `BVNR_SINK_RESERVED_SIZE` bytes (64 each today); 256 is a deliberate
+/// margin, since a mirror may be larger than the C struct (C writes within
+/// its own bounds) but never smaller. The ABI unit test asserts
+/// `size >= C's size` against the live layout, so a C reserve that outgrows
+/// this fails the tests instead of corrupting memory.
 pub const OPAQUE_BYTES: usize = 256;
 /// `BVN_MAX_UNIT_COMPONENTS`.
 pub const MAX_UNIT_COMPONENTS: usize = 32;
