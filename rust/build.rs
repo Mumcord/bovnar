@@ -150,25 +150,32 @@ fn generate_base_units(repo: &Path, gen_dir: &Path) {
 }
 
 fn generate_tables(repo: &Path, gen_dir: &Path) {
-    let probe = Command::new("python3").arg("--version").output();
-    if !matches!(probe, Ok(ref out) if out.status.success()) {
-        panic!(
-            "python3 was not found. Building bovnar runs the upstream table \
-             generators (gen_units.py and friends), which need Python 3 on PATH."
-        );
-    }
+    // $PYTHON first, then python3, then python (Windows installs only the latter).
+    println!("cargo:rerun-if-env-changed=PYTHON");
+    let candidates = env::var("PYTHON")
+        .into_iter()
+        .chain(["python3".to_owned(), "python".to_owned()]);
+    let python = candidates
+        .into_iter()
+        .find(|p| matches!(Command::new(p).arg("--version").output(), Ok(out) if out.status.success()))
+        .unwrap_or_else(|| {
+            panic!(
+                "Python 3 was not found. Building bovnar runs the upstream table \
+                 generators (gen_units.py and friends); put python3 on PATH or set PYTHON."
+            )
+        });
     for script in GENERATORS {
-        let status = Command::new("python3")
+        let status = Command::new(&python)
             .arg(repo.join(script))
             .current_dir(repo)
             .env("BVNR_GENERATED_DIR", gen_dir)
             // Keep the source tree free of __pycache__ from the build.
             .env("PYTHONDONTWRITEBYTECODE", "1")
             .status()
-            .unwrap_or_else(|e| panic!("failed to run python3 {script}: {e}"));
+            .unwrap_or_else(|e| panic!("failed to run {python} {script}: {e}"));
         if !status.success() {
             panic!(
-                "python3 {script} failed ({status}); the unit/prefix/currency tables were not generated"
+                "{python} {script} failed ({status}); the unit/prefix/currency tables were not generated"
             );
         }
     }
