@@ -159,7 +159,20 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
                 w.assignment(key)?;
                 return emit_rows(w, rows, true, None);
             }
-            write_array(w, key, rows, wide_int_annotation(rows), None, None)
+            let vt = wide_int_annotation(rows);
+            if vt.is_none() && has_wide_int(rows) {
+                // An integer past 64 bits is only readable under a width
+                // annotation, and an array has one. Beside a float, a bool or
+                // a string none covers them all, and the bare number is
+                // value_out_of_range to every reader.
+                return Err(Error::Argument(format!(
+                    "Cannot serialise {key:?}: it holds an integer wider than 64 bits beside \
+                     elements that are not integers, and a Bovnar array has a single annotation \
+                     to give the width in. Keep wide integers in an all-integer array, or wrap \
+                     them in a Quantity."
+                )));
+            }
+            write_array(w, key, rows, vt, None, None)
         }
     }
 }
@@ -246,6 +259,17 @@ fn shared_annotation(rows: &[Value]) -> Option<(ValueTypeSpec, Unit, Option<Stri
     });
     let q = first.filter(|_| all && needed)?;
     Some((q.vtype, q.unit, q.unit_source.clone()))
+}
+
+/// Python's `_array_has_wide_int`: whether a plain integer leaf needs more
+/// than 64 bits (unsigned when non-negative, signed when negative).
+fn has_wide_int(rows: &[Value]) -> bool {
+    let mut wide = false;
+    leaves(
+        rows,
+        &mut |v| wide |= matches!(v, Value::Int(i) if !(i128::from(i64::MIN)..=i128::from(u64::MAX)).contains(i)),
+    );
+    wide
 }
 
 /// Python's `_array_int_annotation`: for an all-integer array with an
