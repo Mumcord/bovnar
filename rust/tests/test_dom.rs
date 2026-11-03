@@ -12,6 +12,14 @@
 //
 // Python raises KeyError / IndexError / TypeError / ValueError where the Rust
 // accessors return `None`; those tests assert `None`.
+//
+// Python test names shared by several classes carry the class's subject here,
+// since the port is one flat module: TestDomNodeIntAccessors /
+// TestDomNodeFloatAccessor::test_wrong_type_raises are
+// test_as_i64_wrong_type_raises / test_as_float_wrong_type_raises, and
+// TestDomNodeStructAccess / TestDomNodeArrayAccess::test_getitem_wrong_type_raises
+// are test_struct_getitem_wrong_type_raises /
+// test_array_getitem_wrong_type_raises.
 
 use bovnar::{
     DomDoc, DomNode, DomType, Error, ErrorCode, Value, ValueTypeFamily, parse, to_string,
