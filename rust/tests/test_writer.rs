@@ -29,8 +29,8 @@
 use bovnar::units::UnitFlags;
 use bovnar::writer::format_bigint;
 use bovnar::{
-    Error, Event, Quantity, ReadOptions, Reader, TokenType, Unit, Value, ValueTypeFamily,
-    ValueTypeSpec, Writer, parse, spec_version, to_string,
+    Base, EmitSpec, Error, Event, Quantity, ReadOptions, Reader, Signedness, TokenType, Unit,
+    Value, ValueTypeFamily, ValueTypeSpec, Writer, parse, spec_version, to_string,
 };
 
 /// Python's `DEFAULT_MEM_CAP`.
@@ -115,14 +115,14 @@ mod writer_lifecycle {
 
     #[test]
     fn test_context_manager_calls_finish() {
-        let out = written(|w| w.write_uint("x", 1, 64, 10).unwrap());
+        let out = written(|w| w.write_uint("x", 1, 64, Base::DECIMAL).unwrap());
         assert!(has(&out, b"x"));
     }
 
     #[test]
     fn test_get_output_before_finish_raises() {
         written(|w| {
-            w.write_uint("x", 42, 64, 10).unwrap();
+            w.write_uint("x", 42, 64, Base::DECIMAL).unwrap();
             let _ = w.bytes_written();
         });
     }
@@ -133,26 +133,26 @@ mod write_uint {
 
     #[test]
     fn test_basic_uint16() {
-        let out = written(|w| w.write_uint("port", 8080, 16, 10).unwrap());
+        let out = written(|w| w.write_uint("port", 8080, 16, Base::DECIMAL).unwrap());
         assert!(has(&out, b"port"));
         assert!(has(&out, b"8080"));
     }
 
     #[test]
     fn test_uint8_max() {
-        let out = written(|w| w.write_uint("x", 255, 8, 10).unwrap());
+        let out = written(|w| w.write_uint("x", 255, 8, Base::DECIMAL).unwrap());
         assert!(has(&out, b"255"));
     }
 
     #[test]
     fn test_uint64_large() {
-        let out = written(|w| w.write_uint("big", 1 << 63, 64, 10).unwrap());
+        let out = written(|w| w.write_uint("big", 1 << 63, 64, Base::DECIMAL).unwrap());
         assert!(has(&out, b"big"));
     }
 
     #[test]
     fn test_uint_hex_base() {
-        let out = written(|w| w.write_uint("flags", 0xFF, 8, 16).unwrap());
+        let out = written(|w| w.write_uint("flags", 0xFF, 8, Base::HEX).unwrap());
         assert!(has(&out, b"ff"));
     }
 
@@ -182,7 +182,7 @@ mod write_uint {
     #[test]
     fn test_uint_out_of_range_raises_not_truncates() {
         // the exact 64-bit boundary is still accepted
-        let out = written(|w| w.write_uint("max", u64::MAX, 64, 10).unwrap());
+        let out = written(|w| w.write_uint("max", u64::MAX, 64, Base::DECIMAL).unwrap());
         assert!(has(&out, b"max"));
     }
 }
@@ -192,14 +192,14 @@ mod write_sint {
 
     #[test]
     fn test_negative_value() {
-        let out = written(|w| w.write_sint("delta", -42, 32, 10).unwrap());
+        let out = written(|w| w.write_sint("delta", -42, 32, Base::DECIMAL).unwrap());
         assert!(has(&out, b"delta"));
         assert!(has(&out, b"-42"));
     }
 
     #[test]
     fn test_zero() {
-        let out = written(|w| w.write_sint("zero", 0, 64, 10).unwrap());
+        let out = written(|w| w.write_sint("zero", 0, 64, Base::DECIMAL).unwrap());
         assert!(has(&out, b"0"));
     }
 
@@ -207,15 +207,15 @@ mod write_sint {
     fn test_sint_out_of_range_raises_not_truncates() {
         // the 64-bit boundaries are accepted
         let out = written(|w| {
-            w.write_sint("lo", i64::MIN, 64, 10).unwrap();
-            w.write_sint("hi", i64::MAX, 64, 10).unwrap();
+            w.write_sint("lo", i64::MIN, 64, Base::DECIMAL).unwrap();
+            w.write_sint("hi", i64::MAX, 64, Base::DECIMAL).unwrap();
         });
         assert!(has(&out, b"lo"));
     }
 
     #[test]
     fn test_sint_min_8() {
-        let out = written(|w| w.write_sint("min", -128, 8, 10).unwrap());
+        let out = written(|w| w.write_sint("min", -128, 8, Base::DECIMAL).unwrap());
         assert!(has(&out, b"-128"));
     }
 }
@@ -306,7 +306,7 @@ mod write_struct {
         let out = written(|w| {
             w.begin_struct("server").unwrap();
             w.write_string("host", "localhost").unwrap();
-            w.write_uint("port", 8080, 16, 10).unwrap();
+            w.write_uint("port", 8080, 16, Base::DECIMAL).unwrap();
             w.end_struct().unwrap();
         });
         for needle in [&b"server"[..], b"host", b"localhost", b"port", b"8080"] {
@@ -319,7 +319,7 @@ mod write_struct {
         let out = written(|w| {
             w.begin_struct("outer").unwrap();
             w.begin_struct("inner").unwrap();
-            w.write_uint("x", 42, 64, 10).unwrap();
+            w.write_uint("x", 42, 64, Base::DECIMAL).unwrap();
             w.end_struct().unwrap();
             w.end_struct().unwrap();
         });
@@ -343,11 +343,11 @@ mod write_array {
     fn test_simple_array() {
         let spec = vt(ValueTypeFamily::Uint, 64, 10);
         let out = written(|w| {
-            w.emit(Event::AssignmentStart, Some("values"), None, None)
+            w.emit(Event::AssignmentStart, EmitSpec::key("values"))
                 .unwrap();
             w.begin_array_row().unwrap();
             for v in [1, 2, 3] {
-                w.emit(Event::Data, None, Some(&v.to_string()), Some(spec))
+                w.emit(Event::Data, EmitSpec::value(&v.to_string(), spec))
                     .unwrap();
             }
             w.end_array_row().unwrap();
@@ -361,7 +361,7 @@ mod write_array {
     fn test_2d_array() {
         let spec = vt(ValueTypeFamily::Uint, 64, 10);
         let out = written(|w| {
-            w.emit(Event::AssignmentStart, Some("mat"), None, None)
+            w.emit(Event::AssignmentStart, EmitSpec::key("mat"))
                 .unwrap();
             for (i, row) in [[1, 2], [3, 4]].iter().enumerate() {
                 if i > 0 {
@@ -369,7 +369,7 @@ mod write_array {
                 }
                 w.begin_array_row().unwrap();
                 for v in row {
-                    w.emit(Event::Data, None, Some(&v.to_string()), Some(spec))
+                    w.emit(Event::Data, EmitSpec::value(&v.to_string(), spec))
                         .unwrap();
                 }
                 w.end_array_row().unwrap();
@@ -386,10 +386,9 @@ mod emit {
     fn test_emit_assignment_and_data() {
         let spec = vt(ValueTypeFamily::Uint, 32, 10);
         let out = written(|w| {
-            w.emit(Event::AssignmentStart, Some("x"), None, None)
-                .unwrap();
+            w.emit(Event::AssignmentStart, EmitSpec::key("x")).unwrap();
             w.annotation(spec, &Unit::default(), None).unwrap();
-            w.emit(Event::Data, None, Some("42"), Some(spec)).unwrap();
+            w.emit(Event::Data, EmitSpec::value("42", spec)).unwrap();
         });
         for needle in [&b"x"[..], b"42", b"uint", b"32"] {
             assert!(has(&out, needle));
@@ -400,13 +399,15 @@ mod emit {
     fn test_emit_invalid_event_raises() {
         let mut w = mem();
         let r = w
-            .emit(Event::AssignmentStart, Some("x"), None, None)
+            .emit(Event::AssignmentStart, EmitSpec::key("x"))
             .and_then(|()| {
                 w.emit(
                     Event::Data,
-                    None,
-                    None,
-                    Some(vt(ValueTypeFamily::Uint, 0, 0)),
+                    EmitSpec {
+                        key: None,
+                        value: None,
+                        vt: Some(vt(ValueTypeFamily::Uint, 0, 0)),
+                    },
                 )
             });
         assert!(matches!(r, Err(Error::Write { .. })), "{r:?}");
@@ -420,7 +421,7 @@ mod bytes_written {
     fn test_increases_with_writes() {
         written(|w| {
             let before = w.bytes_written();
-            w.write_uint("x", 1, 64, 10).unwrap();
+            w.write_uint("x", 1, 64, Base::DECIMAL).unwrap();
             assert!(w.bytes_written() > before);
         });
     }
@@ -453,17 +454,17 @@ mod pretty_output {
 
     #[test]
     fn test_pretty_has_newlines() {
-        let out = written(|w| w.write_uint("x", 1, 64, 10).unwrap());
+        let out = written(|w| w.write_uint("x", 1, 64, Base::DECIMAL).unwrap());
         assert!(has(&out, b"\n"));
     }
 
     #[test]
     fn test_compact_no_extra_whitespace() {
         let mut w = Writer::to_mem(CAP, false).unwrap();
-        w.write_uint("x", 1, 64, 10).unwrap();
+        w.write_uint("x", 1, 64, Base::DECIMAL).unwrap();
         w.finish().unwrap();
         let mut w2 = Writer::to_mem(CAP, true).unwrap();
-        w2.write_uint("x", 1, 64, 10).unwrap();
+        w2.write_uint("x", 1, 64, Base::DECIMAL).unwrap();
         w2.finish().unwrap();
         assert!(w.get_output().len() <= w2.get_output().len());
     }
@@ -474,7 +475,10 @@ mod write_bvnf_base {
 
     #[test]
     fn test_base10_width0() {
-        let out = written(|w| w.write_bvnf_base("pi", "3.14159265358979", 0, 10).unwrap());
+        let out = written(|w| {
+            w.write_bvnf_base("pi", "3.14159265358979", 0, Base::DECIMAL)
+                .unwrap()
+        });
         assert!(has(&out, b"pi"));
         assert!(has(&out, b"3.14"));
     }
@@ -483,14 +487,14 @@ mod write_bvnf_base {
     fn test_base10_wide_width() {
         let pi = "3.14159265358979323846264338327950288419716939937510\
                   58209749445923078164062862089986280348253421170679";
-        let out = written(|w| w.write_bvnf_base("pi512", pi, 512, 10).unwrap());
+        let out = written(|w| w.write_bvnf_base("pi512", pi, 512, Base::DECIMAL).unwrap());
         assert!(has(&out, b"pi512"));
         assert!(has(&out, b"float:512"));
     }
 
     #[test]
     fn test_base16_produces_quoted_string() {
-        let out = written(|w| w.write_bvnf_base("one", "1.0p+0", 64, 16).unwrap());
+        let out = written(|w| w.write_bvnf_base("one", "1.0p+0", 64, Base::HEX).unwrap());
         assert!(has(&out, b"one"));
         assert!(has(&out, b"\"1.0p+0\""));
         assert!(has(&out, b"_16"));
@@ -498,14 +502,14 @@ mod write_bvnf_base {
 
     #[test]
     fn test_base16_negative() {
-        let out = written(|w| w.write_bvnf_base("neg", "-1.8p+4", 64, 16).unwrap());
+        let out = written(|w| w.write_bvnf_base("neg", "-1.8p+4", 64, Base::HEX).unwrap());
         assert!(has(&out, b"neg"));
         assert!(has(&out, b"-1.8p+4"));
     }
 
     #[test]
     fn test_invalid_base_raises() {
-        let r = mem().write_bvnf_base("x", "1.0", 64, 8);
+        let r = mem().write_bvnf_base("x", "1.0", 64, Base::OCTAL);
         assert!(matches!(r, Err(Error::Argument { .. })), "{r:?}");
     }
 }
@@ -515,21 +519,30 @@ mod write_bvni {
 
     #[test]
     fn test_uint_decimal() {
-        let out = written(|w| w.write_bvni("u", 255, 8, 10, None).unwrap());
+        let out = written(|w| {
+            w.write_bvni("u", 255, 8, Base::DECIMAL, Signedness::Auto)
+                .unwrap()
+        });
         assert!(has(&out, b"255"));
         assert!(has(&out, b"uint"));
     }
 
     #[test]
     fn test_sint_negative() {
-        let out = written(|w| w.write_bvni("s", -128, 8, 10, None).unwrap());
+        let out = written(|w| {
+            w.write_bvni("s", -128, 8, Base::DECIMAL, Signedness::Auto)
+                .unwrap()
+        });
         assert!(has(&out, b"-128"));
         assert!(has(&out, b"sint"));
     }
 
     #[test]
     fn test_hex_base() {
-        let out = written(|w| w.write_bvni("flags", 0xDEAD_BEEF, 32, 16, None).unwrap());
+        let out = written(|w| {
+            w.write_bvni("flags", 0xDEAD_BEEF, 32, Base::HEX, Signedness::Auto)
+                .unwrap()
+        });
         assert!(has(&out, b"deadbeef"));
         assert!(has(&out, b"\"deadbeef\""));
         assert!(has(&out, b"_16"));
@@ -537,13 +550,19 @@ mod write_bvni {
 
     #[test]
     fn test_hex_negative() {
-        let out = written(|w| w.write_bvni("neg", -0x7FFF_FFFF, 32, 16, None).unwrap());
+        let out = written(|w| {
+            w.write_bvni("neg", -0x7FFF_FFFF, 32, Base::HEX, Signedness::Auto)
+                .unwrap()
+        });
         assert!(has(&out, b"-"));
     }
 
     #[test]
     fn test_forced_signed_positive() {
-        let out = written(|w| w.write_bvni("s", 127, 8, 10, Some(true)).unwrap());
+        let out = written(|w| {
+            w.write_bvni("s", 127, 8, Base::DECIMAL, Signedness::Signed)
+                .unwrap()
+        });
         assert!(has(&out, b"sint"));
     }
 
@@ -575,7 +594,8 @@ mod write_streaming_flush {
     fn test_large_write_exceeds_internal_buffer() {
         let mut w = Writer::to_mem(2 * 1024 * 1024, true).unwrap();
         for i in 0..4000u64 {
-            w.write_uint(&format!("k{i}"), i, 64, 10).unwrap();
+            w.write_uint(&format!("k{i}"), i, 64, Base::DECIMAL)
+                .unwrap();
         }
         w.finish().unwrap();
         assert!(w.get_output().len() > 65536);
@@ -696,10 +716,9 @@ mod annotation_regressions {
     /// One `.key = <annotation> value;` assignment through raw events.
     fn emit_annotated(key: &str, spec: ValueTypeSpec, value: &str) -> Vec<u8> {
         written(|w| {
-            w.emit(Event::AssignmentStart, Some(key), None, None)
-                .unwrap();
+            w.emit(Event::AssignmentStart, EmitSpec::key(key)).unwrap();
             w.annotation(spec, &Unit::default(), None).unwrap();
-            w.emit(Event::Data, None, Some(value), Some(spec)).unwrap();
+            w.emit(Event::Data, EmitSpec::value(value, spec)).unwrap();
         })
     }
 
@@ -722,7 +741,7 @@ mod annotation_regressions {
 
     #[test]
     fn test_float_width_zero_produces_no_width_in_annotation() {
-        let out = written(|w| w.write_bvnf_base("pi", "3.14", 0, 10).unwrap());
+        let out = written(|w| w.write_bvnf_base("pi", "3.14", 0, Base::DECIMAL).unwrap());
         assert!(
             !has(&out, b"float:64"),
             "width=0 must not emit ':64' via bvn_effective_width fallback"
@@ -774,8 +793,7 @@ mod reference_roundtrip {
     /// Writes `.x = &<ref>` as a raw reference event; whether it was taken.
     fn write_reference(reference: &[u8]) -> bool {
         let mut w = mem();
-        w.emit(Event::AssignmentStart, Some("x"), None, None)
-            .unwrap();
+        w.emit(Event::AssignmentStart, EmitSpec::key("x")).unwrap();
         w.event(
             Event::Data,
             TokenType::Reference,
@@ -788,8 +806,7 @@ mod reference_roundtrip {
     /// A finished document `.<key> = &<ref>;`.
     fn reference_doc(key: &str, reference: &[u8]) -> Vec<u8> {
         written(|w| {
-            w.emit(Event::AssignmentStart, Some(key), None, None)
-                .unwrap();
+            w.emit(Event::AssignmentStart, EmitSpec::key(key)).unwrap();
             w.event(
                 Event::Data,
                 TokenType::Reference,
@@ -866,10 +883,9 @@ mod emit_float_fix_token_type {
 
     fn emit_annotated(key: &str, spec: ValueTypeSpec, value: &str) -> Vec<u8> {
         written(|w| {
-            w.emit(Event::AssignmentStart, Some(key), None, None)
-                .unwrap();
+            w.emit(Event::AssignmentStart, EmitSpec::key(key)).unwrap();
             w.annotation(spec, &Unit::default(), None).unwrap();
-            w.emit(Event::Data, None, Some(value), Some(spec)).unwrap();
+            w.emit(Event::Data, EmitSpec::value(value, spec)).unwrap();
         })
     }
 
@@ -1202,7 +1218,7 @@ mod writer_flags_keywords {
     #[test]
     fn test_emit_version_leads_the_document() {
         let mut w = Writer::to_mem_with(CAP, false, 0, true).unwrap();
-        w.write_uint("a", 1, 64, 10).unwrap();
+        w.write_uint("a", 1, 64, Base::DECIMAL).unwrap();
         w.finish().unwrap();
         let (major, minor) = spec_version();
         let lead = format!("#!bovnar {major}.{minor}\n");
@@ -1231,7 +1247,7 @@ mod signed_high_base_refused_by_name {
     fn test_write_sint() {
         for base in [64, 85] {
             let mut w = Writer::to_mem(CAP, false).unwrap();
-            assert_unsigned_refusal(w.write_sint("a", -255, 64, base));
+            assert_unsigned_refusal(w.write_sint("a", -255, 64, Base::try_from(base).unwrap()));
         }
     }
 
@@ -1239,7 +1255,24 @@ mod signed_high_base_refused_by_name {
     fn test_write_bvni_signed() {
         for base in [64, 85] {
             let mut w = Writer::to_mem(CAP, false).unwrap();
-            assert_unsigned_refusal(w.write_bvni("a", -255, 64, base, None));
+            assert_unsigned_refusal(w.write_bvni(
+                "a",
+                -255,
+                64,
+                Base::try_from(base).unwrap(),
+                Signedness::Auto,
+            ));
         }
     }
+}
+
+#[test]
+fn test_base_accepts_exactly_the_bovnar_bases() {
+    assert_eq!(Base::try_from(16).unwrap(), Base::HEX);
+    assert_eq!(u32::from(Base::BASE85), 85);
+    for n in [0, 1, 63, 65, 84, 86] {
+        assert!(Base::try_from(n).is_err(), "{n}");
+    }
+    assert_eq!(Base::default(), Base::DECIMAL);
+    assert_eq!(Signedness::default(), Signedness::Auto);
 }

@@ -38,6 +38,111 @@ pub(crate) fn grow_write(
 
 /// Largest octet-stream chunk: the most one chunk header can count.
 const OCTET_CHUNK: usize = 65536;
+/// A numeric base bovnar reads and writes: 2..=62, 64 or 85 (the `_N` of
+/// an annotation). A checked newtype rather than an enum of 63 variants;
+/// the common ones are named.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct Base(u32);
+
+impl Base {
+    pub const BINARY: Self = Self(2);
+    pub const OCTAL: Self = Self(8);
+    pub const DECIMAL: Self = Self(10);
+    pub const HEX: Self = Self(16);
+    pub const BASE36: Self = Self(36);
+    pub const BASE62: Self = Self(62);
+    pub const BASE64: Self = Self(64);
+    pub const BASE85: Self = Self(85);
+
+    /// The base `n`, or `None` for one bovnar has no alphabet for.
+    pub const fn new(n: u32) -> Option<Self> {
+        if (n >= 2 && n <= 62) || n == 64 || n == 85 {
+            Some(Self(n))
+        } else {
+            None
+        }
+    }
+
+    /// The base as a number.
+    pub const fn get(self) -> u32 {
+        self.0
+    }
+}
+
+impl Default for Base {
+    fn default() -> Self {
+        Self::DECIMAL
+    }
+}
+
+impl TryFrom<u32> for Base {
+    type Error = Error;
+    fn try_from(n: u32) -> Result<Self> {
+        Self::new(n)
+            .ok_or_else(|| Error::argument(format!("base {n} is not one of 2..62, 64 or 85")))
+    }
+}
+
+impl From<Base> for u32 {
+    fn from(b: Base) -> u32 {
+        b.0
+    }
+}
+
+/// What [`Writer::emit`] sends with an event: Python's keyword arguments of
+/// `Writer.emit` (`vu` is not mirrored).
+///
+/// | Python                                         | Rust                                              |
+/// |------------------------------------------------|---------------------------------------------------|
+/// | `w.emit(Event.ASSIGNMENT_START, key="x")`      | `w.emit(Event::AssignmentStart, EmitSpec::key("x"))` |
+/// | `w.emit(Event.DATA, value="42", vt=spec)`      | `w.emit(Event::Data, EmitSpec::value("42", spec))` |
+/// | `w.emit(Event.STRUCT_END)`                     | `w.emit(Event::StructEnd, EmitSpec::NONE)`        |
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct EmitSpec<'a> {
+    /// The key of an assignment (`key=`).
+    pub key: Option<&'a str>,
+    /// A data literal (`value=`).
+    pub value: Option<&'a str>,
+    /// The literal's type (`vt=`); plain when `None`.
+    pub vt: Option<ValueTypeSpec>,
+}
+
+impl<'a> EmitSpec<'a> {
+    /// Nothing with the event.
+    pub const NONE: Self = Self {
+        key: None,
+        value: None,
+        vt: None,
+    };
+
+    /// An assignment's key.
+    pub fn key(key: &'a str) -> Self {
+        Self {
+            key: Some(key),
+            ..Self::NONE
+        }
+    }
+
+    /// A data literal of type `vt`.
+    pub fn value(value: &'a str, vt: ValueTypeSpec) -> Self {
+        Self {
+            value: Some(value),
+            vt: Some(vt),
+            ..Self::NONE
+        }
+    }
+}
+
+/// Whether [`Writer::write_bvni`] writes `sint` or `uint` (Python's
+/// `signed=True`, `False` or `None`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+pub enum Signedness {
+    Signed,
+    Unsigned,
+    /// `sint` for a negative value, `uint` otherwise.
+    #[default]
+    Auto,
+}
 
 /// A streaming BVNR writer into memory.
 pub struct Writer {
@@ -81,15 +186,10 @@ impl Writer {
         Ok(w)
     }
 
-    /// Sends one raw event, like Python's `Writer.emit`: `key` for an
-    /// assignment, `value` (a literal) with its type `vt` for data.
-    pub fn emit(
-        &mut self,
-        event: Event,
-        key: Option<&str>,
-        value: Option<&str>,
-        vt: Option<ValueTypeSpec>,
-    ) -> Result<()> {
+    /// Sends one raw event, like Python's `Writer.emit`: what goes with it
+    /// (Python's keyword arguments) is an [`EmitSpec`].
+    pub fn emit(&mut self, event: Event, spec: EmitSpec<'_>) -> Result<()> {
+        let EmitSpec { key, value, vt } = spec;
         let vt = vt.unwrap_or_default();
         let (token, data) = match (value, key) {
             (Some(v), _) => {
@@ -120,7 +220,8 @@ impl Writer {
     }
 
     /// `.key = <uint:width[,_base]> value;`
-    pub fn write_uint(&mut self, key: &str, value: u64, width: u32, base: u32) -> Result<()> {
+    pub fn write_uint(&mut self, key: &str, value: u64, width: u32, base: Base) -> Result<()> {
+        let base = base.get();
         let vt = type_spec(ValueTypeFamily::Uint, width, base);
         let text = ffi::format_u64(value, base)
             .ok_or_else(|| Error::argument(format!("cannot format {value} in base {base}")))?;
@@ -128,7 +229,8 @@ impl Writer {
     }
 
     /// `.key = <sint:width[,_base]> value;`
-    pub fn write_sint(&mut self, key: &str, value: i64, width: u32, base: u32) -> Result<()> {
+    pub fn write_sint(&mut self, key: &str, value: i64, width: u32, base: Base) -> Result<()> {
+        let base = base.get();
         if base == 64 || base == 85 {
             return Err(Error::argument(format!(
                 "base {base} is unsigned: its alphabet uses '+' and '-' as digits, \
@@ -170,14 +272,15 @@ impl Writer {
         key: &str,
         literal: &str,
         width: u32,
-        base: u32,
+        base: Base,
     ) -> Result<()> {
-        let vt_base = match base {
+        let vt_base = match base.get() {
             10 => 0,
             16 => 16,
             _ => {
                 return Err(Error::argument(format!(
-                    "write_bvnf_base: base must be 10 or 16, got {base}"
+                    "write_bvnf_base: base must be 10 or 16, got {}",
+                    base.get()
                 )));
             }
         };
@@ -189,17 +292,24 @@ impl Writer {
     }
 
     /// `.key = <uint|sint:width[,_base]> value;` for an integer of any width
-    /// up to 128 bits; `signed` picks sint or uint, and `None` writes negative
-    /// values as sint.
+    /// up to 128 bits; `signed` picks sint or uint (Python's `signed=True` /
+    /// `False`), and [`Signedness::Auto`] (`None`) writes negative values as
+    /// sint.
     pub fn write_bvni(
         &mut self,
         key: &str,
         value: i128,
         width: u32,
-        base: u32,
-        signed: Option<bool>,
+        base: Base,
+        signed: Signedness,
     ) -> Result<()> {
-        let family = if signed.unwrap_or(value < 0) {
+        let base = base.get();
+        let signed = match signed {
+            Signedness::Signed => true,
+            Signedness::Unsigned => false,
+            Signedness::Auto => value < 0,
+        };
+        let family = if signed {
             refuse_signed_high_base(base)?;
             ValueTypeFamily::Sint
         } else {
@@ -314,31 +424,31 @@ impl Writer {
     /// `.key = {` — close with [`Writer::end_struct`].
     pub fn begin_struct(&mut self, key: &str) -> Result<()> {
         self.assignment(key)?;
-        self.emit(Event::StructStart, None, None, None)?;
+        self.emit(Event::StructStart, EmitSpec::NONE)?;
         self.struct_depth += 1;
         Ok(())
     }
 
     /// `};`
     pub fn end_struct(&mut self) -> Result<()> {
-        self.emit(Event::StructEnd, None, None, None)?;
+        self.emit(Event::StructEnd, EmitSpec::NONE)?;
         self.struct_depth = self.struct_depth.saturating_sub(1);
         Ok(())
     }
 
     /// `[` of an array row.
     pub fn begin_array_row(&mut self) -> Result<()> {
-        self.emit(Event::ArrayRowStart, None, None, None)
+        self.emit(Event::ArrayRowStart, EmitSpec::NONE)
     }
 
     /// `]` of an array row.
     pub fn end_array_row(&mut self) -> Result<()> {
-        self.emit(Event::ArrayRowEnd, None, None, None)
+        self.emit(Event::ArrayRowEnd, EmitSpec::NONE)
     }
 
     /// `/` between array rows.
     pub fn new_array_dim(&mut self) -> Result<()> {
-        self.emit(Event::ArrayDimStart, None, None, None)
+        self.emit(Event::ArrayDimStart, EmitSpec::NONE)
     }
 
     /// Completes the document. Fails while a struct is still open.
@@ -367,7 +477,7 @@ impl Writer {
     }
 
     pub(crate) fn assignment(&mut self, key: &str) -> Result<()> {
-        self.emit(Event::AssignmentStart, Some(key), None, None)
+        self.emit(Event::AssignmentStart, EmitSpec::key(key))
     }
 
     /// An assignment of one annotated scalar literal.
@@ -625,8 +735,8 @@ mod tests {
     #[test]
     fn writes_scalars_and_structs() {
         let out = written(|w| {
-            w.write_uint("u", 255, 64, 16)?;
-            w.write_sint("i", -3, 64, 10)?;
+            w.write_uint("u", 255, 64, Base::HEX)?;
+            w.write_sint("i", -3, 64, Base::DECIMAL)?;
             w.write_float("f", 1.5, 64)?;
             w.begin_struct("s")?;
             w.write_string("t", "x")?;
@@ -643,8 +753,8 @@ mod tests {
         let out = written(|w| {
             w.write_float_fix("fx", 1.5, 32, 16)?;
             w.write_float_dec("fd", 0.1, 64)?;
-            w.write_bvni("big", -(1i128 << 100), 102, 10, None)?;
-            w.write_bvnf_base("hx", "1.8p1", 64, 16)?;
+            w.write_bvni("big", -(1i128 << 100), 102, Base::DECIMAL, Signedness::Auto)?;
+            w.write_bvnf_base("hx", "1.8p1", 64, Base::HEX)?;
             let km = Unit::parse("k~m").unwrap();
             w.write_quantity(
                 "q",

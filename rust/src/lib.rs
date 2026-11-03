@@ -30,7 +30,7 @@ pub use ffi::ValueTypeSpec;
 pub use quantity::Quantity;
 pub use reader::{EventData, EventPayload, ReadOptions, Reader, UnitPolicy, UnitRule};
 pub use unit::{MAX_UNIT_COMPONENTS, Unit, UnitComponent};
-pub use writer::Writer;
+pub use writer::{Base, EmitSpec, Signedness, Writer};
 
 use writer::needs_annotation;
 
@@ -139,11 +139,11 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
         Value::Bool(b) => w.write_bool(key, *b),
         Value::Int(i) => {
             if let Ok(u) = u64::try_from(*i) {
-                w.write_uint(key, u, 64, 10)
+                w.write_uint(key, u, 64, Base::DECIMAL)
             } else if let Ok(s) = i64::try_from(*i) {
-                w.write_sint(key, s, 64, 10)
+                w.write_sint(key, s, 64, Base::DECIMAL)
             } else {
-                w.write_bvni(key, *i, int_width(*i), 10, None)
+                w.write_bvni(key, *i, int_width(*i), Base::DECIMAL, Signedness::Auto)
             }
         }
         Value::Float(f) => w.write_float(key, *f, 64),
@@ -578,9 +578,9 @@ fn emit_element(
         ),
         Value::Bytes(b) => w.octets(b),
         Value::Struct(entries) => {
-            w.emit(Event::StructStart, None, None, None)?;
+            w.emit(Event::StructStart, EmitSpec::NONE)?;
             emit_entries(w, entries)?;
-            w.emit(Event::StructEnd, None, None, None)
+            w.emit(Event::StructEnd, EmitSpec::NONE)
         }
         Value::Array(rows) => emit_rows(w, rows, annotate, vt),
     }

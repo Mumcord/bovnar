@@ -11,7 +11,7 @@
 
 use crate::enums::{Event, TokenType, ValueTypeFamily};
 use crate::error::{Error, Result};
-use crate::writer::{self, Writer};
+use crate::writer::{self, Base, EmitSpec, Writer};
 use crate::{DomDoc, DomNode, DomType, Unit, ffi};
 
 /// The deepest JSON nesting converted: the writer's and the reader's 255-level
@@ -340,8 +340,8 @@ fn write_value(w: &mut Writer, key: &str, v: &Json) -> Result<()> {
     match v {
         Json::Null => w.write_null(key),
         Json::Bool(b) => w.write_bool(key, *b),
-        Json::Uint(u) => w.write_uint(key, *u, 0, 10),
-        Json::Int(i) => w.write_sint(key, *i, 0, 10),
+        Json::Uint(u) => w.write_uint(key, *u, 0, Base::DECIMAL),
+        Json::Int(i) => w.write_sint(key, *i, 0, Base::DECIMAL),
         Json::Float(f) => w.write_float(key, *f, 0),
         Json::Str(s) => check_string(s).and_then(|_| w.write_string(key, s)),
         Json::Array(items) => {
@@ -395,9 +395,9 @@ fn write_element(w: &mut Writer, e: &Json) -> Result<()> {
         Json::Str(s) => check_string(s).and_then(|_| data(w, TokenType::ArrayString, plain, s)),
         Json::Array(items) => write_array_body(w, items),
         Json::Object(members) => {
-            w.emit(Event::StructStart, None, None, None)?;
+            w.emit(Event::StructStart, EmitSpec::NONE)?;
             members.iter().try_for_each(|(k, v)| write_value(w, k, v))?;
-            w.emit(Event::StructEnd, None, None, None)
+            w.emit(Event::StructEnd, EmitSpec::NONE)
         }
     }
 }
