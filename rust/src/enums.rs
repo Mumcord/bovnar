@@ -1,5 +1,5 @@
-//! The public C enums, mirroring `python/bovnar/enums.py` (same names and
-//! values; the unit enums follow with the unit API).
+//! The public C enums (same values as `bovnar.h`; the unit enums follow
+//! with the unit API).
 
 /// Reader/writer events (`bvnr_event_t`).
 #[repr(i32)]
@@ -258,7 +258,7 @@ impl ErrorCode {
 include!(concat!(env!("OUT_DIR"), "/generated/base_units.rs"));
 
 impl BaseUnit {
-    /// The Python member name (`BaseUnit.METER.name` is `"METER"`).
+    /// The upper-case member name (`BaseUnit::Meter.name()` is `"METER"`).
     pub fn name(self) -> &'static str {
         Self::MEMBERS
             .iter()
@@ -266,13 +266,14 @@ impl BaseUnit {
             .map_or("NONE", |m| m.0)
     }
 
-    /// The member with the Python name `name` (`BaseUnit[name]`).
+    /// The member with the upper-case name `name` (the inverse of
+    /// [`BaseUnit::name`]).
     pub fn from_name(name: &str) -> Option<Self> {
         Self::MEMBERS.iter().find(|m| m.0 == name).map(|m| m.1)
     }
 }
 
-/// The Python member name, as `str(BaseUnit.METER)` gives `METER`.
+/// Prints the upper-case member name: `BaseUnit::Meter` prints `METER`.
 impl std::fmt::Display for BaseUnit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.name())
@@ -415,8 +416,7 @@ impl IECPrefix {
 }
 
 /// A component's prefix: an SI or an IEC prefix (`value_unit_prefix_t`, the
-/// system and the id in one value). Python's pair of `prefix_system` and
-/// `prefix`.
+/// system and the id in one value).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Prefix {
     Si(SIPrefix),
@@ -461,8 +461,7 @@ impl Prefix {
     }
 }
 
-/// A component's prefix compares equal to the bare SI or IEC prefix it is,
-/// as Python compares `prefix` alone.
+/// A component's prefix compares equal to the bare SI or IEC prefix it is.
 impl PartialEq<SIPrefix> for Prefix {
     fn eq(&self, other: &SIPrefix) -> bool {
         *self == Prefix::Si(*other)
@@ -492,10 +491,9 @@ pub const EXPONENT_MIN: i32 = -100;
 /// The largest component exponent.
 pub const EXPONENT_MAX: i32 = 100;
 
-/// A component's exponent (`unit_exponent_t`). Like Python's deliberately
-/// open `Exponent`, any integer in `EXPONENT_MIN..=EXPONENT_MAX` is one, not
-/// only the named constants: a unit read off the wire may carry any of them,
-/// so this is a checked newtype rather than a closed enum. Zero is
+/// A component's exponent (`unit_exponent_t`). Any integer in
+/// `EXPONENT_MIN..=EXPONENT_MAX` is one, not only the named constants: a
+/// unit read off the wire may carry any of them, so this is a checked newtype rather than a closed enum. Zero is
 /// [`Exponent::INVALID`]: a component with exponent 0 is malformed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Exponent(i32);

@@ -1,21 +1,21 @@
-//! An exact decimal number, standing in for Python's `decimal.Decimal`
-//! wherever the Python binding hands one out or takes one in
+//! An exact decimal number, used wherever the binding hands out or takes
+//! in a decimal value
 //! ([`crate::Quantity::decimal`], [`crate::Quantity::stored_value`],
 //! [`crate::BvnFloat::to_decimal`], [`crate::Value::Decimal`]).
 //!
-//! It is the value Python's `Decimal` holds -- a sign, a coefficient of
+//! It holds a sign, a coefficient of
 //! decimal digits and a power-of-ten exponent, or one of the specials
 //! infinity and NaN -- with none of the arithmetic or context machinery:
 //! the binding only produces decimals exactly and compares them. A
-//! `BigRational` would hold every finite value too, but not what Python's
-//! `Decimal` also carries and the tests look at: the signed zero (`-0`),
+//! `BigRational` would hold every finite value too, but not what a decimal
+//! also carries and the tests look at: the signed zero (`-0`),
 //! the infinities and NaN, and the exponent that decides how it prints
 //! (`Decimal("1.50")` is `1.50`, not `1.5`).
 //!
-//! Equality is numeric, as in Python: `1.5 == 1.50`, `0 == -0`, and NaN
-//! equals nothing, itself included. `Display` is Python's `str()`, and
-//! `FromStr` reads what Python's constructor reads (a signalling NaN is
-//! read as a plain NaN).
+//! Equality is numeric: `1.5 == 1.50`, `0 == -0`, and NaN equals nothing,
+//! itself included. `Display` writes the General Decimal Arithmetic
+//! to-scientific-string form, and `FromStr` reads the numeric strings of
+//! that specification (a signalling NaN is read as a plain NaN).
 
 use std::fmt;
 use std::str::FromStr;
@@ -40,7 +40,7 @@ enum Repr {
 pub struct Decimal(Repr);
 
 impl fmt::Debug for Decimal {
-    /// Python's `repr`: `Decimal("1.50")`.
+    /// The value as `Decimal("1.50")`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Decimal({:?})", self.to_string())
     }
@@ -108,8 +108,7 @@ impl Decimal {
         }
     }
 
-    /// `Fraction(d)`: the exact value as a rational. Python raises for NaN
-    /// and the infinities; so does this.
+    /// The exact value as a rational. Fails for NaN and the infinities.
     pub fn to_fraction(&self) -> Result<BigRational> {
         let Repr::Finite { neg, coeff, exp } = &self.0 else {
             return Err(Error::argument(format!(
@@ -128,8 +127,8 @@ impl Decimal {
 
     /// `float(d)`: the nearest `f64`, correctly rounded.
     pub fn to_f64(&self) -> f64 {
-        // Python's float() reads the decimal string too, and Rust's parser
-        // rounds correctly and reads every spelling `Display` writes.
+        // Rust's float parser rounds correctly and reads every spelling
+        // `Display` writes, so going through the text is exact.
         self.to_string().parse().unwrap_or(f64::NAN)
     }
 
@@ -166,8 +165,8 @@ impl Decimal {
     }
 
     /// The same value with trailing zeros of the coefficient moved into the
-    /// exponent, but never past `ideal` (Python's ideal exponent of an exact
-    /// quotient).
+    /// exponent, but never past `ideal` (the ideal exponent of an exact
+    /// quotient in General Decimal Arithmetic).
     pub(crate) fn reduced_to(mut self, ideal: i64) -> Self {
         if let Repr::Finite { coeff, exp, .. } = &mut self.0 {
             let ten = BigUint::from(10u32);
@@ -239,7 +238,7 @@ impl From<i128> for Decimal {
 }
 
 impl fmt::Display for Decimal {
-    /// Python's `str(Decimal)` (the to-scientific-string conversion).
+    /// The to-scientific-string conversion of General Decimal Arithmetic.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (neg, coeff, exp) = match &self.0 {
             Repr::NaN => return f.write_str("NaN"),
@@ -278,7 +277,7 @@ impl fmt::Display for Decimal {
 impl FromStr for Decimal {
     type Err = Error;
 
-    /// Python's `Decimal(text)`: surrounding whitespace is ignored, the
+    /// Reads a decimal numeric string: surrounding whitespace is ignored, the
     /// specials are `Inf`, `Infinity`, `NaN` and `sNaN` in any case, and an
     /// underscore may group digits.
     fn from_str(text: &str) -> Result<Self> {
@@ -355,7 +354,7 @@ mod tests {
     }
 
     #[test]
-    fn prints_like_python() {
+    fn prints_scientific_strings() {
         for (input, want) in [
             ("0E-3", "0.000"),
             ("-0", "-0"),
@@ -385,7 +384,7 @@ mod tests {
     }
 
     #[test]
-    fn refuses_what_python_refuses() {
+    fn refuses_malformed_text() {
         for bad in ["", "abc", "1.2.3", "--1", "1e", ".", "1__0", "_1", "0x10"] {
             assert!(bad.parse::<Decimal>().is_err(), "{bad:?}");
         }

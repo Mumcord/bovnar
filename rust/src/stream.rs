@@ -1,4 +1,4 @@
-//! Document streams, mirroring `python/bovnar/stream.py`: framing several
+//! Document streams: framing several
 //! documents into one byte stream, multiplexing binary messages over
 //! channels, and embedding one document inside another.
 
@@ -95,7 +95,7 @@ pub fn load_documents(
 }
 
 /// Multiplexes `(channel, payload)` messages into one document under `key`
-/// (Python's default is `"mux"`).
+/// (conventionally `"mux"`).
 pub fn mux_dump<P: AsRef<[u8]>>(messages: &[(u64, P)], key: &str) -> Result<Vec<u8>> {
     let msgs: Vec<(u64, &[u8])> = messages.iter().map(|(c, p)| (*c, p.as_ref())).collect();
     let total: usize = msgs.iter().map(|(_, p)| p.len()).sum();
@@ -126,7 +126,7 @@ pub fn mux_load(data: &[u8], max_message: u64, key: Option<&str>) -> Result<Vec<
     })
 }
 
-/// Embeds the document `inner` under `key` (Python's default `"payload"`)
+/// Embeds the document `inner` under `key` (conventionally `"payload"`)
 /// in a new document.
 pub fn embed_document(inner: &[u8], key: &str, pretty: bool) -> Result<Vec<u8>> {
     writer::grow_write(inner.len() + key.len(), pretty, |w| {

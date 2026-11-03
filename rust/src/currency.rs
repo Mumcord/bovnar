@@ -1,4 +1,4 @@
-//! Currency metadata, mirroring `python/bovnar/currency.py`. The table is
+//! Currency metadata. The table is
 //! the C library's own catalogue; base units are plain `BaseUnit` ids.
 
 use crate::enums::BaseUnit;
@@ -28,7 +28,7 @@ impl CurrencyInfo {
     }
 }
 
-/// The code, like Python's `str(info)`.
+/// Prints the ISO code (`USD`).
 impl std::fmt::Display for CurrencyInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.code)

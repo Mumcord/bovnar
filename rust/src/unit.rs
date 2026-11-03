@@ -1,4 +1,4 @@
-//! A physical unit, mirroring `python/bovnar/unit.py`.
+//! A physical unit.
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -10,9 +10,9 @@ use crate::ffi::{self, PrefixId, ValueUnit, ValueUnitComponent, ValueUnitPrefix,
 pub use crate::ffi::MAX_UNIT_COMPONENTS;
 
 /// One factor of a unit (`value_unit_component_t`): a base unit with its
-/// prefix and exponent. Python's `ValueUnitComponent`, whose `prefix_system`
-/// and `prefix` are one [`Prefix`] here. Components compare by value; an
-/// unprefixed component equals whatever its prefix system, as in Python.
+/// prefix and exponent; the prefix system and prefix are one [`Prefix`].
+/// Components compare by value; an unprefixed component equals whatever its
+/// prefix system.
 #[derive(Clone, Copy, Debug)]
 pub struct UnitComponent {
     pub base: BaseUnit,
@@ -39,7 +39,7 @@ impl UnitComponent {
         }
     }
 
-    /// The prefix system (Python's `prefix_system`).
+    /// The prefix system.
     pub fn prefix_system(&self) -> PrefixSystem {
         self.prefix.system()
     }
@@ -112,8 +112,7 @@ impl Unit {
         })
     }
 
-    /// A unit of the given components (Python's `make_unit_compound`);
-    /// fails beyond [`MAX_UNIT_COMPONENTS`].
+    /// A unit of the given components; fails beyond [`MAX_UNIT_COMPONENTS`].
     pub fn compound(components: &[UnitComponent]) -> Result<Self> {
         if components.len() > MAX_UNIT_COMPONENTS {
             return Err(Error::argument(format!(
@@ -129,19 +128,18 @@ impl Unit {
         Ok(Unit(vu))
     }
 
-    /// One SI-prefixed base unit (Python's `make_unit_si`).
+    /// One SI-prefixed base unit.
     pub fn si(base: BaseUnit, prefix: SIPrefix, exponent: Exponent) -> Self {
         Self::one(UnitComponent::si(base, prefix, exponent))
     }
 
-    /// One IEC-prefixed base unit (Python's `make_unit_iec`).
+    /// One IEC-prefixed base unit.
     pub fn iec(base: BaseUnit, prefix: IECPrefix, exponent: Exponent) -> Self {
         Self::one(UnitComponent::iec(base, prefix, exponent))
     }
 
-    /// The explicit dimensionless unit: one `BaseUnit::None` component
-    /// (Python's `make_unit_dimensionless`). [`Unit::default`] is the empty
-    /// unit (`make_unit_none`).
+    /// The explicit dimensionless unit: one `BaseUnit::None` component.
+    /// [`Unit::default`] is the empty unit.
     pub fn dimensionless() -> Self {
         Self::one(UnitComponent::si(
             BaseUnit::None,
@@ -162,7 +160,7 @@ impl Unit {
         self.0.num_components as usize
     }
 
-    /// The active components (Python's `active_components()`).
+    /// The active components.
     pub fn components(&self) -> Vec<UnitComponent> {
         let n = self.num_components().min(MAX_UNIT_COMPONENTS);
         self.0.components[..n]

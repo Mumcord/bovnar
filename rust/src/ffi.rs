@@ -1,18 +1,17 @@
-//! Hand-written declarations of the C API, mirroring `python/bovnar/_ffi.py`
-//! (functions) and `python/bovnar/structs.py` (by-value struct layouts).
+//! Hand-written declarations of the C API in `bovnar.h`: its functions and
+//! the layouts of the structs passed by value.
 //!
 //! This is the only module allowed to use `unsafe`. Besides the raw
 //! declarations it holds the small safe handles the other modules build on, so
 //! every pointer the library hands out is dereferenced here and nowhere else.
 
-// The declaration list mirrors the whole of _ffi.py; the safe layer above it
-// does not reach every function yet.
+// The declaration list covers the C API; the safe layer above it does not
+// reach every function yet.
 #![allow(dead_code)]
 
 use std::ffi::{CStr, CString, c_char, c_int, c_void};
 
-/// Storage reserved for the opaque `bvnr_source_t` / `bvnr_sink_t`, as in
-/// Python's `structs.py`. C uses `BVNR_SOURCE_RESERVED_SIZE` /
+/// Storage reserved for the opaque `bvnr_source_t` / `bvnr_sink_t`. C uses `BVNR_SOURCE_RESERVED_SIZE` /
 /// `BVNR_SINK_RESERVED_SIZE` bytes (64 each today); 256 is a deliberate
 /// margin, since a mirror may be larger than the C struct (C writes within
 /// its own bounds) but never smaller. The ABI unit test asserts
@@ -231,7 +230,7 @@ macro_rules! zeroed {
 }
 zeroed!(ValueUnit, BvnrData, BvnrReadFlags, BvnrWriteFlags);
 
-// Raw declarations, in the order of _ffi.py.
+// Raw declarations.
 unsafe extern "C" {
     pub fn bvnr_reader_create() -> *mut c_void;
     pub fn bvnr_reader_destroy(r: *mut c_void);
@@ -521,7 +520,6 @@ unsafe extern "C" {
     pub fn bvn_float_is_inf(f: *mut c_void) -> bool;
     pub fn bvn_float_is_zero(f: *mut c_void) -> bool;
     pub fn bvn_float_is_neg(f: *mut c_void) -> bool;
-    // Not in _ffi.py: Python keeps its own copy of the currency table.
     pub fn bvn_unit_is_currency(base: c_int) -> bool;
     pub fn bvn_unit_is_fiat(base: c_int) -> bool;
     pub fn bvn_unit_is_crypto(base: c_int) -> bool;
@@ -1808,7 +1806,7 @@ pub fn float_strtodec(text: &str, width: u32) -> Option<Vec<u8>> {
 }
 
 /// A float literal in `base` (16 for a hex float) as the nearest `f64`, via
-/// the library's arbitrary-precision float at Python's working precision.
+/// the library's arbitrary-precision float at 4096 significand bits.
 pub fn parse_float_base(text: &str, base: u32) -> Option<f64> {
     let t = CString::new(text).ok()?;
     // SAFETY: the float is allocated, used and freed here; `t` is
@@ -2240,14 +2238,12 @@ pub fn demux_read(
     }
 }
 
-/// Port of python/tests/test_abi.py: checks every mirrored struct against the
-/// C compiler's own layout, as printed by the upstream ABI manifest generator
+/// Checks every mirrored struct against the C compiler's own layout, as printed by the upstream ABI manifest generator
 /// (tests/bvnr_abi_dump.c). It lives here rather than in tests/ because the
 /// mirrors are private. The generator is compiled by the compiler the `cc`
 /// crate picks for the library itself, so an MSVC build compares MSVC's
-/// layout. Python's test_all_ctypes_structures_are_covered scans loaded
-/// modules for ctypes Structures; here it checks instead that every struct
-/// and field the manifest lists is mirrored.
+/// layout. It also checks that every struct and field the manifest lists is
+/// mirrored.
 #[cfg(all(test, not(target_family = "wasm")))]
 mod abi_tests {
     use super::*;
@@ -2418,7 +2414,7 @@ mod abi_tests {
     /// Every struct and field the manifest lists is mirrored (the two opaque
     /// blobs are checked by size only).
     #[test]
-    fn test_all_ctypes_structures_are_covered() {
+    fn test_all_c_structures_are_covered() {
         assert_eq!(
             c_manifest().len(),
             rust_layout().len() + 2,

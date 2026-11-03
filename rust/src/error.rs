@@ -1,4 +1,4 @@
-//! The error type, mirroring `python/bovnar/exceptions.py`.
+//! The error type.
 
 use std::fmt;
 
@@ -20,8 +20,8 @@ pub struct Position {
     pub byte: u32,
 }
 
-/// Everything a bovnar call can fail with: Python's exception classes in
-/// `exceptions.py`, each with the library's error code where there is one.
+/// Everything a bovnar call can fail with, each variant with the library's
+/// error code where there is one.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
     /// The reader or DOM parser refused the input (`BovnarParseError`).
@@ -41,13 +41,13 @@ pub enum Error {
         code: Option<ErrorKind>,
         message: String,
     },
-    /// The library could not allocate (Python's `MemoryError`); names the
+    /// The library could not allocate; names the
     /// call that failed.
     OutOfMemory(&'static str),
     /// The `std::io::Read` or `std::io::Write` behind a `*_reader` /
     /// `to_writer` entry point failed. `code` is what the C library reports
-    /// for an unreadable fd or an unwritable fd sink in Python's `read_fd`,
-    /// `parse_fd` and `to_fd` (`reading_from_source_fd`, `writing_to_sink`);
+    /// for an unreadable source fd or an unwritable fd sink
+    /// (`reading_from_source_fd`, `writing_to_sink`);
     /// `io_kind` and `message` keep what the I/O error said.
     Io {
         code: ErrorKind,
@@ -101,14 +101,13 @@ impl Error {
         }
     }
 
-    /// The kind: the C error name, when the library gave a code (Python's
-    /// `.code`). `None` for an argument error caught before the library and
+    /// The kind: the C error name, when the library gave a code. `None` for an argument error caught before the library and
     /// for an allocation failure.
     pub fn kind(&self) -> Option<ErrorKind> {
         self.code_raw().and_then(ErrorCode::from_raw)
     }
 
-    /// Same as [`Error::kind`] (the name Python uses).
+    /// Same as [`Error::kind`].
     pub fn code(&self) -> Option<ErrorCode> {
         self.kind()
     }

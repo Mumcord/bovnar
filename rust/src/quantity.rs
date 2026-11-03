@@ -1,4 +1,4 @@
-//! A typed scalar, mirroring `python/bovnar/quantity.py`: the verbatim
+//! A typed scalar: the verbatim
 //! literal with its type, unit and (for a datetime) sub-second digits, so a
 //! value read with [`crate::parse_typed`] is written back losslessly.
 
@@ -44,7 +44,7 @@ impl Quantity {
 
     /// An exact number as a `float_dec`, `float` or `float_fix` (with
     /// `frac` fractional bits) of `width` bits, stored as its exact decimal
-    /// literal (Python's `from_number`). `value` is an [`ExactNumber`]: a
+    /// literal. `value` is an [`ExactNumber`]: a
     /// literal (`"1.25"`), a [`Decimal`], a terminating `BigRational`, a
     /// `BigInt` or an `f64` (only as precise as the double).
     pub fn from_number(
@@ -178,8 +178,7 @@ impl Quantity {
         self.raw.as_deref().unwrap_or("")
     }
 
-    /// The exact value as a [`Decimal`], from the verbatim literal (Python's
-    /// `decimal`): lossless for `uint`/`sint` and the three float families;
+    /// The exact value as a [`Decimal`], from the verbatim literal: lossless for `uint`/`sint` and the three float families;
     /// `None` for a typed null. Any other family is an error.
     pub fn decimal(&self) -> Result<Option<Decimal>> {
         let family = self.family();
@@ -220,7 +219,7 @@ impl Quantity {
         }
     }
 
-    /// The exact value as a rational (Python's `fraction`): for a
+    /// The exact value as a rational: for a
     /// `float_fix` the Q-format datum `mantissa / 2^frac_bits`, for the
     /// others the exact literal; `None` for a typed null.
     pub fn fraction(&self) -> Result<Option<BigRational>> {
@@ -235,7 +234,7 @@ impl Quantity {
     }
 
     /// `(mantissa, frac_bits)` of a `float_fix` value, whose exact value is
-    /// `mantissa / 2^frac_bits` (Python's `fixed_point`). Any other family
+    /// `mantissa / 2^frac_bits`. Any other family
     /// is an error.
     pub fn fixed_point(&self) -> Result<(BigInt, u32)> {
         if self.family() != Some(ValueTypeFamily::FloatFix) {
@@ -315,8 +314,7 @@ impl Quantity {
     }
 
     /// The value as materialised into the declared IEEE or fixed-point
-    /// format (round to nearest even), as an exact [`Decimal`] (Python's
-    /// `stored_value`). It differs from [`Quantity::decimal`] only where the
+    /// format (round to nearest even), as an exact [`Decimal`]. It differs from [`Quantity::decimal`] only where the
     /// literal carries more precision than the format: a 40-digit
     /// `float_dec:64` literal rounds to 16 digits here. Defined for
     /// `float:16/32/64/128/256`, every `float_dec` and every `float_fix`
@@ -324,8 +322,7 @@ impl Quantity {
     /// encoding (`float:96`, `float:512`) is an error: use `decimal`.
     ///
     /// A `float_fix` value `m / 2^q` is always a terminating decimal and is
-    /// given exactly. (Python divides in its default 28-digit context, so
-    /// it rounds a datum with more significant digits than that.)
+    /// given exactly, however many significant digits it has.
     pub fn stored_value(&self) -> Result<Option<Decimal>> {
         let family = self.family();
         let width = self.width();
@@ -334,8 +331,8 @@ impl Quantity {
         }
         if family == Some(ValueTypeFamily::FloatFix) {
             let (m, q) = self.fixed_point()?;
-            // m / 2^q = m * 5^q / 10^q, given with Python's ideal exponent
-            // of an exact quotient (0): trailing zeros stripped down to it.
+            // m / 2^q = m * 5^q / 10^q, given with the ideal exponent of an
+            // exact quotient (0): trailing zeros stripped down to it.
             let scaled = m * num_traits::Pow::pow(BigInt::from(5), q);
             return Ok(Some(
                 Decimal::from_scaled(&scaled, -i64::from(q)).reduced_to(0),
@@ -365,7 +362,7 @@ impl Quantity {
     }
 
     /// The raw IEEE-754 interchange bytes of the materialised value,
-    /// little-endian (Python's `ieee_bits`): binary16..256 for `float`, the
+    /// little-endian: binary16..256 for `float`, the
     /// decimal16..256 interchange encoding for `float_dec`. A typed null, a
     /// binary width with no IEEE encoding and any other family are errors.
     pub fn ieee_bits(&self) -> Result<Vec<u8>> {
@@ -393,7 +390,7 @@ impl Quantity {
     }
 }
 
-/// Python's `ValueTypeFamily(n).name`.
+/// The upper-case name of value type family `family` (`FLOAT_DEC`).
 fn family_name(family: i32) -> String {
     use ValueTypeFamily as F;
     match ValueTypeFamily::from_raw(family) {
@@ -464,7 +461,7 @@ pub(crate) fn check_decimal_fits(text: &str, width: u32) -> Result<()> {
 }
 
 /// A number [`Quantity::from_number`] takes, with what it is written as:
-/// the exact decimal literal (Python's `_exact_number_text`).
+/// the exact decimal literal.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExactNumber {
     /// A literal, used verbatim.
@@ -502,8 +499,8 @@ impl ExactNumber {
             ExactNumber::Float(f) => format!("{f:?}"),
             ExactNumber::Decimal(d) => decimal_text(d),
             ExactNumber::Fraction(fr) => {
-                // Python's scaleb() rounds this to its 28-digit context; the
-                // literal here keeps every digit, as the docstring promises.
+                // The literal keeps every digit of the scaled value, as the
+                // doc comment promises.
                 let Some((scaled, k)) = Decimal::terminating(fr) else {
                     return Err(Error::argument(format!(
                         "{fr} is not a terminating decimal; round it to a Decimal first"
@@ -586,8 +583,8 @@ mod tests {
         assert!(Quantity::from_number("x", ValueTypeFamily::Float, 64, None, km).is_err());
     }
 
-    /// Python divides `m / 2**q` in its 28-digit default context, so a wide
-    /// fixed-point datum lost digits; the stored value here is exact.
+    /// The stored value of a wide fixed-point datum keeps every digit of
+    /// `m / 2^q`, beyond 28 significant digits.
     #[test]
     fn fixed_point_stored_value_is_exact() {
         let vt = ValueTypeSpec {

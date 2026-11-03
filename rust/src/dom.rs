@@ -1,4 +1,4 @@
-//! The DOM, mirroring `python/bovnar/dom.py`: a parsed, random-access,
+//! The DOM: a parsed, random-access,
 //! type-preserving tree with full document-tier validation.
 
 use crate::Value;
@@ -94,20 +94,20 @@ impl DomDoc {
         })
     }
 
-    /// [`DomDoc::parse`] over any [`std::io::Read`]: Python's
-    /// `DomDoc.parse_fd` (and, given a [`std::fs::File`], its `parse_file`).
+    /// [`DomDoc::parse`] over any [`std::io::Read`], such as a
+    /// [`std::fs::File`].
     ///
     /// Reads `input` to its end and parses it, as `bvn_dom_parse_fd` does, up
     /// to the same cap of [`DOM_READ_MAX_BYTES`] (256 MiB). A longer input is
     /// an [`Error::Parse`] with `file_too_long`, where the C function returns
-    /// no document and Python raises `MemoryError`. A failing `input` is an
+    /// no document. A failing `input` is an
     /// [`Error::Io`] with `reading_from_source_fd`.
     pub fn parse_reader(input: impl std::io::Read) -> Result<Self> {
         Self::parse(&read_dom_input(input)?)
     }
 
-    /// [`DomDoc::parse_with_policy`] over any [`std::io::Read`]: Python's
-    /// `DomDoc.parse_fd` with a policy. Reads `input` as
+    /// [`DomDoc::parse_with_policy`] over any [`std::io::Read`]. Reads
+    /// `input` as
     /// [`DomDoc::parse_reader`] does.
     pub fn parse_reader_with_policy(
         input: impl std::io::Read,
@@ -157,8 +157,8 @@ impl DomDoc {
         to_entries(self.handle.entries())
     }
 
-    /// The whole document as a [`Value::Struct`] (Python's `to_dict`). Fails,
-    /// as Python raises, where a node cannot be read as its kind; see
+    /// The whole document as a [`Value::Struct`]. Fails where a node cannot
+    /// be read as its kind; see
     /// [`DomNode::to_value`].
     pub fn to_value(&self) -> Result<Value> {
         strict_entries(self.handle.entries()).map(Value::Struct)
@@ -334,8 +334,8 @@ impl<'a> DomNode<'a> {
         self.0.array_dims() as usize
     }
 
-    /// The node as a plain [`Value`]; type and unit are dropped (Python's
-    /// `to_python`). Where Python raises, this fails instead of defaulting:
+    /// The node as a plain [`Value`]; type and unit are dropped. Fails
+    /// instead of defaulting where the node cannot be read:
     /// text or a key that is not UTF-8, a float or bool node without its
     /// value, an unknown node kind.
     pub fn to_value(self) -> Result<Value> {

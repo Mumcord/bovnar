@@ -1,5 +1,5 @@
-//! Reading a caller's `std::io::Read` for the entry points that mirror
-//! Python's file-descriptor ones (`read_fd`, `parse_fd`).
+//! Reading a caller's `std::io::Read` for the `*_reader` entry points, the
+//! counterparts of the C library's file-descriptor ones.
 //!
 //! The C library takes input from an fd or from memory only: `bvnr_pull_fn`
 //! exists, but `bovnar.h` has no constructor for a source that calls one (the

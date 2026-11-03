@@ -1,12 +1,11 @@
-//! Unit parsing, formatting and conversion helpers, mirroring
-//! `python/bovnar/units.py` and the unit functions of `bovnar/__init__.py`.
+//! Unit parsing, formatting and conversion helpers.
 
 use crate::enums::{BaseUnit, Exponent, Prefix};
 use crate::error::{Error, Result};
 use crate::ffi::{self, PrefixId, ValueUnitPrefix, unit_fns};
 use crate::unit::Unit;
 
-/// Flags for [`unit_to_str_ex`] (Python's `UnitFlags`).
+/// Flags for [`unit_to_str_ex`].
 pub struct UnitFlags;
 
 impl UnitFlags {
@@ -56,7 +55,7 @@ pub fn unit_error_code(text: &str) -> i32 {
     ffi::unit_error_code(text)
 }
 
-/// The SI factor of a unit string (Python's `unit_factor`).
+/// The SI factor of a unit string.
 pub fn unit_factor(text: &str) -> Result<f64> {
     Unit::parse(text)?.factor()
 }
@@ -116,7 +115,7 @@ pub fn unit_prefix_exponent(unit: &Unit) -> i32 {
     unit_fns::prefix_exponent(unit.0)
 }
 
-/// True when `prefix` (Python's `system` and `prefix`) may stand before base
+/// True when `prefix` (system and id) may stand before base
 /// unit `base`.
 pub fn prefix_unit_valid(prefix: Prefix, base: BaseUnit) -> bool {
     let p = ValueUnitPrefix {
@@ -210,7 +209,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn helpers_answer_like_python() {
+    fn helpers_answer_as_expected() {
         let km = parse_unit("k~m").unwrap();
         let m = parse_unit("m").unwrap();
         assert_eq!(unit_prefix_exponent(&km), 3);

@@ -1,5 +1,4 @@
-//! The library's arbitrary-precision float (`bvn_float_t`), mirroring
-//! `python/bovnar/_bvnfloat.py`: the bridge to the full precision of the
+//! The library's arbitrary-precision float (`bvn_float_t`): the bridge to the full precision of the
 //! float formats instead of an `f64`.
 //!
 //! - exact text <-> [`BvnFloat`] conversion at any precision;
@@ -12,12 +11,11 @@
 //! [`decimal_to_interchange_bits`], [`decimal_stored_value`]) materialise
 //! an exact value with no size limit; [`crate::Quantity`] falls back to
 //! them where the C parser saturates an extreme exponent (beyond about
-//! 1e±9865). Python's `Fraction` is [`BigRational`] here, its `Decimal` is
+//! 1e±9865). Exact rationals are [`BigRational`], exact decimals
 //! [`Decimal`].
 //!
-//! Byte strings are little-endian, as in Python. Where Python's `bytes`
-//! argument may be shorter than the format (it is zero-extended), so may
-//! the slice here; a longer one is refused.
+//! Byte strings are little-endian. A byte slice may be shorter than the
+//! format (it is zero-extended); a longer one is refused.
 
 use num_bigint::{BigInt, BigUint};
 use num_integer::Integer;
@@ -333,7 +331,7 @@ pub fn decimal_stored_value(d: &Decimal, width: u32) -> Result<Decimal> {
     })
 }
 
-/// An owned `bvn_float_t`, Python's `BvnFloat`.
+/// An owned `bvn_float_t`.
 pub struct BvnFloat {
     handle: FloatHandle,
 }
@@ -357,8 +355,8 @@ fn check_len(data: &[u8], width: u32) -> Result<()> {
 }
 
 impl BvnFloat {
-    /// A float of `prec` significand bits (Python's `BvnFloat(prec)`;
-    /// [`WORK_PREC`] is its default), holding zero.
+    /// A float of `prec` significand bits ([`WORK_PREC`] is the usual
+    /// choice), holding zero.
     pub fn new(prec: u32) -> Result<Self> {
         FloatHandle::alloc(prec)
             .map(|handle| BvnFloat { handle })

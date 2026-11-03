@@ -1,6 +1,6 @@
 //! Thin Rust binding to the Bovnar (BVNR) C library.
 //!
-//! The module split mirrors the Python binding in `python/bovnar/`. All FFI
+//! All FFI
 //! lives in the private `ffi` module; every other module is safe Rust on top
 //! of it.
 
@@ -41,8 +41,7 @@ pub use writer::{Base, EmitSpec, Signedness, Writer};
 
 use writer::needs_annotation;
 
-/// A BVNR value, the Rust counterpart of what Python's `loads` returns and
-/// `dumps` takes. [`parse`] carries no annotations or units; [`parse_typed`]
+/// A BVNR value, as [`parse`] returns it and [`to_string`] takes it. [`parse`] carries no annotations or units; [`parse_typed`]
 /// returns typed scalars as [`Value::Quantity`].
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
@@ -61,32 +60,31 @@ pub enum Value {
     Struct(Vec<(String, Value)>),
     /// A typed scalar with its literal, type and unit.
     Quantity(Box<Quantity>),
-    /// An exact decimal (Python's `Decimal`), written as a `float_dec:64`
+    /// An exact decimal, written as a `float_dec:64`
     /// literal, never through an `f64`.
     Decimal(Decimal),
-    /// An exact rational (Python's `Fraction`), written as a `float_dec:64`
+    /// An exact rational, written as a `float_dec:64`
     /// literal when its decimal expansion terminates and refused otherwise.
     Fraction(num_rational::BigRational),
 }
 
-/// The library version, e.g. `"2.0.0"` (Python's `version`).
+/// The library version, e.g. `"2.0.0"`.
 pub fn version() -> String {
     ffi::version_string()
 }
 
-/// The newest format version the library implements, as `(major, minor)`
-/// (Python's `spec_version`).
+/// The newest format version the library implements, as `(major, minor)`.
 pub fn spec_version() -> (u16, u16) {
     ffi::spec_version()
 }
 
 /// The `#!bovnar M.N` directive leading `data` (a UTF-8 BOM before it is
-/// fine), or `None` when there is none (Python's `peek_version`).
+/// fine), or `None` when there is none.
 pub fn peek_version(data: &[u8]) -> Option<(u16, u16)> {
     ffi::peek_version(data)
 }
 
-/// Parses a BVNR document into a [`Value::Struct`], like Python's `loads`.
+/// Parses a BVNR document into a [`Value::Struct`].
 ///
 /// This is the single-pass streaming parse: it enforces the grammar and each
 /// value's own type, unit and range, but not the document-tier rules
@@ -98,8 +96,7 @@ pub fn parse(data: &[u8]) -> Result<Value> {
 
 /// Parses like [`parse`], but every typed scalar (number, datetime, symbol,
 /// reference) is a [`Value::Quantity`] keeping its literal, type, unit and
-/// datetime fraction, so [`to_string`] writes it back losslessly. Python's
-/// `loads(typed=True)`.
+/// datetime fraction, so [`to_string`] writes it back losslessly.
 pub fn parse_typed(data: &[u8]) -> Result<Value> {
     parse_with(data, true)
 }
@@ -114,7 +111,7 @@ fn parse_with(data: &[u8], typed: bool) -> Result<Value> {
     Ok(parser.result())
 }
 
-/// Serialises a [`Value::Struct`] to a BVNR document, like Python's `dumps`.
+/// Serialises a [`Value::Struct`] to a BVNR document.
 ///
 /// Returns bytes rather than `String`: an octet stream is written raw.
 /// Everything [`parse`] and [`parse_typed`] return round-trips: arrays
@@ -254,7 +251,7 @@ fn leaves<'a>(rows: &'a [Value], f: &mut dyn FnMut(&'a Value)) {
     walk(rows, false, f);
 }
 
-/// Python's `_uses_spec_1_1` / `_uses_spec_1_2`: the minor spec version a
+/// The minor spec version a
 /// quantity needs declared, if any.
 fn spec_version_needed(q: &Quantity) -> Option<u16> {
     let profile_ns = q.unit_source.as_deref().is_some_and(|s| {
@@ -296,7 +293,7 @@ fn has_real_unit(q: &Quantity) -> bool {
     !q.unit.is_dimensionless()
 }
 
-/// Python's `_array_decimal_annotation`: `<float_dec:64>` for an array
+/// `<float_dec:64>` for an array
 /// whose leaves are all decimals or fractions (nulls aside), the width a
 /// scalar decimal is written with. Written bare they would read back as a
 /// binary float or an integer.
@@ -310,7 +307,7 @@ fn decimal_annotation(rows: &[Value]) -> Option<ValueTypeSpec> {
     (saw && !other).then(|| writer::type_spec(ValueTypeFamily::FloatDec, 64, 0))
 }
 
-/// Python's `_array_datetime_annotation`: one datetime annotation for an
+/// One datetime annotation for an
 /// array of datetimes (widest width wins); mixed epochs are refused.
 fn datetime_annotation(rows: &[Value]) -> Result<Option<ValueTypeSpec>> {
     let (mut saw, mut other, mut width, mut base) = (false, false, 0, None);
@@ -340,7 +337,7 @@ fn datetime_annotation(rows: &[Value]) -> Result<Option<ValueTypeSpec>> {
     )))
 }
 
-/// Python's `_array_quantity_annotation`: the annotation every quantity
+/// The annotation every quantity
 /// leaf shares, when they agree on the effective type (`<uint:64>` is
 /// `<uint:64,_10>`) and the unit (`m*s` is `s*m`) and the annotation says
 /// something. The unit is `None` when it is no unit at all.
@@ -380,7 +377,7 @@ fn quantity_annotation(rows: &[Value]) -> (Option<ValueTypeSpec>, Option<Unit>) 
     )
 }
 
-/// Python's `_array_has_unit`: any quantity leaf with a real unit.
+/// Any quantity leaf with a real unit.
 fn array_has_unit(rows: &[Value]) -> bool {
     let mut any = false;
     leaves(rows, &mut |v| {
@@ -389,7 +386,7 @@ fn array_has_unit(rows: &[Value]) -> bool {
     any
 }
 
-/// Python's `_array_one_unit`: every non-null leaf a numeric quantity with
+/// Every non-null leaf a numeric quantity with
 /// a literal, all with the same real unit.
 fn array_one_unit(rows: &[Value]) -> bool {
     let Some(qs) = quantity_leaves(rows) else {
@@ -402,7 +399,7 @@ fn array_one_unit(rows: &[Value]) -> bool {
         .all(|q| writer::is_numeric(q) && has_real_unit(q) && q.unit == first.unit)
 }
 
-/// Python's `_array_unit_source`: the one spelling every quantity leaf
+/// The one spelling every quantity leaf
 /// agrees on, else `None`.
 fn array_unit_source(rows: &[Value]) -> Option<String> {
     let (mut src, mut agree) = (None::<&str>, true);
@@ -418,7 +415,7 @@ fn array_unit_source(rows: &[Value]) -> Option<String> {
     src.filter(|_| agree).map(str::to_owned)
 }
 
-/// Python's `_array_mixed_numeric_types`: unit-less numeric quantities, at
+/// Unit-less numeric quantities, at
 /// least one with a type default synthesis would not give back.
 fn mixed_numeric_types(rows: &[Value]) -> bool {
     use ValueTypeFamily as F;
@@ -437,12 +434,12 @@ fn mixed_numeric_types(rows: &[Value]) -> bool {
     qs.iter().any(|q| q.raw.is_some() && needs_annotation(q))
 }
 
-/// Bits Python's `int.bit_length()` gives for `|i|`.
+/// The number of bits needed for `|i|` (0 for 0).
 fn bit_length(i: i128) -> u32 {
     128 - i.unsigned_abs().leading_zeros()
 }
 
-/// Python's `_array_has_wide_int`: whether a plain integer leaf needs more
+/// Whether a plain integer leaf needs more
 /// than 64 bits (unsigned when non-negative, signed when negative).
 fn has_wide_int(rows: &[Value]) -> bool {
     let mut wide = false;
@@ -453,7 +450,7 @@ fn has_wide_int(rows: &[Value]) -> bool {
     wide
 }
 
-/// Python's `_array_int_annotation`: for an all-integer array with an
+/// For an all-integer array with an
 /// element wider than 64 bits, the width that holds every element.
 fn int_annotation(rows: &[Value]) -> Option<ValueTypeSpec> {
     let (mut saw, mut other, mut neg) = (false, false, false);
@@ -482,7 +479,7 @@ fn int_annotation(rows: &[Value]) -> Option<ValueTypeSpec> {
     (width > 64).then(|| writer::type_spec(family, width, 10))
 }
 
-/// Writes `.key = [<annotation>] rows;`, like Python's `write_array`: a flat
+/// Writes `.key = [<annotation>] rows;`: a flat
 /// list is one row, a rectangular list of lists is `/`-separated rows. With
 /// `vt`, the annotation (and `unit`, spelled `unit_source` if given) is
 /// written once for the whole array.
@@ -504,7 +501,7 @@ pub fn write_array(
     emit_rows(w, rows, false, vt)
 }
 
-/// Python's `_check_rows`: runs every element through the refusals
+/// Runs every element through the refusals
 /// [`emit_element`] would raise under `vt`, writing nothing. A refusal in the
 /// middle of the array used to leave the writer holding `.p=<uint:16>[80,` --
 /// an open array no later write could close, so the document was lost. (A
@@ -526,7 +523,7 @@ fn check_rows(rows: &[Value], vt: ValueTypeSpec) -> Result<()> {
     Ok(())
 }
 
-/// Python's `_emit_rows`: a single row, and rows of unequal length, are
+/// A single row, and rows of unequal length, are
 /// nested rather than `/`-separated, so the shape reads back unchanged.
 fn emit_rows(
     w: &mut Writer,
@@ -561,7 +558,7 @@ fn emit_rows(
     w.end_array_row()
 }
 
-/// Python's `_emit_array_element`.
+/// Writes one array element, held to the annotation `vt` if there is one.
 fn emit_element(
     w: &mut Writer,
     elem: &Value,
@@ -634,7 +631,7 @@ fn emit_element(
     }
 }
 
-/// Python's `_refuse_under`.
+/// The error refusing `elem` under the array annotation `vt`, saying `why`.
 fn refuse_under(elem: &Value, vt: ValueTypeSpec, why: &str) -> Error {
     let fam = family_name(vt.family).unwrap_or("plain");
     let spec = if vt.width == 0 {
@@ -662,7 +659,7 @@ fn family_name(family: i32) -> Option<&'static str> {
     })
 }
 
-/// Python's `_exact_number_text` for a float: the shortest round-tripping
+/// The exact literal of a float: the shortest round-tripping
 /// decimal, with the format's spellings of the non-finite values.
 fn exact_float_text(f: f64) -> String {
     if f.is_nan() {
@@ -674,7 +671,7 @@ fn exact_float_text(f: f64) -> String {
     }
 }
 
-/// Python's `_emit_held_element`: the token and literal of plain scalar
+/// The token and literal of plain scalar
 /// `elem` held to the array annotation `vt`, refused where it does not fit.
 /// `None` for an annotation that holds its elements to nothing.
 fn held_element(elem: &Value, vt: ValueTypeSpec) -> Result<Option<(TokenType, String)>> {
@@ -753,8 +750,7 @@ fn held_element(elem: &Value, vt: ValueTypeSpec) -> Result<Option<(TokenType, St
     Ok(Some(held))
 }
 
-/// Python's `_decode_value`: one literal as a plain value. What cannot be
-/// decoded stays its text, as in Python.
+/// One literal as a plain value. What cannot be decoded stays its text.
 pub(crate) fn decode_value(raw: &[u8], vt: ValueTypeSpec, token: Option<TokenType>) -> Value {
     if raw.is_empty() {
         return match token {
@@ -796,13 +792,13 @@ pub(crate) fn decode_value(raw: &[u8], vt: ValueTypeSpec, token: Option<TokenTyp
     .unwrap_or(Value::String(text))
 }
 
-/// The event consumer behind [`parse`], a port of Python's `_DictParser`.
+/// The event consumer behind [`parse`].
 ///
 /// Arrays are sealed lazily: a row end leaves its array pending, and the next
 /// event decides whether a `/` continues it, an enclosing row takes it as an
 /// element, or the assignment it belongs to is complete.
 ///
-/// Public but hidden, like Python's importable `_DictParser`, so the event
+/// Public but hidden, so the event
 /// handling can be tested with hand-built event sequences.
 #[doc(hidden)]
 pub mod dict_parser {
@@ -840,7 +836,7 @@ pub mod dict_parser {
         current_key: Option<String>,
         in_octet: bool,
         octets: Vec<u8>,
-        /// Python's `_TypedDictParser`: typed scalars become quantities.
+        /// Typed scalars become quantities ([`crate::parse_typed`]).
         typed: bool,
     }
 
@@ -1006,7 +1002,8 @@ pub mod dict_parser {
         }
     }
 
-    /// Python's `_TypedDictParser._decode_data`.
+    /// One data event as a typed value: a [`Value::Quantity`] for a typed
+    /// scalar, a plain value otherwise.
     fn typed_value(d: &EventData<'_>) -> Value {
         let plain = ValueTypeFamily::from_raw(d.value_type.family) == Some(ValueTypeFamily::Plain);
         let symbolic = matches!(d.token_type, Some(TokenType::Symbol | TokenType::Reference));
@@ -1028,7 +1025,7 @@ pub mod dict_parser {
         }))
     }
 
-    /// Python's `_char_to_digit`: the digit value of `c` in `base`, or `None`.
+    /// The digit value of `c` in `base`, or `None`.
     /// Bases 64 and 85 use the Base64 and Ascii85 alphabets; up to 36 letters
     /// are case-insensitive, 37..62 case-sensitive.
     fn char_to_digit(c: u8, base: u32) -> Option<u32> {
@@ -1050,7 +1047,7 @@ pub mod dict_parser {
         (d < base).then_some(d)
     }
 
-    /// Python's `_int_from_base`: an integer in any bovnar base (2..62, 64,
+    /// An integer in any bovnar base (2..62, 64,
     /// 85). Bases 64 and 85 are unsigned: their '+' and '-' are digits.
     pub(super) fn int_from_base(text: &str, base: u32) -> Option<i128> {
         let bytes = text.as_bytes();
@@ -1072,7 +1069,7 @@ pub mod dict_parser {
         Some(if neg { -val } else { val })
     }
 
-    /// [`int_from_base`] without the 128-bit limit: Python's int.
+    /// [`int_from_base`] without the 128-bit limit.
     pub(crate) fn bigint_from_base(text: &str, base: u32) -> Option<num_bigint::BigInt> {
         let bytes = text.as_bytes();
         let (neg, digits) = match bytes.first() {

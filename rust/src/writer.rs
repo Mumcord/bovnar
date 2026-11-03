@@ -1,4 +1,4 @@
-//! The streaming writer, mirroring `python/bovnar/writer.py`.
+//! The streaming writer.
 
 use crate::enums::{Event, TokenType, ValueTypeFamily};
 use crate::error::{Error, Result};
@@ -7,7 +7,7 @@ use crate::quantity::Quantity;
 use crate::reader::UnitPolicy;
 use crate::unit::Unit;
 
-/// Default size of the memory sink (Python's `DEFAULT_MEM_CAP`).
+/// Default size of the memory sink.
 pub const DEFAULT_MEM_CAP: usize = 4 * 1024 * 1024;
 
 /// Writes into a memory sink that grows: `write` runs on a fresh writer of
@@ -16,7 +16,7 @@ pub const DEFAULT_MEM_CAP: usize = 4 * 1024 * 1024;
 /// library has only fd and fixed memory sinks, so retrying is the growing
 /// sink; `write` must therefore be repeatable.
 /// Writes `size` bytes' worth of output with `write`, doubling the buffer
-/// while it runs out, like Python's retry loop.
+/// while it runs out.
 pub(crate) fn grow_write(
     size: usize,
     pretty: bool,
@@ -89,21 +89,19 @@ impl From<Base> for u32 {
     }
 }
 
-/// What [`Writer::emit`] sends with an event: Python's keyword arguments of
-/// `Writer.emit` (`vu` is not mirrored).
+/// What [`Writer::emit`] sends with an event: a key, a data literal and its
+/// type, each optional.
 ///
-/// | Python                                         | Rust                                              |
-/// |------------------------------------------------|---------------------------------------------------|
-/// | `w.emit(Event.ASSIGNMENT_START, key="x")`      | `w.emit(Event::AssignmentStart, EmitSpec::key("x"))` |
-/// | `w.emit(Event.DATA, value="42", vt=spec)`      | `w.emit(Event::Data, EmitSpec::value("42", spec))` |
-/// | `w.emit(Event.STRUCT_END)`                     | `w.emit(Event::StructEnd, EmitSpec::NONE)`        |
+/// - `w.emit(Event::AssignmentStart, EmitSpec::key("x"))`
+/// - `w.emit(Event::Data, EmitSpec::value("42", spec))`
+/// - `w.emit(Event::StructEnd, EmitSpec::NONE)`
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct EmitSpec<'a> {
-    /// The key of an assignment (`key=`).
+    /// The key of an assignment.
     pub key: Option<&'a str>,
-    /// A data literal (`value=`).
+    /// A data literal.
     pub value: Option<&'a str>,
-    /// The literal's type (`vt=`); plain when `None`.
+    /// The literal's type; plain when `None`.
     pub vt: Option<ValueTypeSpec>,
 }
 
@@ -133,8 +131,7 @@ impl<'a> EmitSpec<'a> {
     }
 }
 
-/// Whether [`Writer::write_bvni`] writes `sint` or `uint` (Python's
-/// `signed=True`, `False` or `None`).
+/// Whether [`Writer::write_bvni`] writes `sint` or `uint`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
 pub enum Signedness {
     Signed,
@@ -161,7 +158,7 @@ impl Writer {
         Self::to_mem_with(cap, pretty, 0, false)
     }
 
-    /// [`Writer::to_mem`] with the remaining keywords of Python's `to_mem`:
+    /// [`Writer::to_mem`] with output options:
     /// `unit_flags` ([`crate::units::UnitFlags`]) rewrite units on output,
     /// and `emit_version` leads the document with `#!bovnar <major>.<minor>`.
     pub fn to_mem_with(
@@ -190,8 +187,8 @@ impl Writer {
         Ok(w)
     }
 
-    /// A writer whose document goes to any [`std::io::Write`]: Python's
-    /// `Writer.to_fd` (and, given a [`std::fs::File`], its `to_file`).
+    /// A writer whose document goes to any [`std::io::Write`], such as a
+    /// [`std::fs::File`].
     ///
     /// The C library writes to an fd or a fixed memory buffer only:
     /// `bvnr_push_fn` exists, but `bovnar.h` has no constructor for a sink
@@ -206,8 +203,8 @@ impl Writer {
         Self::to_writer_with(out, DEFAULT_MEM_CAP, pretty, 0, false)
     }
 
-    /// [`Writer::to_writer`] with a sink of `cap` bytes and the remaining
-    /// keywords of Python's `to_fd`, as [`Writer::to_mem_with`] takes them.
+    /// [`Writer::to_writer`] with a sink of `cap` bytes and the output
+    /// options [`Writer::to_mem_with`] takes.
     pub fn to_writer_with(
         out: impl std::io::Write + Send + 'static,
         cap: usize,
@@ -220,8 +217,7 @@ impl Writer {
         Ok(w)
     }
 
-    /// Sends one raw event, like Python's `Writer.emit`: what goes with it
-    /// (Python's keyword arguments) is an [`EmitSpec`].
+    /// Sends one raw event; what goes with it is an [`EmitSpec`].
     pub fn emit(&mut self, event: Event, spec: EmitSpec<'_>) -> Result<()> {
         let EmitSpec { key, value, vt } = spec;
         let vt = vt.unwrap_or_default();
@@ -326,9 +322,8 @@ impl Writer {
     }
 
     /// `.key = <uint|sint:width[,_base]> value;` for an integer of any width
-    /// up to 128 bits; `signed` picks sint or uint (Python's `signed=True` /
-    /// `False`), and [`Signedness::Auto`] (`None`) writes negative values as
-    /// sint.
+    /// up to 128 bits; `signed` picks sint or uint, and [`Signedness::Auto`]
+    /// writes negative values as sint.
     pub fn write_bvni(
         &mut self,
         key: &str,
@@ -539,8 +534,8 @@ impl Writer {
         self.event(Event::Data, token, vt, text.as_bytes())
     }
 
-    /// A type annotation: `<family:width[,_base|,qN|,epoch][,unit]>`, like
-    /// Python's `_emit_annotation`; `unit_source` is the unit's spelling.
+    /// A type annotation: `<family:width[,_base|,qN|,epoch][,unit]>`;
+    /// `unit_source` is the unit's spelling.
     pub fn annotation(
         &mut self,
         vt: ValueTypeSpec,
@@ -645,8 +640,7 @@ impl Writer {
         self.check(|h| h.write_event_full(event as i32, token as i32, vt, &unit.0, parts))
     }
 
-    /// Sends one raw event with an explicit token type, like Python's direct
-    /// `bvnr_write_event` call.
+    /// Sends one raw event with an explicit token type (`bvnr_write_event`).
     pub fn event(
         &mut self,
         event: Event,
@@ -686,7 +680,7 @@ pub(crate) fn is_numeric(q: &Quantity) -> bool {
     ) && q.raw.is_some()
 }
 
-/// Python's `_needs_annotation`: true only when the annotation carries
+/// True only when the annotation carries
 /// something the bare literal would not give back.
 pub(crate) fn needs_annotation(q: &Quantity) -> bool {
     use ValueTypeFamily as F;
@@ -723,7 +717,7 @@ fn refuse_signed_high_base(base: u32) -> Result<()> {
     Ok(())
 }
 
-/// Python's `_format_bigint`: `value` in any bovnar base (2..62, 64, 85).
+/// `value` in any bovnar base (2..62, 64, 85).
 pub fn format_bigint(value: i128, base: u32) -> Result<String> {
     const B64: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     if !(2..=62).contains(&base) && base != 64 && base != 85 {

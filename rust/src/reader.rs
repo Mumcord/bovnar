@@ -1,12 +1,11 @@
-//! The streaming reader, mirroring `python/bovnar/reader.py`.
+//! The streaming reader.
 
 use crate::enums::{ErrorCode, Event, TokenType};
 use crate::error::{Error, Position, Result};
 use crate::ffi::{self, BvnrReadFlags, ValueTypeSpec};
 use crate::unit::Unit;
 
-/// Options for [`Reader::read_mem`], the keyword arguments of Python's
-/// `Reader.read_mem`. The default reads with the library's limits.
+/// Options for [`Reader::read_mem`]. The default reads with the library's limits.
 #[derive(Clone, Debug, Default)]
 pub struct ReadOptions {
     /// Largest accepted input in bytes; 0 is the library default.
@@ -47,8 +46,8 @@ impl UnitRule {
 }
 
 /// What a document must contain, and what unit values arrive in: the
-/// declarative form of `want_unit`. See Python's `UnitPolicy` for the full
-/// rules; everything is unit text.
+/// declarative form of `want_unit`, handed to `bvnr_reader_set_unit_policy`
+/// (see `bovnar.h` for the full rules); everything is unit text.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct UnitPolicy {
     /// Per-field rules, consulted first; the first match wins.
@@ -119,7 +118,7 @@ impl UnitPolicy {
 }
 
 /// Names the entry the C setter refused, by offering each one on its own
-/// (Python's `describe_unit_policy_refusal`). The setter answers one bool for
+/// The setter answers one bool for
 /// a whole policy; the setter itself is the oracle, so this cannot drift from
 /// the library's own rules.
 pub(crate) fn describe_unit_policy_refusal(policy: &UnitPolicy) -> String {
@@ -208,7 +207,7 @@ pub(crate) fn describe_unit_policy_refusal(policy: &UnitPolicy) -> String {
 }
 
 /// One event as a handler sees it, borrowed for the duration of the call
-/// (Python's `(Event, BvnrData)` callback arguments).
+/// (the event and its data).
 #[derive(Clone, Copy, Debug)]
 pub struct EventData<'a> {
     pub event: Event,
@@ -237,7 +236,7 @@ pub struct EventData<'a> {
 
 impl<'a> EventData<'a> {
     /// A plain, unconverted event, so the dict parser can be driven by
-    /// hand-built event sequences (like Python's `_DictParser` tests).
+    /// hand-built event sequences in tests.
     #[doc(hidden)]
     pub fn plain(event: Event, value_type: ValueTypeSpec, raw: &'a [u8]) -> Self {
         Self {
@@ -281,7 +280,7 @@ impl<'a> EventData<'a> {
 
     /// The exact converted value as a reduced `(numerator, denominator)`
     /// pair in decimal (it may exceed any machine integer), or `None` when no
-    /// conversion was applied (Python's `converted_rational`). The only
+    /// conversion was applied. The only
     /// carrier of the value when the expansion does not terminate in the
     /// requested base (`want_unit_allow_nonterminating`).
     pub fn converted_rational(&self) -> Option<(String, String)> {
@@ -290,7 +289,7 @@ impl<'a> EventData<'a> {
 
     /// The exact converted value rendered in `base` (2..62, 64 or 85), or
     /// `None` when no conversion was applied or the value has no terminating
-    /// expansion in `base` (Python's `converted_in_base`). Fails for a base
+    /// expansion in `base`. Fails for a base
     /// the library cannot write.
     pub fn converted_in_base(&self, base: u32) -> Result<Option<String>> {
         let Some(exact) = self.conv_exact else {
@@ -307,8 +306,7 @@ impl<'a> EventData<'a> {
     }
 }
 
-/// An owned copy of one event, as collected by [`Reader::iter_mem`]
-/// (Python's `EventPayload`).
+/// An owned copy of one event, as collected by [`Reader::iter_mem`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct EventPayload {
     pub event: Event,
@@ -396,8 +394,8 @@ impl Reader {
         self.read(data, options, on_verified, None, Some(want_unit))
     }
 
-    /// [`Reader::read_mem`] over any [`std::io::Read`]: Python's
-    /// `Reader.read_fd` (and, given a [`std::fs::File`], its `read_file`).
+    /// [`Reader::read_mem`] over any [`std::io::Read`], such as a
+    /// [`std::fs::File`].
     ///
     /// The input is read to its end first, or to the first byte over
     /// `options.max_file_size` when that is set, and then parsed as
@@ -417,8 +415,8 @@ impl Reader {
         self.read(&data, options, on_verified, on_unverified, None)
     }
 
-    /// [`Reader::read_mem_want_unit`] over any [`std::io::Read`]: Python's
-    /// `Reader.read_fd` with `want_unit`. Reads `input` as
+    /// [`Reader::read_mem_want_unit`] over any [`std::io::Read`]. Reads
+    /// `input` as
     /// [`Reader::read_reader`] does.
     pub fn read_reader_want_unit<'h>(
         &mut self,
@@ -457,7 +455,7 @@ impl Reader {
     }
 
     /// The `#!bovnar M.N` directive of the last read, or `None` when the
-    /// document carried none (Python's `declared_version`).
+    /// document carried none.
     pub fn declared_version(&self) -> Option<(u16, u16)> {
         self.handle.declared_version()
     }
