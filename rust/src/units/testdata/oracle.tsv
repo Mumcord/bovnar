@@ -1,0 +1,7538 @@
+# Expected results from the C reference (UCUM and CF profiles off), produced by
+# scripts/unit-oracle.sh. Tab-separated:
+#   u <unit> <code> <canonical>
+#   p <unit a> <unit b> <bvn_unit_equal> <bvn_units_convertible>
+u	m	ok	m
+u	k~m	ok	k~m
+u	Ki~B	ok	Ki~B
+u	m/s	ok	m/s
+u	m/s^2	ok	m/s²
+u	k~g*m/s^2	ok	k~g·m/s²
+u	no_unit	ok	no_unit
+u	Å	ok	Å
+u	Å	ok	Å
+u	angstrom	ok	Å
+u	B	ok	B
+p	m	m	1	1
+u	s⁻¹·m	ok	m/s
+p	m/s	s⁻¹·m	1	1
+u	s³·m⁻⁵	ok	s³/m⁵
+u	m⁻⁵·s³	ok	s³/m⁵
+p	s³·m⁻⁵	m⁻⁵·s³	1	1
+u	Pa	ok	Pa
+u	K	ok	K
+u	k~Hz	ok	k~Hz
+u	Mi~B	ok	Mi~B
+u	(m/s)/s	ok	m/s·s
+u	(m/s	unit_illegal	-
+u	s	ok	s
+p	m	s	0	0
+u	zzz_invalid_unit	unit_illegal	-
+u	kg	ok	k~g
+u	MiB	ok	Mi~B
+u	km	ok	k~m
+u	kg·m/s^2	ok	k~g·m/s²
+p	k~m	km	1	1
+u	min	ok	min
+u	m~in	ok	m~in
+p	min	m~in	0	0
+u	kkg	unit_illegal	-
+u	k~kg	unit_illegal	-
+u	pH	ok	pH
+u	m~pH	unit_illegal	-
+u	p~H	ok	p~H
+u	mph	ok	mph
+u	mi/h	ok	mi/h
+p	mph	mi/h	0	1
+u	kt	unit_illegal	-
+u	k~t	ok	k~t
+u	u~sb	ok	µ~sb
+u	°dH	ok	°dH
+u	°fH	ok	°fH
+u	m~val/L	ok	m~val/L
+u	m~mol/L	ok	m~mol/L
+u	m~°dH	unit_illegal	-
+u	dH	ok	d~H
+p	dH	°dH	0	0
+u	µS/cm	ok	µ~S/c~m
+u	µmho/cm	ok	µ~S/c~m
+u	mg/L	ok	m~g/L
+u	gpg	ok	gpg
+u	gr/gal	ok	gr/gal
+p	gpg	gr/gal	0	0
+u	NTU	ok	NTU
+u	FNU	ok	FNU
+u	PSU	ok	PSU
+u	CF	ok	CF
+p	NTU	FNU	0	0
+u	m~PSU	unit_illegal	-
+u	FTU	ok	FTU
+u	FAU	ok	FAU
+u	JTU	ok	JTU
+p	FTU	FNU	0	0
+p	FAU	FNU	0	0
+u	m~JTU	unit_illegal	-
+u	Kim	unit_illegal	-
+u	mB	unit_illegal	-
+u	k$USD	ok	k~$USD
+u	k$EUR/h	ok	k~$EUR/h
+u	kUSD	unit_illegal	-
+u	Ki$USD	unit_illegal	-
+u	m^100	ok	m¹⁰⁰
+u	m¹⁰⁰	ok	m¹⁰⁰
+p	m^100	m¹⁰⁰	1	1
+u	s^-100	ok	s⁻¹⁰⁰
+u	m^101	unit_illegal	-
+u	m^-101	unit_illegal	-
+u	m^0	unit_illegal	-
+u	m^1000	unit_illegal	-
+u	ΔK	ok	ΔK
+u	Δ°C	ok	ΔK
+u	Δ°F	ok	Δ°F
+u	delta_K	ok	ΔK
+u	delta_degC	ok	ΔK
+u	delta_degF	ok	Δ°F
+u	m~ΔK	ok	m~ΔK
+u	ΔK/k~m	ok	ΔK/k~m
+u	ΔK^-1	ok	ΔK⁻¹
+u	Δ°F/mi	ok	Δ°F/mi
+u	Δ°De	ok	Δ°De
+u	Δ°N	ok	Δ°N
+u	Δ°Re	ok	Δ°Re
+u	Δ°Ro	ok	Δ°Ro
+u	delta_C	unit_illegal	-
+u	delta_F	unit_illegal	-
+u		unit_illegal	-
+u	m^	unit_illegal	-
+u	^2	unit_illegal	-
+u	m^2	ok	m²
+u	m^+2	ok	m²
+u	m^-2	ok	m⁻²
+u	m^02	ok	m²
+u	m^002	ok	m²
+u	m^0002	unit_illegal	-
+u	m^-100	ok	m⁻¹⁰⁰
+u	m²	ok	m²
+u	m⁻²	ok	m⁻²
+u	m⁺²	ok	m²
+u	m⁻¹⁰⁰	ok	m⁻¹⁰⁰
+u	m¹⁰¹	unit_illegal	-
+u	m⁰	unit_illegal	-
+u	m²³⁴	unit_illegal	-
+u	m⁻	unit_illegal	-
+u	m^2²	unit_illegal	-
+u	m²^2	unit_illegal	-
+u	k~m²	ok	k~m²
+u	km²	ok	k~m²
+u	m/s/s	ok	m/s·s
+u	m//s	unit_illegal	-
+u	m/	unit_illegal	-
+u	/m	unit_illegal	-
+u	*m	unit_illegal	-
+u	m*	unit_illegal	-
+u	m**s	unit_illegal	-
+u	m·s	ok	m·s
+u	m··s	unit_illegal	-
+u	m·	unit_illegal	-
+u	(m)	ok	m
+u	(m	unit_illegal	-
+u	m)	unit_illegal	-
+u	()	unit_illegal	-
+u	m/(s·s)	ok	m/s·s
+u	m/(s/k~g)	ok	m·k~g/s
+u	(m)(s)	unit_illegal	-
+u	m(s)	unit_illegal	-
+u	(m)s	unit_illegal	-
+u	(m)^2	unit_illegal	-
+u	((m))	ok	m
+u	(((m/s)))/s	ok	m/s·s
+u	(no_unit)	unit_illegal	-
+u	((no_unit))	unit_illegal	-
+u	m·(no_unit)	ok	m
+u	no_unit·m	unit_illegal	-
+u	no_unit/s	unit_illegal	-
+u	NO_UNIT	unit_illegal	-
+u	no_units	unit_illegal	-
+u	k~	unit_illegal	-
+u	~m	unit_illegal	-
+u	k~~m	unit_illegal	-
+u	kk~m	unit_illegal	-
+u	k~km	unit_illegal	-
+u	kkm	unit_illegal	-
+u	dam	ok	da~m
+u	da~m	ok	da~m
+u	dm	ok	d~m
+u	Km	unit_illegal	-
+u	KiB	ok	Ki~B
+u	Ki~m	unit_illegal	-
+u	k~B	ok	k~B
+u	kB	ok	k~B
+u	m~B	unit_illegal	-
+u	Mi~b	ok	Mi~b
+u	Mib	ok	Mi~b
+u	Yi~B	ok	Yi~B
+u	Qi~B	ok	Qi~B
+u	M~b	ok	M~b
+u	µ~m	ok	µ~m
+u	μ~m	ok	µ~m
+u	u~m	ok	µ~m
+u	µm	ok	µ~m
+u	um	ok	µ~m
+u	$USD	ok	$USD
+u	$usd	unit_illegal	-
+u	$US	unit_illegal	-
+u	$USDT	ok	$USDT
+u	$XYZ	unit_illegal	-
+u	k~$USD	ok	k~$USD
+u	~$USD	unit_illegal	-
+u	Ki~$USD	unit_illegal	-
+u	kk$USD	unit_illegal	-
+u	$USD^2	ok	$USD²
+u	USD	unit_illegal	-
+u	$USD·m	ok	$USD·m
+u	m/$USD	ok	m/$USD
+u	$$USD	unit_illegal	-
+u	k~$$USD	unit_illegal	-
+u	$	unit_illegal	-
+u	k$	unit_illegal	-
+u	$USD$	unit_illegal	-
+u	usb	unit_illegal	-
+u	µsb	ok	µ~sb
+u	ppt	unit_illegal	-
+u	p~pt	ok	p~pt
+u	pptr	ok	pptr
+u	mol	ok	mol
+u	m~ol	unit_illegal	-
+u	°C	ok	°C
+u	k~°C	ok	k~°C
+u	ΔK²	ok	ΔK²
+u	ΔK·m/m	ok	ΔK·m/m
+u	%	ok	%
+u	k~%	unit_illegal	-
+u	a:b	unit_profile_unknown	-
+u	ucum:m	unit_profile_unknown	-
+u	cf:m	unit_profile_unknown	-
+u	x:	unit_profile_unknown	-
+u	:m	unit_illegal	-
+u	-x:m	unit_illegal	-
+u	a-b:m	unit_profile_unknown	-
+u	A:m	unit_illegal	-
+u	foo:	unit_profile_unknown	-
+u	ucum:	unit_profile_unknown	-
+u	m:s	unit_profile_unknown	-
+u	m s	unit_illegal	-
+u	 m	unit_illegal	-
+u	m 	unit_illegal	-
+u	m 	unit_illegal	-
+u	k~g·m·s⁻²	ok	k~g·m/s²
+u	kg*m/s^2	ok	k~g·m/s²
+u	N·m	ok	N·m
+u	J	ok	J
+u	W/(m²·K)	ok	W/m²·K
+u	W/(m²·ΔK)	ok	W/m²·ΔK
+u	(m/s)·(s/m)	ok	m·s/s·m
+u	m/(s/(k~g/(A/(K/(mol/cd)))))	ok	m·k~g·K·cd/s·A·mol
+u	((((((((((((((((m))))))))))))))))	ok	m
+u	(((((((((((((((((m)))))))))))))))))	unit_illegal	-
+u	((((((((((((((((((m))))))))))))))))))	unit_illegal	-
+u	m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m	ok	m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m
+u	m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m	unit_illegal	-
+u	m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m/m	ok	m/m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m
+u	(m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m)·s·s·s·s·s·s·s·s·s·s·s·s	ok	m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·s·s·s·s·s·s·s·s·s·s·s·s
+u	(m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m·m)·s·s·s·s·s·s·s·s·s·s·s·s·s	unit_illegal	-
+u	mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm	unit_illegal	-
+u	metremetremetremetremetremetre	unit_illegal	-
+u	°	ok	°
+u	'	unit_illegal	-
+u	"	unit_illegal	-
+u	Ω	ok	Ω
+u	k~Ω	ok	k~Ω
+u	kΩ	ok	k~Ω
+u	MΩ	ok	M~Ω
+u	℃	unit_illegal	-
+u	ÿ	unit_illegal	-
+u	m^-0	unit_illegal	-
+u	m^+0	unit_illegal	-
+u	m^-	unit_illegal	-
+u	m^+	unit_illegal	-
+u	e	ok	e
+u	k~e	ok	k~e
+u	m·s·	unit_illegal	-
+u	m*·s	unit_illegal	-
+u	m/·s	unit_illegal	-
+u	m(	unit_illegal	-
+u	m)s	unit_illegal	-
+u	m/)	unit_illegal	-
+u	bits	ok	b
+u	bit	ok	b
+u	b	ok	b
+u	k~b	ok	k~b
+u	kb	ok	k~b
+u	Ki~b	ok	Ki~b
+u	Kib	ok	Ki~b
+u	mb	unit_illegal	-
+u	µ~b	unit_illegal	-
+u	dab	unit_illegal	-
+u	ub	unit_illegal	-
+u	Q~b	ok	Q~b
+u	qb	unit_illegal	-
+u	b^-3	ok	b⁻³
+u	b⁻²	ok	b⁻²
+u	Bytes	ok	B
+u	bytes	ok	B
+u	Byte	ok	B
+u	byte	ok	B
+u	µ~B	unit_illegal	-
+u	daB	unit_illegal	-
+u	uB	unit_illegal	-
+u	Q~B	ok	Q~B
+u	qB	unit_illegal	-
+u	B^-3	ok	B⁻³
+u	B⁻²	ok	B⁻²
+u	seconds	ok	s
+u	second	ok	s
+u	sec	ok	s
+u	k~s	ok	k~s
+u	ks	ok	k~s
+u	Ki~s	unit_illegal	-
+u	Kis	unit_illegal	-
+u	ms	ok	m~s
+u	µ~s	ok	µ~s
+u	das	ok	da~s
+u	us	ok	µ~s
+u	Q~s	ok	Q~s
+u	qs	ok	q~s
+u	s^-3	ok	s⁻³
+u	s⁻²	ok	s⁻²
+u	metres	ok	m
+u	meters	ok	m
+u	metre	ok	m
+u	meter	ok	m
+u	mm	ok	m~m
+u	Q~m	ok	Q~m
+u	qm	ok	q~m
+u	m^-3	ok	m⁻³
+u	grams	ok	g
+u	gram	ok	g
+u	g	ok	g
+u	k~g	ok	k~g
+u	Ki~g	unit_illegal	-
+u	Kig	unit_illegal	-
+u	mg	ok	m~g
+u	µ~g	ok	µ~g
+u	dag	ok	da~g
+u	ug	ok	µ~g
+u	Q~g	ok	Q~g
+u	qg	ok	q~g
+u	g^-3	ok	g⁻³
+u	g⁻²	ok	g⁻²
+u	amperes	ok	A
+u	ampere	ok	A
+u	amps	ok	A
+u	amp	ok	A
+u	A	ok	A
+u	k~A	ok	k~A
+u	kA	ok	k~A
+u	Ki~A	unit_illegal	-
+u	KiA	unit_illegal	-
+u	mA	ok	m~A
+u	µ~A	ok	µ~A
+u	daA	ok	da~A
+u	uA	ok	µ~A
+u	Q~A	ok	Q~A
+u	qA	ok	q~A
+u	A^-3	ok	A⁻³
+u	A⁻²	ok	A⁻²
+u	kelvins	ok	K
+u	kelvin	ok	K
+u	k~K	ok	k~K
+u	kK	ok	k~K
+u	Ki~K	unit_illegal	-
+u	KiK	unit_illegal	-
+u	mK	ok	m~K
+u	µ~K	ok	µ~K
+u	daK	ok	da~K
+u	uK	ok	µ~K
+u	Q~K	ok	Q~K
+u	qK	ok	q~K
+u	K^-3	ok	K⁻³
+u	K⁻²	ok	K⁻²
+u	moles	ok	mol
+u	mole	ok	mol
+u	k~mol	ok	k~mol
+u	kmol	ok	k~mol
+u	Ki~mol	unit_illegal	-
+u	Kimol	unit_illegal	-
+u	mmol	ok	m~mol
+u	µ~mol	ok	µ~mol
+u	damol	ok	da~mol
+u	umol	ok	µ~mol
+u	Q~mol	ok	Q~mol
+u	qmol	ok	q~mol
+u	mol^-3	ok	mol⁻³
+u	mol⁻²	ok	mol⁻²
+u	candelas	ok	cd
+u	candela	ok	cd
+u	cd	ok	cd
+u	k~cd	ok	k~cd
+u	kcd	ok	k~cd
+u	Ki~cd	unit_illegal	-
+u	Kicd	unit_illegal	-
+u	mcd	ok	m~cd
+u	µ~cd	ok	µ~cd
+u	dacd	ok	da~cd
+u	ucd	ok	µ~cd
+u	Q~cd	ok	Q~cd
+u	qcd	ok	q~cd
+u	cd^-3	ok	cd⁻³
+u	cd⁻²	ok	cd⁻²
+u	hertz	ok	Hz
+u	Hz	ok	Hz
+u	kHz	ok	k~Hz
+u	Ki~Hz	unit_illegal	-
+u	KiHz	unit_illegal	-
+u	mHz	ok	m~Hz
+u	µ~Hz	ok	µ~Hz
+u	daHz	ok	da~Hz
+u	uHz	ok	µ~Hz
+u	Q~Hz	ok	Q~Hz
+u	qHz	ok	q~Hz
+u	Hz^-3	ok	Hz⁻³
+u	Hz⁻²	ok	Hz⁻²
+u	newtons	ok	N
+u	newton	ok	N
+u	N	ok	N
+u	k~N	ok	k~N
+u	kN	ok	k~N
+u	Ki~N	unit_illegal	-
+u	KiN	unit_illegal	-
+u	mN	ok	m~N
+u	µ~N	ok	µ~N
+u	daN	ok	da~N
+u	uN	ok	µ~N
+u	Q~N	ok	Q~N
+u	qN	ok	q~N
+u	N^-3	ok	N⁻³
+u	N⁻²	ok	N⁻²
+u	pascals	ok	Pa
+u	pascal	ok	Pa
+u	k~Pa	ok	k~Pa
+u	kPa	ok	k~Pa
+u	Ki~Pa	unit_illegal	-
+u	KiPa	unit_illegal	-
+u	mPa	ok	m~Pa
+u	µ~Pa	ok	µ~Pa
+u	daPa	ok	da~Pa
+u	uPa	ok	µ~Pa
+u	Q~Pa	ok	Q~Pa
+u	qPa	ok	q~Pa
+u	Pa^-3	ok	Pa⁻³
+u	Pa⁻²	ok	Pa⁻²
+u	joules	ok	J
+u	joule	ok	J
+u	k~J	ok	k~J
+u	kJ	ok	k~J
+u	Ki~J	unit_illegal	-
+u	KiJ	unit_illegal	-
+u	mJ	ok	m~J
+u	µ~J	ok	µ~J
+u	daJ	ok	da~J
+u	uJ	ok	µ~J
+u	Q~J	ok	Q~J
+u	qJ	ok	q~J
+u	J^-3	ok	J⁻³
+u	J⁻²	ok	J⁻²
+u	watts	ok	W
+u	watt	ok	W
+u	W	ok	W
+u	k~W	ok	k~W
+u	kW	ok	k~W
+u	Ki~W	unit_illegal	-
+u	KiW	unit_illegal	-
+u	mW	ok	m~W
+u	µ~W	ok	µ~W
+u	daW	ok	da~W
+u	uW	ok	µ~W
+u	Q~W	ok	Q~W
+u	qW	ok	q~W
+u	W^-3	ok	W⁻³
+u	W⁻²	ok	W⁻²
+u	volts	ok	V
+u	volt	ok	V
+u	V	ok	V
+u	k~V	ok	k~V
+u	kV	ok	k~V
+u	Ki~V	unit_illegal	-
+u	KiV	unit_illegal	-
+u	mV	ok	m~V
+u	µ~V	ok	µ~V
+u	daV	ok	da~V
+u	uV	ok	µ~V
+u	Q~V	ok	Q~V
+u	qV	ok	q~V
+u	V^-3	ok	V⁻³
+u	V⁻²	ok	V⁻²
+u	ohms	ok	Ω
+u	Ω	ok	Ω
+u	ohm	ok	Ω
+u	Ohm	ok	Ω
+u	k~Ω	ok	k~Ω
+u	kΩ	ok	k~Ω
+u	Ki~Ω	unit_illegal	-
+u	KiΩ	unit_illegal	-
+u	mΩ	ok	m~Ω
+u	µ~Ω	ok	µ~Ω
+u	daΩ	ok	da~Ω
+u	uΩ	ok	µ~Ω
+u	Q~Ω	ok	Q~Ω
+u	qΩ	ok	q~Ω
+u	Ω^-3	ok	Ω⁻³
+u	Ω⁻²	ok	Ω⁻²
+u	farads	ok	F
+u	farad	ok	F
+u	F	ok	F
+u	k~F	ok	k~F
+u	kF	ok	k~F
+u	Ki~F	unit_illegal	-
+u	KiF	unit_illegal	-
+u	mF	ok	m~F
+u	µ~F	ok	µ~F
+u	daF	ok	da~F
+u	uF	ok	µ~F
+u	Q~F	ok	Q~F
+u	qF	ok	q~F
+u	F^-3	ok	F⁻³
+u	F⁻²	ok	F⁻²
+u	coulombs	ok	C
+u	coulomb	ok	C
+u	C	ok	C
+u	k~C	ok	k~C
+u	kC	ok	k~C
+u	Ki~C	unit_illegal	-
+u	KiC	unit_illegal	-
+u	mC	ok	m~C
+u	µ~C	ok	µ~C
+u	daC	ok	da~C
+u	uC	ok	µ~C
+u	Q~C	ok	Q~C
+u	qC	ok	q~C
+u	C^-3	ok	C⁻³
+u	C⁻²	ok	C⁻²
+u	siemens	ok	S
+u	mhos	ok	S
+u	mho	ok	S
+u	S	ok	S
+u	℧	ok	S
+u	k~S	ok	k~S
+u	kS	ok	k~S
+u	Ki~S	unit_illegal	-
+u	KiS	unit_illegal	-
+u	mS	ok	m~S
+u	µ~S	ok	µ~S
+u	daS	ok	da~S
+u	uS	ok	µ~S
+u	Q~S	ok	Q~S
+u	qS	ok	q~S
+u	S^-3	ok	S⁻³
+u	S⁻²	ok	S⁻²
+u	webers	ok	Wb
+u	weber	ok	Wb
+u	Wb	ok	Wb
+u	k~Wb	ok	k~Wb
+u	kWb	ok	k~Wb
+u	Ki~Wb	unit_illegal	-
+u	KiWb	unit_illegal	-
+u	mWb	ok	m~Wb
+u	µ~Wb	ok	µ~Wb
+u	daWb	ok	da~Wb
+u	uWb	ok	µ~Wb
+u	Q~Wb	ok	Q~Wb
+u	qWb	ok	q~Wb
+u	Wb^-3	ok	Wb⁻³
+u	Wb⁻²	ok	Wb⁻²
+u	teslas	ok	T
+u	tesla	ok	T
+u	T	ok	T
+u	k~T	ok	k~T
+u	kT	ok	k~T
+u	Ki~T	unit_illegal	-
+u	KiT	unit_illegal	-
+u	mT	ok	m~T
+u	µ~T	ok	µ~T
+u	daT	ok	da~T
+u	uT	ok	µ~T
+u	Q~T	ok	Q~T
+u	qT	ok	q~T
+u	T^-3	ok	T⁻³
+u	T⁻²	ok	T⁻²
+u	henries	ok	H
+u	henrys	ok	H
+u	henry	ok	H
+u	H	ok	H
+u	k~H	ok	k~H
+u	kH	ok	k~H
+u	Ki~H	unit_illegal	-
+u	KiH	unit_illegal	-
+u	mH	ok	m~H
+u	µ~H	ok	µ~H
+u	daH	ok	da~H
+u	uH	ok	µ~H
+u	Q~H	ok	Q~H
+u	qH	ok	q~H
+u	H^-3	ok	H⁻³
+u	H⁻²	ok	H⁻²
+u	lumens	ok	lm
+u	lumen	ok	lm
+u	lm	ok	lm
+u	k~lm	ok	k~lm
+u	klm	ok	k~lm
+u	Ki~lm	unit_illegal	-
+u	Kilm	unit_illegal	-
+u	mlm	ok	m~lm
+u	µ~lm	ok	µ~lm
+u	dalm	ok	da~lm
+u	ulm	ok	µ~lm
+u	Q~lm	ok	Q~lm
+u	qlm	ok	q~lm
+u	lm^-3	ok	lm⁻³
+u	lm⁻²	ok	lm⁻²
+u	lux	ok	lx
+u	lx	ok	lx
+u	k~lx	ok	k~lx
+u	klx	ok	k~lx
+u	Ki~lx	unit_illegal	-
+u	Kilx	unit_illegal	-
+u	mlx	ok	m~lx
+u	µ~lx	ok	µ~lx
+u	dalx	ok	da~lx
+u	ulx	ok	µ~lx
+u	Q~lx	ok	Q~lx
+u	qlx	ok	q~lx
+u	lx^-3	ok	lx⁻³
+u	lx⁻²	ok	lx⁻²
+u	becquerels	ok	Bq
+u	becquerel	ok	Bq
+u	Bq	ok	Bq
+u	k~Bq	ok	k~Bq
+u	kBq	ok	k~Bq
+u	Ki~Bq	unit_illegal	-
+u	KiBq	unit_illegal	-
+u	mBq	ok	m~Bq
+u	µ~Bq	ok	µ~Bq
+u	daBq	ok	da~Bq
+u	uBq	ok	µ~Bq
+u	Q~Bq	ok	Q~Bq
+u	qBq	ok	q~Bq
+u	Bq^-3	ok	Bq⁻³
+u	Bq⁻²	ok	Bq⁻²
+u	grays	ok	Gy
+u	gray	ok	Gy
+u	Gy	ok	Gy
+u	k~Gy	ok	k~Gy
+u	kGy	ok	k~Gy
+u	Ki~Gy	unit_illegal	-
+u	KiGy	unit_illegal	-
+u	mGy	ok	m~Gy
+u	µ~Gy	ok	µ~Gy
+u	daGy	ok	da~Gy
+u	uGy	ok	µ~Gy
+u	Q~Gy	ok	Q~Gy
+u	qGy	ok	q~Gy
+u	Gy^-3	ok	Gy⁻³
+u	Gy⁻²	ok	Gy⁻²
+u	sieverts	ok	Sv
+u	sievert	ok	Sv
+u	Sv	ok	Sv
+u	k~Sv	ok	k~Sv
+u	kSv	ok	k~Sv
+u	Ki~Sv	unit_illegal	-
+u	KiSv	unit_illegal	-
+u	mSv	ok	m~Sv
+u	µ~Sv	ok	µ~Sv
+u	daSv	ok	da~Sv
+u	uSv	ok	µ~Sv
+u	Q~Sv	ok	Q~Sv
+u	qSv	ok	q~Sv
+u	Sv^-3	ok	Sv⁻³
+u	Sv⁻²	ok	Sv⁻²
+u	katals	ok	kat
+u	katal	ok	kat
+u	kat	ok	kat
+u	k~kat	ok	k~kat
+u	kkat	ok	k~kat
+u	Ki~kat	unit_illegal	-
+u	Kikat	unit_illegal	-
+u	mkat	ok	m~kat
+u	µ~kat	ok	µ~kat
+u	dakat	ok	da~kat
+u	ukat	ok	µ~kat
+u	Q~kat	ok	Q~kat
+u	qkat	ok	q~kat
+u	kat^-3	ok	kat⁻³
+u	kat⁻²	ok	kat⁻²
+u	litres	ok	L
+u	liters	ok	L
+u	litre	ok	L
+u	liter	ok	L
+u	L	ok	L
+u	l	ok	L
+u	k~L	ok	k~L
+u	kL	ok	k~L
+u	Ki~L	unit_illegal	-
+u	KiL	unit_illegal	-
+u	mL	ok	m~L
+u	µ~L	ok	µ~L
+u	daL	ok	da~L
+u	uL	ok	µ~L
+u	Q~L	ok	Q~L
+u	qL	ok	q~L
+u	L^-3	ok	L⁻³
+u	L⁻²	ok	L⁻²
+u	minutes	ok	min
+u	minute	ok	min
+u	k~min	ok	k~min
+u	kmin	ok	k~min
+u	Ki~min	unit_illegal	-
+u	Kimin	unit_illegal	-
+u	mmin	ok	m~min
+u	µ~min	ok	µ~min
+u	damin	ok	da~min
+u	umin	ok	µ~min
+u	Q~min	ok	Q~min
+u	qmin	ok	q~min
+u	min^-3	ok	min⁻³
+u	min⁻²	ok	min⁻²
+u	hours	ok	h
+u	hour	ok	h
+u	h	ok	h
+u	k~h	ok	k~h
+u	kh	ok	k~h
+u	Ki~h	unit_illegal	-
+u	Kih	unit_illegal	-
+u	mh	ok	m~h
+u	µ~h	ok	µ~h
+u	dah	ok	da~h
+u	uh	ok	µ~h
+u	Q~h	ok	Q~h
+u	qh	ok	q~h
+u	h^-3	ok	h⁻³
+u	h⁻²	ok	h⁻²
+u	days	ok	d
+u	day	ok	d
+u	d	ok	d
+u	k~d	ok	k~d
+u	kd	ok	k~d
+u	Ki~d	unit_illegal	-
+u	Kid	unit_illegal	-
+u	md	ok	m~d
+u	µ~d	ok	µ~d
+u	dad	ok	da~d
+u	ud	ok	µ~d
+u	Q~d	ok	Q~d
+u	qd	ok	q~d
+u	d^-3	ok	d⁻³
+u	d⁻²	ok	d⁻²
+u	degrees	ok	°
+u	degree	ok	°
+u	degr	ok	°
+u	deg	ok	°
+u	k~°	ok	k~°
+u	k°	ok	k~°
+u	Ki~°	unit_illegal	-
+u	Ki°	unit_illegal	-
+u	m°	ok	m~°
+u	µ~°	ok	µ~°
+u	da°	ok	da~°
+u	u°	ok	µ~°
+u	Q~°	ok	Q~°
+u	q°	ok	q~°
+u	°^-3	ok	°⁻³
+u	°⁻²	ok	°⁻²
+u	degreesC	ok	°C
+u	celsius	ok	°C
+u	degreeC	ok	°C
+u	degrC	ok	°C
+u	degC	ok	°C
+u	k°C	ok	k~°C
+u	Ki~°C	unit_illegal	-
+u	Ki°C	unit_illegal	-
+u	m°C	ok	m~°C
+u	µ~°C	ok	µ~°C
+u	da°C	ok	da~°C
+u	u°C	ok	µ~°C
+u	Q~°C	ok	Q~°C
+u	q°C	ok	q~°C
+u	°C^-3	ok	°C⁻³
+u	°C⁻²	ok	°C⁻²
+u	radians	ok	rad
+u	radian	ok	rad
+u	rad	ok	rad
+u	k~rad	ok	k~rad
+u	krad	ok	k~rad
+u	Ki~rad	unit_illegal	-
+u	Kirad	unit_illegal	-
+u	mrad	ok	m~rad
+u	µ~rad	ok	µ~rad
+u	darad	ok	da~rad
+u	urad	ok	µ~rad
+u	Q~rad	ok	Q~rad
+u	qrad	ok	q~rad
+u	rad^-3	ok	rad⁻³
+u	rad⁻²	ok	rad⁻²
+u	steradians	ok	sr
+u	steradian	ok	sr
+u	sr	ok	sr
+u	k~sr	ok	k~sr
+u	ksr	ok	k~sr
+u	Ki~sr	unit_illegal	-
+u	Kisr	unit_illegal	-
+u	msr	ok	m~sr
+u	µ~sr	ok	µ~sr
+u	dasr	ok	da~sr
+u	usr	ok	µ~sr
+u	Q~sr	ok	Q~sr
+u	qsr	ok	q~sr
+u	sr^-3	ok	sr⁻³
+u	sr⁻²	ok	sr⁻²
+u	tonnes	ok	t
+u	tonne	ok	t
+u	t	ok	t
+u	Ki~t	unit_illegal	-
+u	Kit	unit_illegal	-
+u	mt	ok	m~t
+u	µ~t	ok	µ~t
+u	dat	ok	d~at
+u	ut	ok	µ~t
+u	Q~t	ok	Q~t
+u	qt	ok	qt
+u	t^-3	ok	t⁻³
+u	t⁻²	ok	t⁻²
+u	bars	ok	bar
+u	bar	ok	bar
+u	k~bar	ok	k~bar
+u	kbar	ok	k~bar
+u	Ki~bar	unit_illegal	-
+u	Kibar	unit_illegal	-
+u	mbar	ok	m~bar
+u	µ~bar	ok	µ~bar
+u	dabar	ok	da~bar
+u	ubar	ok	µ~bar
+u	Q~bar	ok	Q~bar
+u	qbar	ok	q~bar
+u	bar^-3	ok	bar⁻³
+u	bar⁻²	ok	bar⁻²
+u	electronvolts	ok	eV
+u	electronvolt	ok	eV
+u	eV	ok	eV
+u	k~eV	ok	k~eV
+u	keV	ok	k~eV
+u	Ki~eV	unit_illegal	-
+u	KieV	unit_illegal	-
+u	meV	ok	m~eV
+u	µ~eV	ok	µ~eV
+u	daeV	ok	da~eV
+u	ueV	ok	µ~eV
+u	Q~eV	ok	Q~eV
+u	qeV	ok	q~eV
+u	eV^-3	ok	eV⁻³
+u	eV⁻²	ok	eV⁻²
+u	daltons	ok	Da
+u	dalton	ok	Da
+u	amu	ok	Da
+u	Da	ok	Da
+u	u	ok	Da
+u	k~Da	ok	k~Da
+u	kDa	ok	k~Da
+u	Ki~Da	unit_illegal	-
+u	KiDa	unit_illegal	-
+u	mDa	ok	m~Da
+u	µ~Da	ok	µ~Da
+u	daDa	ok	da~Da
+u	uDa	ok	µ~Da
+u	Q~Da	ok	Q~Da
+u	qDa	ok	q~Da
+u	Da^-3	ok	Da⁻³
+u	Da⁻²	ok	Da⁻²
+u	au	ok	au
+u	k~au	ok	k~au
+u	kau	ok	k~au
+u	Ki~au	unit_illegal	-
+u	Kiau	unit_illegal	-
+u	mau	ok	m~au
+u	µ~au	ok	µ~au
+u	daau	ok	da~au
+u	uau	ok	µ~au
+u	Q~au	ok	Q~au
+u	qau	ok	q~au
+u	au^-3	ok	au⁻³
+u	au⁻²	ok	au⁻²
+u	hectares	ok	ha
+u	hectare	ok	ha
+u	ha	ok	ha
+u	k~ha	ok	k~ha
+u	kha	ok	k~ha
+u	Ki~ha	unit_illegal	-
+u	Kiha	unit_illegal	-
+u	mha	ok	m~ha
+u	µ~ha	ok	µ~ha
+u	daha	ok	da~ha
+u	uha	ok	µ~ha
+u	Q~ha	ok	Q~ha
+u	qha	ok	q~ha
+u	ha^-3	ok	ha⁻³
+u	ha⁻²	ok	ha⁻²
+u	weeks	ok	wk
+u	week	ok	wk
+u	wk	ok	wk
+u	k~wk	ok	k~wk
+u	kwk	ok	k~wk
+u	Ki~wk	unit_illegal	-
+u	Kiwk	unit_illegal	-
+u	mwk	ok	m~wk
+u	µ~wk	ok	µ~wk
+u	dawk	ok	da~wk
+u	uwk	ok	µ~wk
+u	Q~wk	ok	Q~wk
+u	qwk	ok	q~wk
+u	wk^-3	ok	wk⁻³
+u	wk⁻²	ok	wk⁻²
+u	years	ok	yr
+u	year	ok	yr
+u	yr	ok	yr
+u	k~yr	ok	k~yr
+u	kyr	ok	k~yr
+u	Ki~yr	unit_illegal	-
+u	Kiyr	unit_illegal	-
+u	myr	ok	m~yr
+u	µ~yr	ok	µ~yr
+u	dayr	ok	da~yr
+u	uyr	ok	µ~yr
+u	Q~yr	ok	Q~yr
+u	qyr	ok	q~yr
+u	yr^-3	ok	yr⁻³
+u	yr⁻²	ok	yr⁻²
+u	inches	ok	in
+u	inch	ok	in
+u	in	ok	in
+u	k~in	ok	k~in
+u	kin	ok	k~in
+u	Ki~in	unit_illegal	-
+u	Kiin	unit_illegal	-
+u	µ~in	ok	µ~in
+u	dain	ok	da~in
+u	uin	ok	µ~in
+u	Q~in	ok	Q~in
+u	qin	ok	q~in
+u	in^-3	ok	in⁻³
+u	in⁻²	ok	in⁻²
+u	foot	ok	ft
+u	feet	ok	ft
+u	ft	ok	ft
+u	k~ft	ok	k~ft
+u	kft	ok	k~ft
+u	Ki~ft	unit_illegal	-
+u	Kift	unit_illegal	-
+u	mft	ok	m~ft
+u	µ~ft	ok	µ~ft
+u	daft	ok	da~ft
+u	uft	ok	µ~ft
+u	Q~ft	ok	Q~ft
+u	qft	ok	q~ft
+u	ft^-3	ok	ft⁻³
+u	ft⁻²	ok	ft⁻²
+u	yards	ok	yd
+u	yard	ok	yd
+u	yd	ok	yd
+u	k~yd	ok	k~yd
+u	kyd	ok	k~yd
+u	Ki~yd	unit_illegal	-
+u	Kiyd	unit_illegal	-
+u	myd	ok	m~yd
+u	µ~yd	ok	µ~yd
+u	dayd	ok	da~yd
+u	uyd	ok	µ~yd
+u	Q~yd	ok	Q~yd
+u	qyd	ok	q~yd
+u	yd^-3	ok	yd⁻³
+u	yd⁻²	ok	yd⁻²
+u	miles	ok	mi
+u	mile	ok	mi
+u	mi	ok	mi
+u	k~mi	ok	k~mi
+u	kmi	ok	k~mi
+u	Ki~mi	unit_illegal	-
+u	Kimi	unit_illegal	-
+u	mmi	ok	m~mi
+u	µ~mi	ok	µ~mi
+u	dami	ok	da~mi
+u	umi	ok	µ~mi
+u	Q~mi	ok	Q~mi
+u	qmi	ok	q~mi
+u	mi^-3	ok	mi⁻³
+u	mi⁻²	ok	mi⁻²
+u	nautical_miles	ok	nmi
+u	nautical_mile	ok	nmi
+u	nmi	ok	nmi
+u	k~nmi	ok	k~nmi
+u	knmi	ok	k~nmi
+u	Ki~nmi	unit_illegal	-
+u	Kinmi	unit_illegal	-
+u	mnmi	ok	m~nmi
+u	µ~nmi	ok	µ~nmi
+u	danmi	ok	da~nmi
+u	unmi	ok	µ~nmi
+u	Q~nmi	ok	Q~nmi
+u	qnmi	ok	q~nmi
+u	nmi^-3	ok	nmi⁻³
+u	nmi⁻²	ok	nmi⁻²
+u	angstroms	ok	Å
+u	Å	ok	Å
+u	k~Å	ok	k~Å
+u	kÅ	ok	k~Å
+u	Ki~Å	unit_illegal	-
+u	KiÅ	unit_illegal	-
+u	mÅ	ok	m~Å
+u	µ~Å	ok	µ~Å
+u	daÅ	ok	da~Å
+u	uÅ	ok	µ~Å
+u	Q~Å	ok	Q~Å
+u	qÅ	ok	q~Å
+u	Å^-3	ok	Å⁻³
+u	Å⁻²	ok	Å⁻²
+u	light_years	ok	ly
+u	light_year	ok	ly
+u	ly	ok	ly
+u	k~ly	ok	k~ly
+u	kly	ok	k~ly
+u	Ki~ly	unit_illegal	-
+u	Kily	unit_illegal	-
+u	mly	ok	m~ly
+u	µ~ly	ok	µ~ly
+u	daly	ok	da~ly
+u	uly	ok	µ~ly
+u	Q~ly	ok	Q~ly
+u	qly	ok	q~ly
+u	ly^-3	ok	ly⁻³
+u	ly⁻²	ok	ly⁻²
+u	parsecs	ok	pc
+u	parsec	ok	pc
+u	pc	ok	pc
+u	k~pc	ok	k~pc
+u	kpc	ok	k~pc
+u	Ki~pc	unit_illegal	-
+u	Kipc	unit_illegal	-
+u	mpc	ok	m~pc
+u	µ~pc	ok	µ~pc
+u	dapc	ok	da~pc
+u	upc	ok	µ~pc
+u	Q~pc	ok	Q~pc
+u	qpc	ok	q~pc
+u	pc^-3	ok	pc⁻³
+u	pc⁻²	ok	pc⁻²
+u	furlongs	ok	fur
+u	furlong	ok	fur
+u	fur	ok	fur
+u	k~fur	ok	k~fur
+u	kfur	ok	k~fur
+u	Ki~fur	unit_illegal	-
+u	Kifur	unit_illegal	-
+u	mfur	ok	m~fur
+u	µ~fur	ok	µ~fur
+u	dafur	ok	da~fur
+u	ufur	ok	µ~fur
+u	Q~fur	ok	Q~fur
+u	qfur	ok	q~fur
+u	fur^-3	ok	fur⁻³
+u	fur⁻²	ok	fur⁻²
+u	fathoms	ok	fath
+u	fathom	ok	fath
+u	fath	ok	fath
+u	k~fath	ok	k~fath
+u	kfath	ok	k~fath
+u	Ki~fath	unit_illegal	-
+u	Kifath	unit_illegal	-
+u	mfath	ok	m~fath
+u	µ~fath	ok	µ~fath
+u	dafath	ok	da~fath
+u	ufath	ok	µ~fath
+u	Q~fath	ok	Q~fath
+u	qfath	ok	q~fath
+u	fath^-3	ok	fath⁻³
+u	fath⁻²	ok	fath⁻²
+u	pounds	ok	lb
+u	pound	ok	lb
+u	lbs	ok	lb
+u	lb	ok	lb
+u	k~lb	ok	k~lb
+u	klb	ok	k~lb
+u	Ki~lb	unit_illegal	-
+u	Kilb	unit_illegal	-
+u	mlb	ok	m~lb
+u	µ~lb	ok	µ~lb
+u	dalb	ok	da~lb
+u	ulb	ok	µ~lb
+u	Q~lb	ok	Q~lb
+u	qlb	ok	q~lb
+u	lb^-3	ok	lb⁻³
+u	lb⁻²	ok	lb⁻²
+u	ounces	ok	oz
+u	ounce	ok	oz
+u	oz	ok	oz
+u	k~oz	ok	k~oz
+u	koz	ok	k~oz
+u	Ki~oz	unit_illegal	-
+u	Kioz	unit_illegal	-
+u	moz	ok	m~oz
+u	µ~oz	ok	µ~oz
+u	daoz	ok	da~oz
+u	uoz	ok	µ~oz
+u	Q~oz	ok	Q~oz
+u	qoz	ok	q~oz
+u	oz^-3	ok	oz⁻³
+u	oz⁻²	ok	oz⁻²
+u	grains	ok	gr
+u	grain	ok	gr
+u	gr	ok	gr
+u	k~gr	ok	k~gr
+u	kgr	ok	k~gr
+u	Ki~gr	unit_illegal	-
+u	Kigr	unit_illegal	-
+u	mgr	ok	m~gr
+u	µ~gr	ok	µ~gr
+u	dagr	ok	da~gr
+u	ugr	ok	µ~gr
+u	Q~gr	ok	Q~gr
+u	qgr	ok	q~gr
+u	gr^-3	ok	gr⁻³
+u	gr⁻²	ok	gr⁻²
+u	stones	ok	st
+u	stone	ok	st
+u	st	ok	st
+u	k~st	ok	k~st
+u	kst	ok	k~st
+u	Ki~st	unit_illegal	-
+u	Kist	unit_illegal	-
+u	mst	ok	m~st
+u	µ~st	ok	µ~st
+u	dast	ok	da~st
+u	ust	ok	µ~st
+u	Q~st	ok	Q~st
+u	qst	ok	q~st
+u	st^-3	ok	st⁻³
+u	st⁻²	ok	st⁻²
+u	short_tons	ok	tn_sh
+u	short_ton	ok	tn_sh
+u	tn_sh	ok	tn_sh
+u	k~tn_sh	ok	k~tn_sh
+u	ktn_sh	ok	k~tn_sh
+u	Ki~tn_sh	unit_illegal	-
+u	Kitn_sh	unit_illegal	-
+u	mtn_sh	ok	m~tn_sh
+u	µ~tn_sh	ok	µ~tn_sh
+u	datn_sh	ok	da~tn_sh
+u	utn_sh	ok	µ~tn_sh
+u	Q~tn_sh	ok	Q~tn_sh
+u	qtn_sh	ok	q~tn_sh
+u	tn_sh^-3	ok	tn_sh⁻³
+u	tn_sh⁻²	ok	tn_sh⁻²
+u	long_tons	ok	tn_l
+u	long_ton	ok	tn_l
+u	tn_l	ok	tn_l
+u	k~tn_l	ok	k~tn_l
+u	ktn_l	ok	k~tn_l
+u	Ki~tn_l	unit_illegal	-
+u	Kitn_l	unit_illegal	-
+u	mtn_l	ok	m~tn_l
+u	µ~tn_l	ok	µ~tn_l
+u	datn_l	ok	da~tn_l
+u	utn_l	ok	µ~tn_l
+u	Q~tn_l	ok	Q~tn_l
+u	qtn_l	ok	q~tn_l
+u	tn_l^-3	ok	tn_l⁻³
+u	tn_l⁻²	ok	tn_l⁻²
+u	troy_ounces	ok	oz_t
+u	troy_ounce	ok	oz_t
+u	oz_t	ok	oz_t
+u	k~oz_t	ok	k~oz_t
+u	koz_t	ok	k~oz_t
+u	Ki~oz_t	unit_illegal	-
+u	Kioz_t	unit_illegal	-
+u	moz_t	ok	m~oz_t
+u	µ~oz_t	ok	µ~oz_t
+u	daoz_t	ok	da~oz_t
+u	uoz_t	ok	µ~oz_t
+u	Q~oz_t	ok	Q~oz_t
+u	qoz_t	ok	q~oz_t
+u	oz_t^-3	ok	oz_t⁻³
+u	oz_t⁻²	ok	oz_t⁻²
+u	carats	ok	ct
+u	carat	ok	ct
+u	ct	ok	ct
+u	k~ct	ok	k~ct
+u	kct	ok	k~ct
+u	Ki~ct	unit_illegal	-
+u	Kict	unit_illegal	-
+u	mct	ok	m~ct
+u	µ~ct	ok	µ~ct
+u	dact	ok	da~ct
+u	uct	ok	µ~ct
+u	Q~ct	ok	Q~ct
+u	qct	ok	q~ct
+u	ct^-3	ok	ct⁻³
+u	ct⁻²	ok	ct⁻²
+u	fahrenheit	ok	°F
+u	degreesF	ok	°F
+u	degreeF	ok	°F
+u	degrF	ok	°F
+u	degF	ok	°F
+u	°F	ok	°F
+u	k~°F	ok	k~°F
+u	k°F	ok	k~°F
+u	Ki~°F	unit_illegal	-
+u	Ki°F	unit_illegal	-
+u	m°F	ok	m~°F
+u	µ~°F	ok	µ~°F
+u	da°F	ok	da~°F
+u	u°F	ok	µ~°F
+u	Q~°F	ok	Q~°F
+u	q°F	ok	q~°F
+u	°F^-3	ok	°F⁻³
+u	°F⁻²	ok	°F⁻²
+u	atmospheres	ok	atm
+u	atmosphere	ok	atm
+u	atm	ok	atm
+u	k~atm	ok	k~atm
+u	katm	ok	k~atm
+u	Ki~atm	unit_illegal	-
+u	Kiatm	unit_illegal	-
+u	matm	ok	m~atm
+u	µ~atm	ok	µ~atm
+u	daatm	ok	da~atm
+u	uatm	ok	µ~atm
+u	Q~atm	ok	Q~atm
+u	qatm	ok	q~atm
+u	atm^-3	ok	atm⁻³
+u	atm⁻²	ok	atm⁻²
+u	mmHg	ok	mmHg
+u	k~mmHg	ok	k~mmHg
+u	kmmHg	ok	k~mmHg
+u	Ki~mmHg	unit_illegal	-
+u	KimmHg	unit_illegal	-
+u	mmmHg	ok	m~mmHg
+u	µ~mmHg	ok	µ~mmHg
+u	dammHg	ok	da~mmHg
+u	ummHg	ok	µ~mmHg
+u	Q~mmHg	ok	Q~mmHg
+u	qmmHg	ok	q~mmHg
+u	mmHg^-3	ok	mmHg⁻³
+u	mmHg⁻²	ok	mmHg⁻²
+u	Torr	ok	Torr
+u	torr	ok	Torr
+u	k~Torr	ok	k~Torr
+u	kTorr	ok	k~Torr
+u	Ki~Torr	unit_illegal	-
+u	KiTorr	unit_illegal	-
+u	mTorr	ok	m~Torr
+u	µ~Torr	ok	µ~Torr
+u	daTorr	ok	da~Torr
+u	uTorr	ok	µ~Torr
+u	Q~Torr	ok	Q~Torr
+u	qTorr	ok	q~Torr
+u	Torr^-3	ok	Torr⁻³
+u	Torr⁻²	ok	Torr⁻²
+u	psi	ok	psi
+u	k~psi	ok	k~psi
+u	kpsi	ok	k~psi
+u	Ki~psi	unit_illegal	-
+u	Kipsi	unit_illegal	-
+u	mpsi	ok	m~psi
+u	µ~psi	ok	µ~psi
+u	dapsi	ok	da~psi
+u	upsi	ok	µ~psi
+u	Q~psi	ok	Q~psi
+u	qpsi	ok	q~psi
+u	psi^-3	ok	psi⁻³
+u	psi⁻²	ok	psi⁻²
+u	calories	ok	cal
+u	calorie	ok	cal
+u	cal	ok	cal
+u	k~cal	ok	k~cal
+u	kcal	ok	k~cal
+u	Ki~cal	unit_illegal	-
+u	Kical	unit_illegal	-
+u	mcal	ok	m~cal
+u	µ~cal	ok	µ~cal
+u	dacal	ok	da~cal
+u	ucal	ok	µ~cal
+u	Q~cal	ok	Q~cal
+u	qcal	ok	q~cal
+u	cal^-3	ok	cal⁻³
+u	cal⁻²	ok	cal⁻²
+u	Btu	ok	Btu
+u	BTU	ok	Btu
+u	btu	ok	Btu
+u	k~Btu	ok	k~Btu
+u	kBtu	ok	k~Btu
+u	Ki~Btu	unit_illegal	-
+u	KiBtu	unit_illegal	-
+u	mBtu	ok	m~Btu
+u	µ~Btu	ok	µ~Btu
+u	daBtu	ok	da~Btu
+u	uBtu	ok	µ~Btu
+u	Q~Btu	ok	Q~Btu
+u	qBtu	ok	q~Btu
+u	Btu^-3	ok	Btu⁻³
+u	Btu⁻²	ok	Btu⁻²
+u	ergs	ok	erg
+u	erg	ok	erg
+u	k~erg	ok	k~erg
+u	kerg	ok	k~erg
+u	Ki~erg	unit_illegal	-
+u	Kierg	unit_illegal	-
+u	merg	ok	m~erg
+u	µ~erg	ok	µ~erg
+u	daerg	ok	da~erg
+u	uerg	ok	µ~erg
+u	Q~erg	ok	Q~erg
+u	qerg	ok	q~erg
+u	erg^-3	ok	erg⁻³
+u	erg⁻²	ok	erg⁻²
+u	therms	ok	thm
+u	therm	ok	thm
+u	thm	ok	thm
+u	k~thm	ok	k~thm
+u	kthm	ok	k~thm
+u	Ki~thm	unit_illegal	-
+u	Kithm	unit_illegal	-
+u	mthm	ok	m~thm
+u	µ~thm	ok	µ~thm
+u	dathm	ok	da~thm
+u	uthm	ok	µ~thm
+u	Q~thm	ok	Q~thm
+u	qthm	ok	q~thm
+u	thm^-3	ok	thm⁻³
+u	thm⁻²	ok	thm⁻²
+u	horsepower	ok	hp
+u	hp	ok	hp
+u	k~hp	ok	k~hp
+u	khp	ok	k~hp
+u	Ki~hp	unit_illegal	-
+u	Kihp	unit_illegal	-
+u	mhp	ok	m~hp
+u	µ~hp	ok	µ~hp
+u	dahp	ok	da~hp
+u	uhp	ok	µ~hp
+u	Q~hp	ok	Q~hp
+u	qhp	ok	q~hp
+u	hp^-3	ok	hp⁻³
+u	hp⁻²	ok	hp⁻²
+u	pound_force	ok	lbf
+u	lbf	ok	lbf
+u	k~lbf	ok	k~lbf
+u	klbf	ok	k~lbf
+u	Ki~lbf	unit_illegal	-
+u	Kilbf	unit_illegal	-
+u	mlbf	ok	m~lbf
+u	µ~lbf	ok	µ~lbf
+u	dalbf	ok	da~lbf
+u	ulbf	ok	µ~lbf
+u	Q~lbf	ok	Q~lbf
+u	qlbf	ok	q~lbf
+u	lbf^-3	ok	lbf⁻³
+u	lbf⁻²	ok	lbf⁻²
+u	dynes	ok	dyn
+u	dyne	ok	dyn
+u	dyn	ok	dyn
+u	k~dyn	ok	k~dyn
+u	kdyn	ok	k~dyn
+u	Ki~dyn	unit_illegal	-
+u	Kidyn	unit_illegal	-
+u	mdyn	ok	m~dyn
+u	µ~dyn	ok	µ~dyn
+u	dadyn	ok	da~dyn
+u	udyn	ok	µ~dyn
+u	Q~dyn	ok	Q~dyn
+u	qdyn	ok	q~dyn
+u	dyn^-3	ok	dyn⁻³
+u	dyn⁻²	ok	dyn⁻²
+u	kips	ok	kip
+u	kip	ok	kip
+u	k~kip	ok	k~kip
+u	kkip	ok	k~kip
+u	Ki~kip	unit_illegal	-
+u	Kikip	unit_illegal	-
+u	mkip	ok	m~kip
+u	µ~kip	ok	µ~kip
+u	dakip	ok	da~kip
+u	ukip	ok	µ~kip
+u	Q~kip	ok	Q~kip
+u	qkip	ok	q~kip
+u	kip^-3	ok	kip⁻³
+u	kip⁻²	ok	kip⁻²
+u	knots	ok	kn
+u	knot	ok	kn
+u	kn	ok	kn
+u	k~kn	ok	k~kn
+u	kkn	ok	k~kn
+u	Ki~kn	unit_illegal	-
+u	Kikn	unit_illegal	-
+u	mkn	ok	m~kn
+u	µ~kn	ok	µ~kn
+u	dakn	ok	da~kn
+u	ukn	ok	µ~kn
+u	Q~kn	ok	Q~kn
+u	qkn	ok	q~kn
+u	kn^-3	ok	kn⁻³
+u	kn⁻²	ok	kn⁻²
+u	gallons	ok	gal
+u	gallon	ok	gal
+u	gal	ok	gal
+u	k~gal	ok	k~gal
+u	kgal	ok	k~gal
+u	Ki~gal	unit_illegal	-
+u	Kigal	unit_illegal	-
+u	mgal	ok	m~gal
+u	µ~gal	ok	µ~gal
+u	dagal	ok	da~gal
+u	ugal	ok	µ~gal
+u	Q~gal	ok	Q~gal
+u	qgal	ok	q~gal
+u	gal^-3	ok	gal⁻³
+u	gal⁻²	ok	gal⁻²
+u	gallons_uk	ok	gal_uk
+u	gallon_uk	ok	gal_uk
+u	gal_uk	ok	gal_uk
+u	k~gal_uk	ok	k~gal_uk
+u	kgal_uk	ok	k~gal_uk
+u	Ki~gal_uk	unit_illegal	-
+u	Kigal_uk	unit_illegal	-
+u	mgal_uk	ok	m~gal_uk
+u	µ~gal_uk	ok	µ~gal_uk
+u	dagal_uk	ok	da~gal_uk
+u	ugal_uk	ok	µ~gal_uk
+u	Q~gal_uk	ok	Q~gal_uk
+u	qgal_uk	ok	q~gal_uk
+u	gal_uk^-3	ok	gal_uk⁻³
+u	gal_uk⁻²	ok	gal_uk⁻²
+u	quarts	ok	qt
+u	quart	ok	qt
+u	k~qt	ok	k~qt
+u	kqt	ok	k~qt
+u	Ki~qt	unit_illegal	-
+u	Kiqt	unit_illegal	-
+u	mqt	ok	m~qt
+u	µ~qt	ok	µ~qt
+u	daqt	ok	da~qt
+u	uqt	ok	µ~qt
+u	Q~qt	ok	Q~qt
+u	qqt	ok	q~qt
+u	qt^-3	ok	qt⁻³
+u	qt⁻²	ok	qt⁻²
+u	pints	ok	pt
+u	pint	ok	pt
+u	pt	ok	pt
+u	k~pt	ok	k~pt
+u	kpt	ok	k~pt
+u	Ki~pt	unit_illegal	-
+u	Kipt	unit_illegal	-
+u	mpt	ok	m~pt
+u	µ~pt	ok	µ~pt
+u	dapt	ok	da~pt
+u	upt	ok	µ~pt
+u	Q~pt	ok	Q~pt
+u	qpt	ok	q~pt
+u	pt^-3	ok	pt⁻³
+u	pt⁻²	ok	pt⁻²
+u	cups	ok	cup
+u	cup	ok	cup
+u	k~cup	ok	k~cup
+u	kcup	ok	k~cup
+u	Ki~cup	unit_illegal	-
+u	Kicup	unit_illegal	-
+u	mcup	ok	m~cup
+u	µ~cup	ok	µ~cup
+u	dacup	ok	da~cup
+u	ucup	ok	µ~cup
+u	Q~cup	ok	Q~cup
+u	qcup	ok	q~cup
+u	cup^-3	ok	cup⁻³
+u	cup⁻²	ok	cup⁻²
+u	fluid_ounces	ok	fl_oz
+u	fluid_ounce	ok	fl_oz
+u	fl_oz	ok	fl_oz
+u	k~fl_oz	ok	k~fl_oz
+u	kfl_oz	ok	k~fl_oz
+u	Ki~fl_oz	unit_illegal	-
+u	Kifl_oz	unit_illegal	-
+u	mfl_oz	ok	m~fl_oz
+u	µ~fl_oz	ok	µ~fl_oz
+u	dafl_oz	ok	da~fl_oz
+u	ufl_oz	ok	µ~fl_oz
+u	Q~fl_oz	ok	Q~fl_oz
+u	qfl_oz	ok	q~fl_oz
+u	fl_oz^-3	ok	fl_oz⁻³
+u	fl_oz⁻²	ok	fl_oz⁻²
+u	tablespoons	ok	tbsp
+u	tablespoon	ok	tbsp
+u	tbsp	ok	tbsp
+u	k~tbsp	ok	k~tbsp
+u	ktbsp	ok	k~tbsp
+u	Ki~tbsp	unit_illegal	-
+u	Kitbsp	unit_illegal	-
+u	mtbsp	ok	m~tbsp
+u	µ~tbsp	ok	µ~tbsp
+u	datbsp	ok	da~tbsp
+u	utbsp	ok	µ~tbsp
+u	Q~tbsp	ok	Q~tbsp
+u	qtbsp	ok	q~tbsp
+u	tbsp^-3	ok	tbsp⁻³
+u	tbsp⁻²	ok	tbsp⁻²
+u	teaspoons	ok	tsp
+u	teaspoon	ok	tsp
+u	tsp	ok	tsp
+u	k~tsp	ok	k~tsp
+u	ktsp	ok	k~tsp
+u	Ki~tsp	unit_illegal	-
+u	Kitsp	unit_illegal	-
+u	mtsp	ok	m~tsp
+u	µ~tsp	ok	µ~tsp
+u	datsp	ok	da~tsp
+u	utsp	ok	µ~tsp
+u	Q~tsp	ok	Q~tsp
+u	qtsp	ok	q~tsp
+u	tsp^-3	ok	tsp⁻³
+u	tsp⁻²	ok	tsp⁻²
+u	barrels	ok	bbl
+u	barrel	ok	bbl
+u	bbl	ok	bbl
+u	k~bbl	ok	k~bbl
+u	kbbl	ok	k~bbl
+u	Ki~bbl	unit_illegal	-
+u	Kibbl	unit_illegal	-
+u	mbbl	ok	m~bbl
+u	µ~bbl	ok	µ~bbl
+u	dabbl	ok	da~bbl
+u	ubbl	ok	µ~bbl
+u	Q~bbl	ok	Q~bbl
+u	qbbl	ok	q~bbl
+u	bbl^-3	ok	bbl⁻³
+u	bbl⁻²	ok	bbl⁻²
+u	acres	ok	ac
+u	acre	ok	ac
+u	ac	ok	ac
+u	k~ac	ok	k~ac
+u	kac	ok	k~ac
+u	Ki~ac	unit_illegal	-
+u	Kiac	unit_illegal	-
+u	mac	ok	m~ac
+u	µ~ac	ok	µ~ac
+u	daac	ok	da~ac
+u	uac	ok	µ~ac
+u	Q~ac	ok	Q~ac
+u	qac	ok	q~ac
+u	ac^-3	ok	ac⁻³
+u	ac⁻²	ok	ac⁻²
+u	barns	ok	barn
+u	barn	ok	barn
+u	k~barn	ok	k~barn
+u	kbarn	ok	k~barn
+u	Ki~barn	unit_illegal	-
+u	Kibarn	unit_illegal	-
+u	mbarn	ok	m~barn
+u	µ~barn	ok	µ~barn
+u	dabarn	ok	da~barn
+u	ubarn	ok	µ~barn
+u	Q~barn	ok	Q~barn
+u	qbarn	ok	q~barn
+u	barn^-3	ok	barn⁻³
+u	barn⁻²	ok	barn⁻²
+u	arcminutes	ok	arcmin
+u	arcminute	ok	arcmin
+u	arcmin	ok	arcmin
+u	k~arcmin	ok	k~arcmin
+u	karcmin	ok	k~arcmin
+u	Ki~arcmin	unit_illegal	-
+u	Kiarcmin	unit_illegal	-
+u	marcmin	ok	m~arcmin
+u	µ~arcmin	ok	µ~arcmin
+u	daarcmin	ok	da~arcmin
+u	uarcmin	ok	µ~arcmin
+u	Q~arcmin	ok	Q~arcmin
+u	qarcmin	ok	q~arcmin
+u	arcmin^-3	ok	arcmin⁻³
+u	arcmin⁻²	ok	arcmin⁻²
+u	arcseconds	ok	arcsec
+u	arcsecond	ok	arcsec
+u	arcsec	ok	arcsec
+u	k~arcsec	ok	k~arcsec
+u	karcsec	ok	k~arcsec
+u	Ki~arcsec	unit_illegal	-
+u	Kiarcsec	unit_illegal	-
+u	marcsec	ok	m~arcsec
+u	µ~arcsec	ok	µ~arcsec
+u	daarcsec	ok	da~arcsec
+u	uarcsec	ok	µ~arcsec
+u	Q~arcsec	ok	Q~arcsec
+u	qarcsec	ok	q~arcsec
+u	arcsec^-3	ok	arcsec⁻³
+u	arcsec⁻²	ok	arcsec⁻²
+u	gradians	ok	grad
+u	gradian	ok	grad
+u	grad	ok	grad
+u	gon	ok	grad
+u	k~grad	ok	k~grad
+u	kgrad	ok	k~grad
+u	Ki~grad	unit_illegal	-
+u	Kigrad	unit_illegal	-
+u	mgrad	ok	m~grad
+u	µ~grad	ok	µ~grad
+u	dagrad	ok	da~grad
+u	ugrad	ok	µ~grad
+u	Q~grad	ok	Q~grad
+u	qgrad	ok	q~grad
+u	grad^-3	ok	grad⁻³
+u	grad⁻²	ok	grad⁻²
+u	poises	ok	P
+u	poise	ok	P
+u	P	ok	P
+u	k~P	ok	k~P
+u	kP	ok	k~P
+u	Ki~P	unit_illegal	-
+u	KiP	unit_illegal	-
+u	mP	ok	m~P
+u	µ~P	ok	µ~P
+u	daP	ok	da~P
+u	uP	ok	µ~P
+u	Q~P	ok	Q~P
+u	qP	ok	q~P
+u	P^-3	ok	P⁻³
+u	P⁻²	ok	P⁻²
+u	stokes	ok	St
+u	stoke	ok	St
+u	St	ok	St
+u	k~St	ok	k~St
+u	kSt	ok	k~St
+u	Ki~St	unit_illegal	-
+u	KiSt	unit_illegal	-
+u	mSt	ok	m~St
+u	µ~St	ok	µ~St
+u	daSt	ok	da~St
+u	uSt	ok	µ~St
+u	Q~St	ok	Q~St
+u	qSt	ok	q~St
+u	St^-3	ok	St⁻³
+u	St⁻²	ok	St⁻²
+u	gauss	ok	G
+u	G	ok	G
+u	k~G	ok	k~G
+u	kG	ok	k~G
+u	Ki~G	unit_illegal	-
+u	KiG	unit_illegal	-
+u	mG	ok	m~G
+u	µ~G	ok	µ~G
+u	daG	ok	da~G
+u	uG	ok	µ~G
+u	Q~G	ok	Q~G
+u	qG	ok	q~G
+u	G^-3	ok	G⁻³
+u	G⁻²	ok	G⁻²
+u	maxwells	ok	Mx
+u	maxwell	ok	Mx
+u	Mx	ok	Mx
+u	k~Mx	ok	k~Mx
+u	kMx	ok	k~Mx
+u	Ki~Mx	unit_illegal	-
+u	KiMx	unit_illegal	-
+u	mMx	ok	m~Mx
+u	µ~Mx	ok	µ~Mx
+u	daMx	ok	da~Mx
+u	uMx	ok	µ~Mx
+u	Q~Mx	ok	Q~Mx
+u	qMx	ok	q~Mx
+u	Mx^-3	ok	Mx⁻³
+u	Mx⁻²	ok	Mx⁻²
+u	oersteds	ok	Oe
+u	oersted	ok	Oe
+u	Oe	ok	Oe
+u	k~Oe	ok	k~Oe
+u	kOe	ok	k~Oe
+u	Ki~Oe	unit_illegal	-
+u	KiOe	unit_illegal	-
+u	mOe	ok	m~Oe
+u	µ~Oe	ok	µ~Oe
+u	daOe	ok	da~Oe
+u	uOe	ok	µ~Oe
+u	Q~Oe	ok	Q~Oe
+u	qOe	ok	q~Oe
+u	Oe^-3	ok	Oe⁻³
+u	Oe⁻²	ok	Oe⁻²
+u	stilbs	ok	sb
+u	stilb	ok	sb
+u	sb	ok	sb
+u	k~sb	ok	k~sb
+u	ksb	ok	k~sb
+u	Ki~sb	unit_illegal	-
+u	Kisb	unit_illegal	-
+u	msb	ok	m~sb
+u	µ~sb	ok	µ~sb
+u	dasb	ok	da~sb
+u	Q~sb	ok	Q~sb
+u	qsb	ok	q~sb
+u	sb^-3	ok	sb⁻³
+u	sb⁻²	ok	sb⁻²
+u	phots	ok	ph
+u	phot	ok	ph
+u	ph	ok	ph
+u	k~ph	ok	k~ph
+u	kph	ok	kph
+u	Ki~ph	unit_illegal	-
+u	Kiph	unit_illegal	-
+u	µ~ph	ok	µ~ph
+u	daph	ok	da~ph
+u	uph	ok	µ~ph
+u	Q~ph	ok	Q~ph
+u	qph	ok	q~ph
+u	ph^-3	ok	ph⁻³
+u	ph⁻²	ok	ph⁻²
+u	galileos	ok	Gal
+u	galileo	ok	Gal
+u	Gal	ok	Gal
+u	k~Gal	ok	k~Gal
+u	kGal	ok	k~Gal
+u	Ki~Gal	unit_illegal	-
+u	KiGal	unit_illegal	-
+u	mGal	ok	m~Gal
+u	µ~Gal	ok	µ~Gal
+u	daGal	ok	da~Gal
+u	uGal	ok	µ~Gal
+u	Q~Gal	ok	Q~Gal
+u	qGal	ok	q~Gal
+u	Gal^-3	ok	Gal⁻³
+u	Gal⁻²	ok	Gal⁻²
+u	curies	ok	Ci
+u	curie	ok	Ci
+u	Ci	ok	Ci
+u	k~Ci	ok	k~Ci
+u	kCi	ok	k~Ci
+u	Ki~Ci	unit_illegal	-
+u	KiCi	unit_illegal	-
+u	mCi	ok	m~Ci
+u	µ~Ci	ok	µ~Ci
+u	daCi	ok	da~Ci
+u	uCi	ok	µ~Ci
+u	Q~Ci	ok	Q~Ci
+u	qCi	ok	q~Ci
+u	Ci^-3	ok	Ci⁻³
+u	Ci⁻²	ok	Ci⁻²
+u	roentgens	ok	R
+u	roentgen	ok	R
+u	R	ok	R
+u	k~R	ok	k~R
+u	kR	ok	k~R
+u	Ki~R	unit_illegal	-
+u	KiR	unit_illegal	-
+u	mR	ok	m~R
+u	µ~R	ok	µ~R
+u	daR	ok	da~R
+u	uR	ok	µ~R
+u	Q~R	ok	Q~R
+u	qR	ok	q~R
+u	R^-3	ok	R⁻³
+u	R⁻²	ok	R⁻²
+u	rems	ok	rem
+u	rem	ok	rem
+u	k~rem	ok	k~rem
+u	krem	ok	k~rem
+u	Ki~rem	unit_illegal	-
+u	Kirem	unit_illegal	-
+u	mrem	ok	m~rem
+u	µ~rem	ok	µ~rem
+u	darem	ok	da~rem
+u	urem	ok	µ~rem
+u	Q~rem	ok	Q~rem
+u	qrem	ok	q~rem
+u	rem^-3	ok	rem⁻³
+u	rem⁻²	ok	rem⁻²
+u	nepers	ok	Np
+u	neper	ok	Np
+u	Np	ok	Np
+u	k~Np	ok	k~Np
+u	kNp	ok	k~Np
+u	Ki~Np	unit_illegal	-
+u	KiNp	unit_illegal	-
+u	mNp	ok	m~Np
+u	µ~Np	ok	µ~Np
+u	daNp	ok	da~Np
+u	uNp	ok	µ~Np
+u	Q~Np	ok	Q~Np
+u	qNp	ok	q~Np
+u	Np^-3	ok	Np⁻³
+u	Np⁻²	ok	Np⁻²
+u	decibels	ok	dB
+u	decibel	ok	dB
+u	dB	ok	dB
+u	k~dB	ok	k~dB
+u	kdB	ok	k~dB
+u	Ki~dB	unit_illegal	-
+u	KidB	unit_illegal	-
+u	mdB	ok	m~dB
+u	µ~dB	ok	µ~dB
+u	dadB	ok	da~dB
+u	udB	ok	µ~dB
+u	Q~dB	ok	Q~dB
+u	qdB	ok	q~dB
+u	dB^-3	ok	dB⁻³
+u	dB⁻²	ok	dB⁻²
+u	degreesRa	ok	°Ra
+u	degreeRa	ok	°Ra
+u	rankine	ok	°Ra
+u	degrRa	ok	°Ra
+u	degRa	ok	°Ra
+u	°Ra	ok	°Ra
+u	Ra	ok	°Ra
+u	k~°Ra	ok	k~°Ra
+u	k°Ra	ok	k~°Ra
+u	Ki~°Ra	unit_illegal	-
+u	Ki°Ra	unit_illegal	-
+u	m°Ra	ok	m~°Ra
+u	µ~°Ra	ok	µ~°Ra
+u	da°Ra	ok	da~°Ra
+u	u°Ra	ok	µ~°Ra
+u	Q~°Ra	ok	Q~°Ra
+u	q°Ra	ok	q~°Ra
+u	°Ra^-3	ok	°Ra⁻³
+u	°Ra⁻²	ok	°Ra⁻²
+u	slugs	ok	slug
+u	slug	ok	slug
+u	k~slug	ok	k~slug
+u	kslug	ok	k~slug
+u	Ki~slug	unit_illegal	-
+u	Kislug	unit_illegal	-
+u	mslug	ok	m~slug
+u	µ~slug	ok	µ~slug
+u	daslug	ok	da~slug
+u	uslug	ok	µ~slug
+u	Q~slug	ok	Q~slug
+u	qslug	ok	q~slug
+u	slug^-3	ok	slug⁻³
+u	slug⁻²	ok	slug⁻²
+u	thou	ok	thou
+u	mils	ok	thou
+u	mil	ok	thou
+u	k~thou	ok	k~thou
+u	kthou	ok	k~thou
+u	Ki~thou	unit_illegal	-
+u	Kithou	unit_illegal	-
+u	mthou	ok	m~thou
+u	µ~thou	ok	µ~thou
+u	dathou	ok	da~thou
+u	uthou	ok	µ~thou
+u	Q~thou	ok	Q~thou
+u	qthou	ok	q~thou
+u	thou^-3	ok	thou⁻³
+u	thou⁻²	ok	thou⁻²
+u	pints_uk	ok	pt_uk
+u	pint_uk	ok	pt_uk
+u	pt_uk	ok	pt_uk
+u	k~pt_uk	ok	k~pt_uk
+u	kpt_uk	ok	k~pt_uk
+u	Ki~pt_uk	unit_illegal	-
+u	Kipt_uk	unit_illegal	-
+u	mpt_uk	ok	m~pt_uk
+u	µ~pt_uk	ok	µ~pt_uk
+u	dapt_uk	ok	da~pt_uk
+u	upt_uk	ok	µ~pt_uk
+u	Q~pt_uk	ok	Q~pt_uk
+u	qpt_uk	ok	q~pt_uk
+u	pt_uk^-3	ok	pt_uk⁻³
+u	pt_uk⁻²	ok	pt_uk⁻²
+u	fluid_ounces_uk	ok	fl_oz_uk
+u	fluid_ounce_uk	ok	fl_oz_uk
+u	fl_oz_uk	ok	fl_oz_uk
+u	k~fl_oz_uk	ok	k~fl_oz_uk
+u	kfl_oz_uk	ok	k~fl_oz_uk
+u	Ki~fl_oz_uk	unit_illegal	-
+u	Kifl_oz_uk	unit_illegal	-
+u	mfl_oz_uk	ok	m~fl_oz_uk
+u	µ~fl_oz_uk	ok	µ~fl_oz_uk
+u	dafl_oz_uk	ok	da~fl_oz_uk
+u	ufl_oz_uk	ok	µ~fl_oz_uk
+u	Q~fl_oz_uk	ok	Q~fl_oz_uk
+u	qfl_oz_uk	ok	q~fl_oz_uk
+u	fl_oz_uk^-3	ok	fl_oz_uk⁻³
+u	fl_oz_uk⁻²	ok	fl_oz_uk⁻²
+u	quarts_uk	ok	qt_uk
+u	quart_uk	ok	qt_uk
+u	qt_uk	ok	qt_uk
+u	k~qt_uk	ok	k~qt_uk
+u	kqt_uk	ok	k~qt_uk
+u	Ki~qt_uk	unit_illegal	-
+u	Kiqt_uk	unit_illegal	-
+u	mqt_uk	ok	m~qt_uk
+u	µ~qt_uk	ok	µ~qt_uk
+u	daqt_uk	ok	da~qt_uk
+u	uqt_uk	ok	µ~qt_uk
+u	Q~qt_uk	ok	Q~qt_uk
+u	qqt_uk	ok	q~qt_uk
+u	qt_uk^-3	ok	qt_uk⁻³
+u	qt_uk⁻²	ok	qt_uk⁻²
+u	vars	ok	var
+u	var	ok	var
+u	k~var	ok	k~var
+u	kvar	ok	k~var
+u	Ki~var	unit_illegal	-
+u	Kivar	unit_illegal	-
+u	mvar	ok	m~var
+u	µ~var	ok	µ~var
+u	davar	ok	da~var
+u	uvar	ok	µ~var
+u	Q~var	ok	Q~var
+u	qvar	ok	q~var
+u	var^-3	ok	var⁻³
+u	var⁻²	ok	var⁻²
+u	volt_amperes	ok	VA
+u	volt_ampere	ok	VA
+u	VA	ok	VA
+u	k~VA	ok	k~VA
+u	kVA	ok	k~VA
+u	Ki~VA	unit_illegal	-
+u	KiVA	unit_illegal	-
+u	mVA	ok	m~VA
+u	µ~VA	ok	µ~VA
+u	daVA	ok	da~VA
+u	uVA	ok	µ~VA
+u	Q~VA	ok	Q~VA
+u	qVA	ok	q~VA
+u	VA^-3	ok	VA⁻³
+u	VA⁻²	ok	VA⁻²
+u	kilogram_force	ok	kgf
+u	kgf	ok	kgf
+u	k~kgf	ok	k~kgf
+u	kkgf	ok	k~kgf
+u	Ki~kgf	unit_illegal	-
+u	Kikgf	unit_illegal	-
+u	mkgf	ok	m~kgf
+u	µ~kgf	ok	µ~kgf
+u	dakgf	ok	da~kgf
+u	ukgf	ok	µ~kgf
+u	Q~kgf	ok	Q~kgf
+u	qkgf	ok	q~kgf
+u	kgf^-3	ok	kgf⁻³
+u	kgf⁻²	ok	kgf⁻²
+u	inch_mercury	ok	inHg
+u	inch_hg	ok	inHg
+u	inHg	ok	inHg
+u	k~inHg	ok	k~inHg
+u	kinHg	ok	k~inHg
+u	Ki~inHg	unit_illegal	-
+u	KiinHg	unit_illegal	-
+u	minHg	ok	m~inHg
+u	µ~inHg	ok	µ~inHg
+u	dainHg	ok	da~inHg
+u	uinHg	ok	µ~inHg
+u	Q~inHg	ok	Q~inHg
+u	qinHg	ok	q~inHg
+u	inHg^-3	ok	inHg⁻³
+u	inHg⁻²	ok	inHg⁻²
+u	rpm	ok	rpm
+u	k~rpm	ok	k~rpm
+u	krpm	ok	k~rpm
+u	Ki~rpm	unit_illegal	-
+u	Kirpm	unit_illegal	-
+u	mrpm	ok	m~rpm
+u	µ~rpm	ok	µ~rpm
+u	darpm	ok	da~rpm
+u	urpm	ok	µ~rpm
+u	Q~rpm	ok	Q~rpm
+u	qrpm	ok	q~rpm
+u	rpm^-3	ok	rpm⁻³
+u	rpm⁻²	ok	rpm⁻²
+u	foot_pounds	ok	ft_lb
+u	foot_pound	ok	ft_lb
+u	ft_lb	ok	ft_lb
+u	k~ft_lb	ok	k~ft_lb
+u	kft_lb	ok	k~ft_lb
+u	Ki~ft_lb	unit_illegal	-
+u	Kift_lb	unit_illegal	-
+u	mft_lb	ok	m~ft_lb
+u	µ~ft_lb	ok	µ~ft_lb
+u	daft_lb	ok	da~ft_lb
+u	uft_lb	ok	µ~ft_lb
+u	Q~ft_lb	ok	Q~ft_lb
+u	qft_lb	ok	q~ft_lb
+u	ft_lb^-3	ok	ft_lb⁻³
+u	ft_lb⁻²	ok	ft_lb⁻²
+u	drams	ok	dr
+u	dram	ok	dr
+u	dr	ok	dr
+u	k~dr	ok	k~dr
+u	kdr	ok	k~dr
+u	Ki~dr	unit_illegal	-
+u	Kidr	unit_illegal	-
+u	mdr	ok	m~dr
+u	µ~dr	ok	µ~dr
+u	dadr	ok	da~dr
+u	udr	ok	µ~dr
+u	Q~dr	ok	Q~dr
+u	qdr	ok	q~dr
+u	dr^-3	ok	dr⁻³
+u	dr⁻²	ok	dr⁻²
+u	pennyweights	ok	dwt
+u	pennyweight	ok	dwt
+u	dwt	ok	dwt
+u	k~dwt	ok	k~dwt
+u	kdwt	ok	k~dwt
+u	Ki~dwt	unit_illegal	-
+u	Kidwt	unit_illegal	-
+u	mdwt	ok	m~dwt
+u	µ~dwt	ok	µ~dwt
+u	dadwt	ok	da~dwt
+u	udwt	ok	µ~dwt
+u	Q~dwt	ok	Q~dwt
+u	qdwt	ok	q~dwt
+u	dwt^-3	ok	dwt⁻³
+u	dwt⁻²	ok	dwt⁻²
+u	chains	ok	ch
+u	chain	ok	ch
+u	ch	ok	ch
+u	k~ch	ok	k~ch
+u	kch	ok	k~ch
+u	Ki~ch	unit_illegal	-
+u	Kich	unit_illegal	-
+u	mch	ok	m~ch
+u	µ~ch	ok	µ~ch
+u	dach	ok	da~ch
+u	uch	ok	µ~ch
+u	Q~ch	ok	Q~ch
+u	qch	ok	q~ch
+u	ch^-3	ok	ch⁻³
+u	ch⁻²	ok	ch⁻²
+u	rods	ok	rd
+u	rod	ok	rd
+u	rd	ok	rd
+u	k~rd	ok	k~rd
+u	krd	ok	k~rd
+u	Ki~rd	unit_illegal	-
+u	Kird	unit_illegal	-
+u	mrd	ok	m~rd
+u	µ~rd	ok	µ~rd
+u	dard	ok	da~rd
+u	urd	ok	µ~rd
+u	Q~rd	ok	Q~rd
+u	qrd	ok	q~rd
+u	rd^-3	ok	rd⁻³
+u	rd⁻²	ok	rd⁻²
+u	gills	ok	gi
+u	gill	ok	gi
+u	gi	ok	gi
+u	k~gi	ok	k~gi
+u	kgi	ok	k~gi
+u	Ki~gi	unit_illegal	-
+u	Kigi	unit_illegal	-
+u	mgi	ok	m~gi
+u	µ~gi	ok	µ~gi
+u	dagi	ok	da~gi
+u	ugi	ok	µ~gi
+u	Q~gi	ok	Q~gi
+u	qgi	ok	q~gi
+u	gi^-3	ok	gi⁻³
+u	gi⁻²	ok	gi⁻²
+u	gill_uk	ok	gi_uk
+u	gills_uk	ok	gi_uk
+u	gi_uk	ok	gi_uk
+u	k~gi_uk	ok	k~gi_uk
+u	kgi_uk	ok	k~gi_uk
+u	Ki~gi_uk	unit_illegal	-
+u	Kigi_uk	unit_illegal	-
+u	mgi_uk	ok	m~gi_uk
+u	µ~gi_uk	ok	µ~gi_uk
+u	dagi_uk	ok	da~gi_uk
+u	ugi_uk	ok	µ~gi_uk
+u	Q~gi_uk	ok	Q~gi_uk
+u	qgi_uk	ok	q~gi_uk
+u	gi_uk^-3	ok	gi_uk⁻³
+u	gi_uk⁻²	ok	gi_uk⁻²
+u	standard_gravity	ok	gn
+u	gn	ok	gn
+u	k~gn	ok	k~gn
+u	kgn	ok	k~gn
+u	Ki~gn	unit_illegal	-
+u	Kign	unit_illegal	-
+u	mgn	ok	m~gn
+u	µ~gn	ok	µ~gn
+u	dagn	ok	da~gn
+u	ugn	ok	µ~gn
+u	Q~gn	ok	Q~gn
+u	qgn	ok	q~gn
+u	gn^-3	ok	gn⁻³
+u	gn⁻²	ok	gn⁻²
+u	metric_horsepower	ok	PS
+u	PS	ok	PS
+u	CV	ok	PS
+u	k~PS	ok	k~PS
+u	kPS	ok	k~PS
+u	Ki~PS	unit_illegal	-
+u	KiPS	unit_illegal	-
+u	mPS	ok	m~PS
+u	µ~PS	ok	µ~PS
+u	daPS	ok	da~PS
+u	uPS	ok	µ~PS
+u	Q~PS	ok	Q~PS
+u	qPS	ok	q~PS
+u	PS^-3	ok	PS⁻³
+u	PS⁻²	ok	PS⁻²
+u	revolutions	ok	rev
+u	revolution	ok	rev
+u	turns	ok	rev
+u	turn	ok	rev
+u	rev	ok	rev
+u	k~rev	ok	k~rev
+u	krev	ok	k~rev
+u	Ki~rev	unit_illegal	-
+u	Kirev	unit_illegal	-
+u	mrev	ok	m~rev
+u	µ~rev	ok	µ~rev
+u	darev	ok	da~rev
+u	urev	ok	µ~rev
+u	Q~rev	ok	Q~rev
+u	qrev	ok	q~rev
+u	rev^-3	ok	rev⁻³
+u	rev⁻²	ok	rev⁻²
+u	months	ok	mo
+u	month	ok	mo
+u	mo	ok	mo
+u	k~mo	ok	k~mo
+u	kmo	ok	k~mo
+u	Ki~mo	unit_illegal	-
+u	Kimo	unit_illegal	-
+u	mmo	ok	m~mo
+u	µ~mo	ok	µ~mo
+u	damo	ok	da~mo
+u	umo	ok	µ~mo
+u	Q~mo	ok	Q~mo
+u	qmo	ok	q~mo
+u	mo^-3	ok	mo⁻³
+u	mo⁻²	ok	mo⁻²
+u	fortnights	ok	fn
+u	fortnight	ok	fn
+u	fn	ok	fn
+u	k~fn	ok	k~fn
+u	kfn	ok	k~fn
+u	Ki~fn	unit_illegal	-
+u	Kifn	unit_illegal	-
+u	mfn	ok	m~fn
+u	µ~fn	ok	µ~fn
+u	dafn	ok	da~fn
+u	ufn	ok	µ~fn
+u	Q~fn	ok	Q~fn
+u	qfn	ok	q~fn
+u	fn^-3	ok	fn⁻³
+u	fn⁻²	ok	fn⁻²
+u	atmosphere_technical	ok	at
+u	at	ok	at
+u	k~at	ok	k~at
+u	Ki~at	unit_illegal	-
+u	Kiat	unit_illegal	-
+u	mat	ok	m~at
+u	µ~at	ok	µ~at
+u	daat	ok	da~at
+u	uat	ok	µ~at
+u	Q~at	ok	Q~at
+u	qat	ok	q~at
+u	at^-3	ok	at⁻³
+u	at⁻²	ok	at⁻²
+u	tex	ok	tex
+u	k~tex	ok	k~tex
+u	ktex	ok	k~tex
+u	Ki~tex	unit_illegal	-
+u	Kitex	unit_illegal	-
+u	mtex	ok	m~tex
+u	µ~tex	ok	µ~tex
+u	datex	ok	da~tex
+u	utex	ok	µ~tex
+u	Q~tex	ok	Q~tex
+u	qtex	ok	q~tex
+u	tex^-3	ok	tex⁻³
+u	tex⁻²	ok	tex⁻²
+u	deniers	ok	den
+u	denier	ok	den
+u	den	ok	den
+u	k~den	ok	k~den
+u	kden	ok	k~den
+u	Ki~den	unit_illegal	-
+u	Kiden	unit_illegal	-
+u	mden	ok	m~den
+u	µ~den	ok	µ~den
+u	daden	ok	da~den
+u	uden	ok	µ~den
+u	Q~den	ok	Q~den
+u	qden	ok	q~den
+u	den^-3	ok	den⁻³
+u	den⁻²	ok	den⁻²
+u	fluid_drams	ok	fl_dr
+u	fluid_dram	ok	fl_dr
+u	fl_drams	ok	fl_dr
+u	fl_dr	ok	fl_dr
+u	k~fl_dr	ok	k~fl_dr
+u	kfl_dr	ok	k~fl_dr
+u	Ki~fl_dr	unit_illegal	-
+u	Kifl_dr	unit_illegal	-
+u	mfl_dr	ok	m~fl_dr
+u	µ~fl_dr	ok	µ~fl_dr
+u	dafl_dr	ok	da~fl_dr
+u	ufl_dr	ok	µ~fl_dr
+u	Q~fl_dr	ok	Q~fl_dr
+u	qfl_dr	ok	q~fl_dr
+u	fl_dr^-3	ok	fl_dr⁻³
+u	fl_dr⁻²	ok	fl_dr⁻²
+u	minims	ok	minim
+u	minim	ok	minim
+u	k~minim	ok	k~minim
+u	kminim	ok	k~minim
+u	Ki~minim	unit_illegal	-
+u	Kiminim	unit_illegal	-
+u	mminim	ok	m~minim
+u	µ~minim	ok	µ~minim
+u	daminim	ok	da~minim
+u	uminim	ok	µ~minim
+u	Q~minim	ok	Q~minim
+u	qminim	ok	q~minim
+u	minim^-3	ok	minim⁻³
+u	minim⁻²	ok	minim⁻²
+u	pecks	ok	pk
+u	peck	ok	pk
+u	pk	ok	pk
+u	k~pk	ok	k~pk
+u	kpk	ok	k~pk
+u	Ki~pk	unit_illegal	-
+u	Kipk	unit_illegal	-
+u	mpk	ok	m~pk
+u	µ~pk	ok	µ~pk
+u	dapk	ok	da~pk
+u	upk	ok	µ~pk
+u	Q~pk	ok	Q~pk
+u	qpk	ok	q~pk
+u	pk^-3	ok	pk⁻³
+u	pk⁻²	ok	pk⁻²
+u	bushels	ok	bsh
+u	bushel	ok	bsh
+u	bsh	ok	bsh
+u	k~bsh	ok	k~bsh
+u	kbsh	ok	k~bsh
+u	Ki~bsh	unit_illegal	-
+u	Kibsh	unit_illegal	-
+u	mbsh	ok	m~bsh
+u	µ~bsh	ok	µ~bsh
+u	dabsh	ok	da~bsh
+u	ubsh	ok	µ~bsh
+u	Q~bsh	ok	Q~bsh
+u	qbsh	ok	q~bsh
+u	bsh^-3	ok	bsh⁻³
+u	bsh⁻²	ok	bsh⁻²
+u	pfunds	ok	Pfd
+u	pfund	ok	Pfd
+u	Pfd	ok	Pfd
+u	k~Pfd	unit_illegal	-
+u	kPfd	unit_illegal	-
+u	Ki~Pfd	unit_illegal	-
+u	KiPfd	unit_illegal	-
+u	mPfd	unit_illegal	-
+u	µ~Pfd	unit_illegal	-
+u	daPfd	unit_illegal	-
+u	uPfd	unit_illegal	-
+u	Q~Pfd	unit_illegal	-
+u	qPfd	unit_illegal	-
+u	Pfd^-3	ok	Pfd⁻³
+u	Pfd⁻²	ok	Pfd⁻²
+u	zentner	ok	Ztr
+u	Ztr	ok	Ztr
+u	k~Ztr	unit_illegal	-
+u	kZtr	unit_illegal	-
+u	Ki~Ztr	unit_illegal	-
+u	KiZtr	unit_illegal	-
+u	mZtr	unit_illegal	-
+u	µ~Ztr	unit_illegal	-
+u	daZtr	unit_illegal	-
+u	uZtr	unit_illegal	-
+u	Q~Ztr	unit_illegal	-
+u	qZtr	unit_illegal	-
+u	Ztr^-3	ok	Ztr⁻³
+u	Ztr⁻²	ok	Ztr⁻²
+u	doppelzentner	ok	dz
+u	dz	ok	dz
+u	k~dz	unit_illegal	-
+u	kdz	unit_illegal	-
+u	Ki~dz	unit_illegal	-
+u	Kidz	unit_illegal	-
+u	mdz	unit_illegal	-
+u	µ~dz	unit_illegal	-
+u	dadz	unit_illegal	-
+u	udz	unit_illegal	-
+u	Q~dz	unit_illegal	-
+u	qdz	unit_illegal	-
+u	dz^-3	ok	dz⁻³
+u	dz⁻²	ok	dz⁻²
+u	lots	ok	lot
+u	lot	ok	lot
+u	k~lot	unit_illegal	-
+u	klot	unit_illegal	-
+u	Ki~lot	unit_illegal	-
+u	Kilot	unit_illegal	-
+u	mlot	unit_illegal	-
+u	µ~lot	unit_illegal	-
+u	dalot	unit_illegal	-
+u	ulot	unit_illegal	-
+u	Q~lot	unit_illegal	-
+u	qlot	unit_illegal	-
+u	lot^-3	ok	lot⁻³
+u	lot⁻²	ok	lot⁻²
+u	prussian_line	ok	prln
+u	linie	ok	prln
+u	prln	ok	prln
+u	k~prln	unit_illegal	-
+u	kprln	unit_illegal	-
+u	Ki~prln	unit_illegal	-
+u	Kiprln	unit_illegal	-
+u	mprln	unit_illegal	-
+u	µ~prln	unit_illegal	-
+u	daprln	unit_illegal	-
+u	uprln	unit_illegal	-
+u	Q~prln	unit_illegal	-
+u	qprln	unit_illegal	-
+u	prln^-3	ok	prln⁻³
+u	prln⁻²	ok	prln⁻²
+u	prussian_zoll	ok	prz
+u	zoll	ok	prz
+u	prz	ok	prz
+u	k~prz	unit_illegal	-
+u	kprz	unit_illegal	-
+u	Ki~prz	unit_illegal	-
+u	Kiprz	unit_illegal	-
+u	mprz	unit_illegal	-
+u	µ~prz	unit_illegal	-
+u	daprz	unit_illegal	-
+u	uprz	unit_illegal	-
+u	Q~prz	unit_illegal	-
+u	qprz	unit_illegal	-
+u	prz^-3	ok	prz⁻³
+u	prz⁻²	ok	prz⁻²
+u	preussischer_fuss	ok	prf
+u	prussian_fuss	ok	prf
+u	prf	ok	prf
+u	k~prf	unit_illegal	-
+u	kprf	unit_illegal	-
+u	Ki~prf	unit_illegal	-
+u	Kiprf	unit_illegal	-
+u	mprf	unit_illegal	-
+u	µ~prf	unit_illegal	-
+u	daprf	unit_illegal	-
+u	uprf	unit_illegal	-
+u	Q~prf	unit_illegal	-
+u	qprf	unit_illegal	-
+u	prf^-3	ok	prf⁻³
+u	prf⁻²	ok	prf⁻²
+u	preussische_elle	ok	elle
+u	prussian_elle	ok	elle
+u	elle	ok	elle
+u	k~elle	unit_illegal	-
+u	kelle	unit_illegal	-
+u	Ki~elle	unit_illegal	-
+u	Kielle	unit_illegal	-
+u	melle	unit_illegal	-
+u	µ~elle	unit_illegal	-
+u	daelle	unit_illegal	-
+u	uelle	unit_illegal	-
+u	Q~elle	unit_illegal	-
+u	qelle	unit_illegal	-
+u	elle^-3	ok	elle⁻³
+u	elle⁻²	ok	elle⁻²
+u	preussische_rute	ok	rute
+u	prussian_rute	ok	rute
+u	rute	ok	rute
+u	k~rute	unit_illegal	-
+u	krute	unit_illegal	-
+u	Ki~rute	unit_illegal	-
+u	Kirute	unit_illegal	-
+u	mrute	unit_illegal	-
+u	µ~rute	unit_illegal	-
+u	darute	unit_illegal	-
+u	urute	unit_illegal	-
+u	Q~rute	unit_illegal	-
+u	qrute	unit_illegal	-
+u	rute^-3	ok	rute⁻³
+u	rute⁻²	ok	rute⁻²
+u	prussian_klafter	ok	klafter
+u	klafter	ok	klafter
+u	k~klafter	unit_illegal	-
+u	kklafter	unit_illegal	-
+u	Ki~klafter	unit_illegal	-
+u	Kiklafter	unit_illegal	-
+u	mklafter	unit_illegal	-
+u	µ~klafter	unit_illegal	-
+u	daklafter	unit_illegal	-
+u	uklafter	unit_illegal	-
+u	Q~klafter	unit_illegal	-
+u	qklafter	unit_illegal	-
+u	klafter^-3	ok	klafter⁻³
+u	klafter⁻²	ok	klafter⁻²
+u	german_mile	ok	dt_mi
+u	deutsche_meile	ok	dt_mi
+u	dt_mi	ok	dt_mi
+u	k~dt_mi	unit_illegal	-
+u	kdt_mi	unit_illegal	-
+u	Ki~dt_mi	unit_illegal	-
+u	Kidt_mi	unit_illegal	-
+u	mdt_mi	unit_illegal	-
+u	µ~dt_mi	unit_illegal	-
+u	dadt_mi	unit_illegal	-
+u	udt_mi	unit_illegal	-
+u	Q~dt_mi	unit_illegal	-
+u	qdt_mi	unit_illegal	-
+u	dt_mi^-3	ok	dt_mi⁻³
+u	dt_mi⁻²	ok	dt_mi⁻²
+u	prussian_morgen	ok	morgen
+u	morgen	ok	morgen
+u	k~morgen	unit_illegal	-
+u	kmorgen	unit_illegal	-
+u	Ki~morgen	unit_illegal	-
+u	Kimorgen	unit_illegal	-
+u	mmorgen	unit_illegal	-
+u	µ~morgen	unit_illegal	-
+u	damorgen	unit_illegal	-
+u	umorgen	unit_illegal	-
+u	Q~morgen	unit_illegal	-
+u	qmorgen	unit_illegal	-
+u	morgen^-3	ok	morgen⁻³
+u	morgen⁻²	ok	morgen⁻²
+u	prussian_scheffel	ok	schffl
+u	scheffel	ok	schffl
+u	schffl	ok	schffl
+u	k~schffl	unit_illegal	-
+u	kschffl	unit_illegal	-
+u	Ki~schffl	unit_illegal	-
+u	Kischffl	unit_illegal	-
+u	mschffl	unit_illegal	-
+u	µ~schffl	unit_illegal	-
+u	daschffl	unit_illegal	-
+u	uschffl	unit_illegal	-
+u	Q~schffl	unit_illegal	-
+u	qschffl	unit_illegal	-
+u	schffl^-3	ok	schffl⁻³
+u	schffl⁻²	ok	schffl⁻²
+u	survey_foot	ok	ftUS
+u	ftUS	ok	ftUS
+u	k~ftUS	ok	k~ftUS
+u	kftUS	ok	k~ftUS
+u	Ki~ftUS	unit_illegal	-
+u	KiftUS	unit_illegal	-
+u	mftUS	ok	m~ftUS
+u	µ~ftUS	ok	µ~ftUS
+u	daftUS	ok	da~ftUS
+u	uftUS	ok	µ~ftUS
+u	Q~ftUS	ok	Q~ftUS
+u	qftUS	ok	q~ftUS
+u	ftUS^-3	ok	ftUS⁻³
+u	ftUS⁻²	ok	ftUS⁻²
+u	leagues	ok	lea
+u	league	ok	lea
+u	lea	ok	lea
+u	k~lea	ok	k~lea
+u	klea	ok	k~lea
+u	Ki~lea	unit_illegal	-
+u	Kilea	unit_illegal	-
+u	mlea	ok	m~lea
+u	µ~lea	ok	µ~lea
+u	dalea	ok	da~lea
+u	ulea	ok	µ~lea
+u	Q~lea	ok	Q~lea
+u	qlea	ok	q~lea
+u	lea^-3	ok	lea⁻³
+u	lea⁻²	ok	lea⁻²
+u	cables	ok	cbl
+u	cable	ok	cbl
+u	cbl	ok	cbl
+u	k~cbl	ok	k~cbl
+u	kcbl	ok	k~cbl
+u	Ki~cbl	unit_illegal	-
+u	Kicbl	unit_illegal	-
+u	mcbl	ok	m~cbl
+u	µ~cbl	ok	µ~cbl
+u	dacbl	ok	da~cbl
+u	ucbl	ok	µ~cbl
+u	Q~cbl	ok	Q~cbl
+u	qcbl	ok	q~cbl
+u	cbl^-3	ok	cbl⁻³
+u	cbl⁻²	ok	cbl⁻²
+u	hands	ok	hand
+u	hand	ok	hand
+u	k~hand	ok	k~hand
+u	khand	ok	k~hand
+u	Ki~hand	unit_illegal	-
+u	Kihand	unit_illegal	-
+u	mhand	ok	m~hand
+u	µ~hand	ok	µ~hand
+u	dahand	ok	da~hand
+u	uhand	ok	µ~hand
+u	Q~hand	ok	Q~hand
+u	qhand	ok	q~hand
+u	hand^-3	ok	hand⁻³
+u	hand⁻²	ok	hand⁻²
+u	quintals	ok	qntl
+u	quintal	ok	qntl
+u	qntl	ok	qntl
+u	k~qntl	ok	k~qntl
+u	kqntl	ok	k~qntl
+u	Ki~qntl	unit_illegal	-
+u	Kiqntl	unit_illegal	-
+u	mqntl	ok	m~qntl
+u	µ~qntl	ok	µ~qntl
+u	daqntl	ok	da~qntl
+u	uqntl	ok	µ~qntl
+u	Q~qntl	ok	Q~qntl
+u	qqntl	ok	q~qntl
+u	qntl^-3	ok	qntl⁻³
+u	qntl⁻²	ok	qntl⁻²
+u	scruples	ok	sc
+u	scruple	ok	sc
+u	sc	ok	sc
+u	k~sc	ok	k~sc
+u	ksc	ok	k~sc
+u	Ki~sc	unit_illegal	-
+u	Kisc	unit_illegal	-
+u	msc	ok	m~sc
+u	µ~sc	ok	µ~sc
+u	dasc	ok	da~sc
+u	usc	ok	µ~sc
+u	Q~sc	ok	Q~sc
+u	qsc	ok	q~sc
+u	sc^-3	ok	sc⁻³
+u	sc⁻²	ok	sc⁻²
+u	bauds	ok	Bd
+u	baud	ok	Bd
+u	Bd	ok	Bd
+u	k~Bd	ok	k~Bd
+u	kBd	ok	k~Bd
+u	Ki~Bd	unit_illegal	-
+u	KiBd	unit_illegal	-
+u	mBd	ok	m~Bd
+u	µ~Bd	ok	µ~Bd
+u	daBd	ok	da~Bd
+u	uBd	ok	µ~Bd
+u	Q~Bd	ok	Q~Bd
+u	qBd	ok	q~Bd
+u	Bd^-3	ok	Bd⁻³
+u	Bd⁻²	ok	Bd⁻²
+u	degreesDe	ok	°De
+u	degreeDe	ok	°De
+u	delisle	ok	°De
+u	degrDe	ok	°De
+u	degDe	ok	°De
+u	°De	ok	°De
+u	k~°De	ok	k~°De
+u	k°De	ok	k~°De
+u	Ki~°De	unit_illegal	-
+u	Ki°De	unit_illegal	-
+u	m°De	ok	m~°De
+u	µ~°De	ok	µ~°De
+u	da°De	ok	da~°De
+u	u°De	ok	µ~°De
+u	Q~°De	ok	Q~°De
+u	q°De	ok	q~°De
+u	°De^-3	ok	°De⁻³
+u	°De⁻²	ok	°De⁻²
+u	newton_temperature	ok	°N
+u	degreesN	ok	°N
+u	degreeN	ok	°N
+u	degrN	ok	°N
+u	degN	ok	°N
+u	°N	ok	°N
+u	k~°N	ok	k~°N
+u	k°N	ok	k~°N
+u	Ki~°N	unit_illegal	-
+u	Ki°N	unit_illegal	-
+u	m°N	ok	m~°N
+u	µ~°N	ok	µ~°N
+u	da°N	ok	da~°N
+u	u°N	ok	µ~°N
+u	Q~°N	ok	Q~°N
+u	q°N	ok	q~°N
+u	°N^-3	ok	°N⁻³
+u	°N⁻²	ok	°N⁻²
+u	degreesRe	ok	°Re
+u	degreeRe	ok	°Re
+u	reaumur	ok	°Re
+u	degrRe	ok	°Re
+u	degRe	ok	°Re
+u	°Re	ok	°Re
+u	k~°Re	ok	k~°Re
+u	k°Re	ok	k~°Re
+u	Ki~°Re	unit_illegal	-
+u	Ki°Re	unit_illegal	-
+u	m°Re	ok	m~°Re
+u	µ~°Re	ok	µ~°Re
+u	da°Re	ok	da~°Re
+u	u°Re	ok	µ~°Re
+u	Q~°Re	ok	Q~°Re
+u	q°Re	ok	q~°Re
+u	°Re^-3	ok	°Re⁻³
+u	°Re⁻²	ok	°Re⁻²
+u	degreesRo	ok	°Ro
+u	degreeRo	ok	°Ro
+u	degrRo	ok	°Ro
+u	degRo	ok	°Ro
+u	romer	ok	°Ro
+u	°Ro	ok	°Ro
+u	k~°Ro	ok	k~°Ro
+u	k°Ro	ok	k~°Ro
+u	Ki~°Ro	unit_illegal	-
+u	Ki°Ro	unit_illegal	-
+u	m°Ro	ok	m~°Ro
+u	µ~°Ro	ok	µ~°Ro
+u	da°Ro	ok	da~°Ro
+u	u°Ro	ok	µ~°Ro
+u	Q~°Ro	ok	Q~°Ro
+u	q°Ro	ok	q~°Ro
+u	°Ro^-3	ok	°Ro⁻³
+u	°Ro⁻²	ok	°Ro⁻²
+u	percent	ok	%
+u	k%	unit_illegal	-
+u	Ki~%	unit_illegal	-
+u	Ki%	unit_illegal	-
+u	m%	unit_illegal	-
+u	µ~%	unit_illegal	-
+u	da%	unit_illegal	-
+u	u%	unit_illegal	-
+u	Q~%	unit_illegal	-
+u	q%	unit_illegal	-
+u	%^-3	ok	%⁻³
+u	%⁻²	ok	%⁻²
+u	per_mille	ok	‰
+u	‰	ok	‰
+u	k~‰	unit_illegal	-
+u	k‰	unit_illegal	-
+u	Ki~‰	unit_illegal	-
+u	Ki‰	unit_illegal	-
+u	m‰	unit_illegal	-
+u	µ~‰	unit_illegal	-
+u	da‰	unit_illegal	-
+u	u‰	unit_illegal	-
+u	Q~‰	unit_illegal	-
+u	q‰	unit_illegal	-
+u	‰^-3	ok	‰⁻³
+u	‰⁻²	ok	‰⁻²
+u	per_myriad	ok	‱
+u	‱	ok	‱
+u	k~‱	unit_illegal	-
+u	k‱	unit_illegal	-
+u	Ki~‱	unit_illegal	-
+u	Ki‱	unit_illegal	-
+u	m‱	unit_illegal	-
+u	µ~‱	unit_illegal	-
+u	da‱	unit_illegal	-
+u	u‱	unit_illegal	-
+u	Q~‱	unit_illegal	-
+u	q‱	unit_illegal	-
+u	‱^-3	ok	‱⁻³
+u	‱⁻²	ok	‱⁻²
+u	per_cent_mille	ok	pcm
+u	pcm	ok	pcm
+u	k~pcm	unit_illegal	-
+u	kpcm	unit_illegal	-
+u	Ki~pcm	unit_illegal	-
+u	Kipcm	unit_illegal	-
+u	mpcm	unit_illegal	-
+u	µ~pcm	unit_illegal	-
+u	dapcm	unit_illegal	-
+u	upcm	unit_illegal	-
+u	Q~pcm	unit_illegal	-
+u	qpcm	unit_illegal	-
+u	pcm^-3	ok	pcm⁻³
+u	pcm⁻²	ok	pcm⁻²
+u	ppm	ok	ppm
+u	k~ppm	unit_illegal	-
+u	kppm	unit_illegal	-
+u	Ki~ppm	unit_illegal	-
+u	Kippm	unit_illegal	-
+u	mppm	unit_illegal	-
+u	µ~ppm	unit_illegal	-
+u	dappm	unit_illegal	-
+u	uppm	unit_illegal	-
+u	Q~ppm	unit_illegal	-
+u	qppm	unit_illegal	-
+u	ppm^-3	ok	ppm⁻³
+u	ppm⁻²	ok	ppm⁻²
+u	ppb	ok	ppb
+u	k~ppb	unit_illegal	-
+u	kppb	unit_illegal	-
+u	Ki~ppb	unit_illegal	-
+u	Kippb	unit_illegal	-
+u	mppb	unit_illegal	-
+u	µ~ppb	unit_illegal	-
+u	dappb	unit_illegal	-
+u	uppb	unit_illegal	-
+u	Q~ppb	unit_illegal	-
+u	qppb	unit_illegal	-
+u	ppb^-3	ok	ppb⁻³
+u	ppb⁻²	ok	ppb⁻²
+u	k~pH	unit_illegal	-
+u	kpH	unit_illegal	-
+u	Ki~pH	unit_illegal	-
+u	KipH	unit_illegal	-
+u	mpH	unit_illegal	-
+u	µ~pH	unit_illegal	-
+u	dapH	unit_illegal	-
+u	upH	unit_illegal	-
+u	Q~pH	unit_illegal	-
+u	qpH	unit_illegal	-
+u	pH^-3	ok	pH⁻³
+u	pH⁻²	ok	pH⁻²
+u	k~mph	unit_illegal	-
+u	kmph	unit_illegal	-
+u	Ki~mph	unit_illegal	-
+u	Kimph	unit_illegal	-
+u	mmph	unit_illegal	-
+u	µ~mph	unit_illegal	-
+u	damph	unit_illegal	-
+u	umph	unit_illegal	-
+u	Q~mph	unit_illegal	-
+u	qmph	unit_illegal	-
+u	mph^-3	ok	mph⁻³
+u	mph⁻²	ok	mph⁻²
+u	kmh	ok	kph
+u	k~kph	unit_illegal	-
+u	kkph	unit_illegal	-
+u	Ki~kph	unit_illegal	-
+u	Kikph	unit_illegal	-
+u	mkph	unit_illegal	-
+u	µ~kph	unit_illegal	-
+u	dakph	unit_illegal	-
+u	ukph	unit_illegal	-
+u	Q~kph	unit_illegal	-
+u	qkph	unit_illegal	-
+u	kph^-3	ok	kph⁻³
+u	kph⁻²	ok	kph⁻²
+u	german_hardness	ok	°dH
+u	k~°dH	unit_illegal	-
+u	k°dH	unit_illegal	-
+u	Ki~°dH	unit_illegal	-
+u	Ki°dH	unit_illegal	-
+u	m°dH	unit_illegal	-
+u	µ~°dH	unit_illegal	-
+u	da°dH	unit_illegal	-
+u	u°dH	unit_illegal	-
+u	Q~°dH	unit_illegal	-
+u	q°dH	unit_illegal	-
+u	°dH^-3	ok	°dH⁻³
+u	°dH⁻²	ok	°dH⁻²
+u	english_hardness	ok	°e
+u	clark_degree	ok	°e
+u	°Clark	ok	°e
+u	°e	ok	°e
+u	k~°e	unit_illegal	-
+u	k°e	unit_illegal	-
+u	Ki~°e	unit_illegal	-
+u	Ki°e	unit_illegal	-
+u	m°e	unit_illegal	-
+u	µ~°e	unit_illegal	-
+u	da°e	unit_illegal	-
+u	u°e	unit_illegal	-
+u	Q~°e	unit_illegal	-
+u	q°e	unit_illegal	-
+u	°e^-3	ok	°e⁻³
+u	°e⁻²	ok	°e⁻²
+u	french_hardness	ok	°fH
+u	k~°fH	unit_illegal	-
+u	k°fH	unit_illegal	-
+u	Ki~°fH	unit_illegal	-
+u	Ki°fH	unit_illegal	-
+u	m°fH	unit_illegal	-
+u	µ~°fH	unit_illegal	-
+u	da°fH	unit_illegal	-
+u	u°fH	unit_illegal	-
+u	Q~°fH	unit_illegal	-
+u	q°fH	unit_illegal	-
+u	°fH^-3	ok	°fH⁻³
+u	°fH⁻²	ok	°fH⁻²
+u	russian_hardness	ok	°rH
+u	°rH	ok	°rH
+u	k~°rH	unit_illegal	-
+u	k°rH	unit_illegal	-
+u	Ki~°rH	unit_illegal	-
+u	Ki°rH	unit_illegal	-
+u	m°rH	unit_illegal	-
+u	µ~°rH	unit_illegal	-
+u	da°rH	unit_illegal	-
+u	u°rH	unit_illegal	-
+u	Q~°rH	unit_illegal	-
+u	q°rH	unit_illegal	-
+u	°rH^-3	ok	°rH⁻³
+u	°rH⁻²	ok	°rH⁻²
+u	american_hardness	ok	°aH
+u	°aH	ok	°aH
+u	k~°aH	unit_illegal	-
+u	k°aH	unit_illegal	-
+u	Ki~°aH	unit_illegal	-
+u	Ki°aH	unit_illegal	-
+u	m°aH	unit_illegal	-
+u	µ~°aH	unit_illegal	-
+u	da°aH	unit_illegal	-
+u	u°aH	unit_illegal	-
+u	Q~°aH	unit_illegal	-
+u	q°aH	unit_illegal	-
+u	°aH^-3	ok	°aH⁻³
+u	°aH⁻²	ok	°aH⁻²
+u	vals	ok	val
+u	val	ok	val
+u	eq	ok	val
+u	k~val	ok	k~val
+u	kval	ok	k~val
+u	Ki~val	unit_illegal	-
+u	Kival	unit_illegal	-
+u	mval	ok	m~val
+u	µ~val	ok	µ~val
+u	daval	ok	da~val
+u	uval	ok	µ~val
+u	Q~val	ok	Q~val
+u	qval	ok	q~val
+u	val^-3	ok	val⁻³
+u	val⁻²	ok	val⁻²
+u	grains_per_gallon	ok	gpg
+u	k~gpg	unit_illegal	-
+u	kgpg	unit_illegal	-
+u	Ki~gpg	unit_illegal	-
+u	Kigpg	unit_illegal	-
+u	mgpg	unit_illegal	-
+u	µ~gpg	unit_illegal	-
+u	dagpg	unit_illegal	-
+u	ugpg	unit_illegal	-
+u	Q~gpg	unit_illegal	-
+u	qgpg	unit_illegal	-
+u	gpg^-3	ok	gpg⁻³
+u	gpg⁻²	ok	gpg⁻²
+u	nephelometric_turbidity	ok	NTU
+u	k~NTU	ok	k~NTU
+u	kNTU	ok	k~NTU
+u	Ki~NTU	unit_illegal	-
+u	KiNTU	unit_illegal	-
+u	mNTU	ok	m~NTU
+u	µ~NTU	ok	µ~NTU
+u	daNTU	ok	da~NTU
+u	uNTU	ok	µ~NTU
+u	Q~NTU	ok	Q~NTU
+u	qNTU	ok	q~NTU
+u	NTU^-3	ok	NTU⁻³
+u	NTU⁻²	ok	NTU⁻²
+u	formazin_nephelometric	ok	FNU
+u	k~FNU	ok	k~FNU
+u	kFNU	ok	k~FNU
+u	Ki~FNU	unit_illegal	-
+u	KiFNU	unit_illegal	-
+u	mFNU	ok	m~FNU
+u	µ~FNU	ok	µ~FNU
+u	daFNU	ok	da~FNU
+u	uFNU	ok	µ~FNU
+u	Q~FNU	ok	Q~FNU
+u	qFNU	ok	q~FNU
+u	FNU^-3	ok	FNU⁻³
+u	FNU⁻²	ok	FNU⁻²
+u	practical_salinity	ok	PSU
+u	k~PSU	unit_illegal	-
+u	kPSU	unit_illegal	-
+u	Ki~PSU	unit_illegal	-
+u	KiPSU	unit_illegal	-
+u	mPSU	unit_illegal	-
+u	µ~PSU	unit_illegal	-
+u	daPSU	unit_illegal	-
+u	uPSU	unit_illegal	-
+u	Q~PSU	unit_illegal	-
+u	qPSU	unit_illegal	-
+u	PSU^-3	ok	PSU⁻³
+u	PSU⁻²	ok	PSU⁻²
+u	conductivity_factor	ok	CF
+u	k~CF	unit_illegal	-
+u	kCF	unit_illegal	-
+u	Ki~CF	unit_illegal	-
+u	KiCF	unit_illegal	-
+u	mCF	unit_illegal	-
+u	µ~CF	unit_illegal	-
+u	daCF	unit_illegal	-
+u	uCF	unit_illegal	-
+u	Q~CF	unit_illegal	-
+u	qCF	unit_illegal	-
+u	CF^-3	ok	CF⁻³
+u	CF⁻²	ok	CF⁻²
+u	formazin_turbidity	ok	FTU
+u	k~FTU	ok	k~FTU
+u	kFTU	ok	k~FTU
+u	Ki~FTU	unit_illegal	-
+u	KiFTU	unit_illegal	-
+u	mFTU	ok	m~FTU
+u	µ~FTU	ok	µ~FTU
+u	daFTU	ok	da~FTU
+u	uFTU	ok	µ~FTU
+u	Q~FTU	ok	Q~FTU
+u	qFTU	ok	q~FTU
+u	FTU^-3	ok	FTU⁻³
+u	FTU⁻²	ok	FTU⁻²
+u	formazin_attenuation	ok	FAU
+u	k~FAU	ok	k~FAU
+u	kFAU	ok	k~FAU
+u	Ki~FAU	unit_illegal	-
+u	KiFAU	unit_illegal	-
+u	mFAU	ok	m~FAU
+u	µ~FAU	ok	µ~FAU
+u	daFAU	ok	da~FAU
+u	uFAU	ok	µ~FAU
+u	Q~FAU	ok	Q~FAU
+u	qFAU	ok	q~FAU
+u	FAU^-3	ok	FAU⁻³
+u	FAU⁻²	ok	FAU⁻²
+u	jackson_turbidity	ok	JTU
+u	k~JTU	unit_illegal	-
+u	kJTU	unit_illegal	-
+u	Ki~JTU	unit_illegal	-
+u	KiJTU	unit_illegal	-
+u	mJTU	unit_illegal	-
+u	µ~JTU	unit_illegal	-
+u	daJTU	unit_illegal	-
+u	uJTU	unit_illegal	-
+u	Q~JTU	unit_illegal	-
+u	qJTU	unit_illegal	-
+u	JTU^-3	ok	JTU⁻³
+u	JTU⁻²	ok	JTU⁻²
+u	delta_kelvin	ok	ΔK
+u	deltakelvin	ok	ΔK
+u	deltaK	ok	ΔK
+u	delta_celsius	ok	ΔK
+u	deltacelsius	ok	ΔK
+u	deltadegC	ok	ΔK
+u	k~ΔK	ok	k~ΔK
+u	kΔK	ok	k~ΔK
+u	Ki~ΔK	unit_illegal	-
+u	KiΔK	unit_illegal	-
+u	mΔK	ok	m~ΔK
+u	µ~ΔK	ok	µ~ΔK
+u	daΔK	ok	da~ΔK
+u	uΔK	ok	µ~ΔK
+u	Q~ΔK	ok	Q~ΔK
+u	qΔK	ok	q~ΔK
+u	ΔK^-3	ok	ΔK⁻³
+u	ΔK⁻²	ok	ΔK⁻²
+u	delta_fahrenheit	ok	Δ°F
+u	deltafahrenheit	ok	Δ°F
+u	deltadegF	ok	Δ°F
+u	delta_rankine	ok	Δ°F
+u	deltarankine	ok	Δ°F
+u	delta_degRa	ok	Δ°F
+u	deltadegRa	ok	Δ°F
+u	Δ°Ra	ok	Δ°F
+u	k~Δ°F	ok	k~Δ°F
+u	kΔ°F	ok	k~Δ°F
+u	Ki~Δ°F	unit_illegal	-
+u	KiΔ°F	unit_illegal	-
+u	mΔ°F	ok	m~Δ°F
+u	µ~Δ°F	ok	µ~Δ°F
+u	daΔ°F	ok	da~Δ°F
+u	uΔ°F	ok	µ~Δ°F
+u	Q~Δ°F	ok	Q~Δ°F
+u	qΔ°F	ok	q~Δ°F
+u	Δ°F^-3	ok	Δ°F⁻³
+u	Δ°F⁻²	ok	Δ°F⁻²
+u	delta_delisle	ok	Δ°De
+u	deltadelisle	ok	Δ°De
+u	delta_degDe	ok	Δ°De
+u	deltadegDe	ok	Δ°De
+u	k~Δ°De	ok	k~Δ°De
+u	kΔ°De	ok	k~Δ°De
+u	Ki~Δ°De	unit_illegal	-
+u	KiΔ°De	unit_illegal	-
+u	mΔ°De	ok	m~Δ°De
+u	µ~Δ°De	ok	µ~Δ°De
+u	daΔ°De	ok	da~Δ°De
+u	uΔ°De	ok	µ~Δ°De
+u	Q~Δ°De	ok	Q~Δ°De
+u	qΔ°De	ok	q~Δ°De
+u	Δ°De^-3	ok	Δ°De⁻³
+u	Δ°De⁻²	ok	Δ°De⁻²
+u	delta_newton_temperature	ok	Δ°N
+u	delta_degN	ok	Δ°N
+u	deltadegN	ok	Δ°N
+u	k~Δ°N	ok	k~Δ°N
+u	kΔ°N	ok	k~Δ°N
+u	Ki~Δ°N	unit_illegal	-
+u	KiΔ°N	unit_illegal	-
+u	mΔ°N	ok	m~Δ°N
+u	µ~Δ°N	ok	µ~Δ°N
+u	daΔ°N	ok	da~Δ°N
+u	uΔ°N	ok	µ~Δ°N
+u	Q~Δ°N	ok	Q~Δ°N
+u	qΔ°N	ok	q~Δ°N
+u	Δ°N^-3	ok	Δ°N⁻³
+u	Δ°N⁻²	ok	Δ°N⁻²
+u	delta_reaumur	ok	Δ°Re
+u	deltareaumur	ok	Δ°Re
+u	delta_degRe	ok	Δ°Re
+u	deltadegRe	ok	Δ°Re
+u	k~Δ°Re	ok	k~Δ°Re
+u	kΔ°Re	ok	k~Δ°Re
+u	Ki~Δ°Re	unit_illegal	-
+u	KiΔ°Re	unit_illegal	-
+u	mΔ°Re	ok	m~Δ°Re
+u	µ~Δ°Re	ok	µ~Δ°Re
+u	daΔ°Re	ok	da~Δ°Re
+u	uΔ°Re	ok	µ~Δ°Re
+u	Q~Δ°Re	ok	Q~Δ°Re
+u	qΔ°Re	ok	q~Δ°Re
+u	Δ°Re^-3	ok	Δ°Re⁻³
+u	Δ°Re⁻²	ok	Δ°Re⁻²
+u	delta_romer	ok	Δ°Ro
+u	deltaromer	ok	Δ°Ro
+u	delta_degRo	ok	Δ°Ro
+u	deltadegRo	ok	Δ°Ro
+u	k~Δ°Ro	ok	k~Δ°Ro
+u	kΔ°Ro	ok	k~Δ°Ro
+u	Ki~Δ°Ro	unit_illegal	-
+u	KiΔ°Ro	unit_illegal	-
+u	mΔ°Ro	ok	m~Δ°Ro
+u	µ~Δ°Ro	ok	µ~Δ°Ro
+u	daΔ°Ro	ok	da~Δ°Ro
+u	uΔ°Ro	ok	µ~Δ°Ro
+u	Q~Δ°Ro	ok	Q~Δ°Ro
+u	qΔ°Ro	ok	q~Δ°Ro
+u	Δ°Ro^-3	ok	Δ°Ro⁻³
+u	Δ°Ro⁻²	ok	Δ°Ro⁻²
+u	metre_water	ok	mH2O
+u	meter_water	ok	mH2O
+u	mH2O	ok	mH2O
+u	k~mH2O	ok	k~mH2O
+u	kmH2O	ok	k~mH2O
+u	Ki~mH2O	unit_illegal	-
+u	KimH2O	unit_illegal	-
+u	mmH2O	ok	m~mH2O
+u	µ~mH2O	ok	µ~mH2O
+u	damH2O	ok	da~mH2O
+u	umH2O	ok	µ~mH2O
+u	Q~mH2O	ok	Q~mH2O
+u	qmH2O	ok	q~mH2O
+u	mH2O^-3	ok	mH2O⁻³
+u	mH2O⁻²	ok	mH2O⁻²
+u	calorie_IT	ok	cal_IT
+u	cal_IT	ok	cal_IT
+u	k~cal_IT	ok	k~cal_IT
+u	kcal_IT	ok	k~cal_IT
+u	Ki~cal_IT	unit_illegal	-
+u	Kical_IT	unit_illegal	-
+u	mcal_IT	ok	m~cal_IT
+u	µ~cal_IT	ok	µ~cal_IT
+u	dacal_IT	ok	da~cal_IT
+u	ucal_IT	ok	µ~cal_IT
+u	Q~cal_IT	ok	Q~cal_IT
+u	qcal_IT	ok	q~cal_IT
+u	cal_IT^-3	ok	cal_IT⁻³
+u	cal_IT⁻²	ok	cal_IT⁻²
+u	Btu_th	ok	Btu_th
+u	BTU_th	ok	Btu_th
+u	btu_th	ok	Btu_th
+u	k~Btu_th	ok	k~Btu_th
+u	kBtu_th	ok	k~Btu_th
+u	Ki~Btu_th	unit_illegal	-
+u	KiBtu_th	unit_illegal	-
+u	mBtu_th	ok	m~Btu_th
+u	µ~Btu_th	ok	µ~Btu_th
+u	daBtu_th	ok	da~Btu_th
+u	uBtu_th	ok	µ~Btu_th
+u	Q~Btu_th	ok	Q~Btu_th
+u	qBtu_th	ok	q~Btu_th
+u	Btu_th^-3	ok	Btu_th⁻³
+u	Btu_th⁻²	ok	Btu_th⁻²
+u	apothecary_pound	ok	lb_t
+u	troy_pounds	ok	lb_t
+u	troy_pound	ok	lb_t
+u	lb_t	ok	lb_t
+u	k~lb_t	ok	k~lb_t
+u	klb_t	ok	k~lb_t
+u	Ki~lb_t	unit_illegal	-
+u	Kilb_t	unit_illegal	-
+u	mlb_t	ok	m~lb_t
+u	µ~lb_t	ok	µ~lb_t
+u	dalb_t	ok	da~lb_t
+u	ulb_t	ok	µ~lb_t
+u	Q~lb_t	ok	Q~lb_t
+u	qlb_t	ok	q~lb_t
+u	lb_t^-3	ok	lb_t⁻³
+u	lb_t⁻²	ok	lb_t⁻²
+u	apothecary_drams	ok	dr_ap
+u	apothecary_dram	ok	dr_ap
+u	dr_ap	ok	dr_ap
+u	k~dr_ap	ok	k~dr_ap
+u	kdr_ap	ok	k~dr_ap
+u	Ki~dr_ap	unit_illegal	-
+u	Kidr_ap	unit_illegal	-
+u	mdr_ap	ok	m~dr_ap
+u	µ~dr_ap	ok	µ~dr_ap
+u	dadr_ap	ok	da~dr_ap
+u	udr_ap	ok	µ~dr_ap
+u	Q~dr_ap	ok	Q~dr_ap
+u	qdr_ap	ok	q~dr_ap
+u	dr_ap^-3	ok	dr_ap⁻³
+u	dr_ap⁻²	ok	dr_ap⁻²
+u	long_hundredweights	ok	cwt_l
+u	long_hundredweight	ok	cwt_l
+u	cwt_l	ok	cwt_l
+u	k~cwt_l	ok	k~cwt_l
+u	kcwt_l	ok	k~cwt_l
+u	Ki~cwt_l	unit_illegal	-
+u	Kicwt_l	unit_illegal	-
+u	mcwt_l	ok	m~cwt_l
+u	µ~cwt_l	ok	µ~cwt_l
+u	dacwt_l	ok	da~cwt_l
+u	ucwt_l	ok	µ~cwt_l
+u	Q~cwt_l	ok	Q~cwt_l
+u	qcwt_l	ok	q~cwt_l
+u	cwt_l^-3	ok	cwt_l⁻³
+u	cwt_l⁻²	ok	cwt_l⁻²
+u	survey_inch	ok	inUS
+u	inUS	ok	inUS
+u	k~inUS	ok	k~inUS
+u	kinUS	ok	k~inUS
+u	Ki~inUS	unit_illegal	-
+u	KiinUS	unit_illegal	-
+u	minUS	ok	m~inUS
+u	µ~inUS	ok	µ~inUS
+u	dainUS	ok	da~inUS
+u	uinUS	ok	µ~inUS
+u	Q~inUS	ok	Q~inUS
+u	qinUS	ok	q~inUS
+u	inUS^-3	ok	inUS⁻³
+u	inUS⁻²	ok	inUS⁻²
+u	survey_yard	ok	ydUS
+u	ydUS	ok	ydUS
+u	k~ydUS	ok	k~ydUS
+u	kydUS	ok	k~ydUS
+u	Ki~ydUS	unit_illegal	-
+u	KiydUS	unit_illegal	-
+u	mydUS	ok	m~ydUS
+u	µ~ydUS	ok	µ~ydUS
+u	daydUS	ok	da~ydUS
+u	uydUS	ok	µ~ydUS
+u	Q~ydUS	ok	Q~ydUS
+u	qydUS	ok	q~ydUS
+u	ydUS^-3	ok	ydUS⁻³
+u	ydUS⁻²	ok	ydUS⁻²
+u	survey_fathom	ok	fathUS
+u	fathUS	ok	fathUS
+u	k~fathUS	ok	k~fathUS
+u	kfathUS	ok	k~fathUS
+u	Ki~fathUS	unit_illegal	-
+u	KifathUS	unit_illegal	-
+u	mfathUS	ok	m~fathUS
+u	µ~fathUS	ok	µ~fathUS
+u	dafathUS	ok	da~fathUS
+u	ufathUS	ok	µ~fathUS
+u	Q~fathUS	ok	Q~fathUS
+u	qfathUS	ok	q~fathUS
+u	fathUS^-3	ok	fathUS⁻³
+u	fathUS⁻²	ok	fathUS⁻²
+u	survey_rod	ok	rdUS
+u	rdUS	ok	rdUS
+u	k~rdUS	ok	k~rdUS
+u	krdUS	ok	k~rdUS
+u	Ki~rdUS	unit_illegal	-
+u	KirdUS	unit_illegal	-
+u	mrdUS	ok	m~rdUS
+u	µ~rdUS	ok	µ~rdUS
+u	dardUS	ok	da~rdUS
+u	urdUS	ok	µ~rdUS
+u	Q~rdUS	ok	Q~rdUS
+u	qrdUS	ok	q~rdUS
+u	rdUS^-3	ok	rdUS⁻³
+u	rdUS⁻²	ok	rdUS⁻²
+u	survey_chain	ok	chUS
+u	chUS	ok	chUS
+u	k~chUS	ok	k~chUS
+u	kchUS	ok	k~chUS
+u	Ki~chUS	unit_illegal	-
+u	KichUS	unit_illegal	-
+u	mchUS	ok	m~chUS
+u	µ~chUS	ok	µ~chUS
+u	dachUS	ok	da~chUS
+u	uchUS	ok	µ~chUS
+u	Q~chUS	ok	Q~chUS
+u	qchUS	ok	q~chUS
+u	chUS^-3	ok	chUS⁻³
+u	chUS⁻²	ok	chUS⁻²
+u	survey_link	ok	lkUS
+u	lkUS	ok	lkUS
+u	k~lkUS	ok	k~lkUS
+u	klkUS	ok	k~lkUS
+u	Ki~lkUS	unit_illegal	-
+u	KilkUS	unit_illegal	-
+u	mlkUS	ok	m~lkUS
+u	µ~lkUS	ok	µ~lkUS
+u	dalkUS	ok	da~lkUS
+u	ulkUS	ok	µ~lkUS
+u	Q~lkUS	ok	Q~lkUS
+u	qlkUS	ok	q~lkUS
+u	lkUS^-3	ok	lkUS⁻³
+u	lkUS⁻²	ok	lkUS⁻²
+u	survey_furlong	ok	furUS
+u	furUS	ok	furUS
+u	k~furUS	ok	k~furUS
+u	kfurUS	ok	k~furUS
+u	Ki~furUS	unit_illegal	-
+u	KifurUS	unit_illegal	-
+u	mfurUS	ok	m~furUS
+u	µ~furUS	ok	µ~furUS
+u	dafurUS	ok	da~furUS
+u	ufurUS	ok	µ~furUS
+u	Q~furUS	ok	Q~furUS
+u	qfurUS	ok	q~furUS
+u	furUS^-3	ok	furUS⁻³
+u	furUS⁻²	ok	furUS⁻²
+u	survey_miles	ok	miUS
+u	survey_mile	ok	miUS
+u	miUS	ok	miUS
+u	k~miUS	ok	k~miUS
+u	kmiUS	ok	k~miUS
+u	Ki~miUS	unit_illegal	-
+u	KimiUS	unit_illegal	-
+u	mmiUS	ok	m~miUS
+u	µ~miUS	ok	µ~miUS
+u	damiUS	ok	da~miUS
+u	umiUS	ok	µ~miUS
+u	Q~miUS	ok	Q~miUS
+u	qmiUS	ok	q~miUS
+u	miUS^-3	ok	miUS⁻³
+u	miUS⁻²	ok	miUS⁻²
+u	survey_acres	ok	acUS
+u	survey_acre	ok	acUS
+u	acUS	ok	acUS
+u	k~acUS	ok	k~acUS
+u	kacUS	ok	k~acUS
+u	Ki~acUS	unit_illegal	-
+u	KiacUS	unit_illegal	-
+u	macUS	ok	m~acUS
+u	µ~acUS	ok	µ~acUS
+u	daacUS	ok	da~acUS
+u	uacUS	ok	µ~acUS
+u	Q~acUS	ok	Q~acUS
+u	qacUS	ok	q~acUS
+u	acUS^-3	ok	acUS⁻³
+u	acUS⁻²	ok	acUS⁻²
+u	points	ok	pnt
+u	point	ok	pnt
+u	pnt	ok	pnt
+u	k~pnt	ok	k~pnt
+u	kpnt	ok	k~pnt
+u	Ki~pnt	unit_illegal	-
+u	Kipnt	unit_illegal	-
+u	mpnt	ok	m~pnt
+u	µ~pnt	ok	µ~pnt
+u	dapnt	ok	da~pnt
+u	upnt	ok	µ~pnt
+u	Q~pnt	ok	Q~pnt
+u	qpnt	ok	q~pnt
+u	pnt^-3	ok	pnt⁻³
+u	pnt⁻²	ok	pnt⁻²
+u	picas	ok	pca
+u	pica	ok	pca
+u	pca	ok	pca
+u	k~pca	ok	k~pca
+u	kpca	ok	k~pca
+u	Ki~pca	unit_illegal	-
+u	Kipca	unit_illegal	-
+u	mpca	ok	m~pca
+u	µ~pca	ok	µ~pca
+u	dapca	ok	da~pca
+u	upca	ok	µ~pca
+u	Q~pca	ok	Q~pca
+u	qpca	ok	q~pca
+u	pca^-3	ok	pca⁻³
+u	pca⁻²	ok	pca⁻²
+u	lines	ok	lne
+u	line	ok	lne
+u	lne	ok	lne
+u	k~lne	ok	k~lne
+u	klne	ok	k~lne
+u	Ki~lne	unit_illegal	-
+u	Kilne	unit_illegal	-
+u	mlne	ok	m~lne
+u	µ~lne	ok	µ~lne
+u	dalne	ok	da~lne
+u	ulne	ok	µ~lne
+u	Q~lne	ok	Q~lne
+u	qlne	ok	q~lne
+u	lne^-3	ok	lne⁻³
+u	lne⁻²	ok	lne⁻²
+u	dry_gallons	ok	gal_dry
+u	dry_gallon	ok	gal_dry
+u	gal_dry	ok	gal_dry
+u	k~gal_dry	ok	k~gal_dry
+u	kgal_dry	ok	k~gal_dry
+u	Ki~gal_dry	unit_illegal	-
+u	Kigal_dry	unit_illegal	-
+u	mgal_dry	ok	m~gal_dry
+u	µ~gal_dry	ok	µ~gal_dry
+u	dagal_dry	ok	da~gal_dry
+u	ugal_dry	ok	µ~gal_dry
+u	Q~gal_dry	ok	Q~gal_dry
+u	qgal_dry	ok	q~gal_dry
+u	gal_dry^-3	ok	gal_dry⁻³
+u	gal_dry⁻²	ok	gal_dry⁻²
+u	dry_quarts	ok	qt_dry
+u	dry_quart	ok	qt_dry
+u	qt_dry	ok	qt_dry
+u	k~qt_dry	ok	k~qt_dry
+u	kqt_dry	ok	k~qt_dry
+u	Ki~qt_dry	unit_illegal	-
+u	Kiqt_dry	unit_illegal	-
+u	mqt_dry	ok	m~qt_dry
+u	µ~qt_dry	ok	µ~qt_dry
+u	daqt_dry	ok	da~qt_dry
+u	uqt_dry	ok	µ~qt_dry
+u	Q~qt_dry	ok	Q~qt_dry
+u	qqt_dry	ok	q~qt_dry
+u	qt_dry^-3	ok	qt_dry⁻³
+u	qt_dry⁻²	ok	qt_dry⁻²
+u	dry_pints	ok	pt_dry
+u	dry_pint	ok	pt_dry
+u	pt_dry	ok	pt_dry
+u	k~pt_dry	ok	k~pt_dry
+u	kpt_dry	ok	k~pt_dry
+u	Ki~pt_dry	unit_illegal	-
+u	Kipt_dry	unit_illegal	-
+u	mpt_dry	ok	m~pt_dry
+u	µ~pt_dry	ok	µ~pt_dry
+u	dapt_dry	ok	da~pt_dry
+u	upt_dry	ok	µ~pt_dry
+u	Q~pt_dry	ok	Q~pt_dry
+u	qpt_dry	ok	q~pt_dry
+u	pt_dry^-3	ok	pt_dry⁻³
+u	pt_dry⁻²	ok	pt_dry⁻²
+u	board_feet	ok	fbm
+u	board_foot	ok	fbm
+u	fbm	ok	fbm
+u	k~fbm	ok	k~fbm
+u	kfbm	ok	k~fbm
+u	Ki~fbm	unit_illegal	-
+u	Kifbm	unit_illegal	-
+u	mfbm	ok	m~fbm
+u	µ~fbm	ok	µ~fbm
+u	dafbm	ok	da~fbm
+u	ufbm	ok	µ~fbm
+u	Q~fbm	ok	Q~fbm
+u	qfbm	ok	q~fbm
+u	fbm^-3	ok	fbm⁻³
+u	fbm⁻²	ok	fbm⁻²
+u	cords	ok	cord
+u	cord	ok	cord
+u	k~cord	ok	k~cord
+u	kcord	ok	k~cord
+u	Ki~cord	unit_illegal	-
+u	Kicord	unit_illegal	-
+u	mcord	ok	m~cord
+u	µ~cord	ok	µ~cord
+u	dacord	ok	da~cord
+u	ucord	ok	µ~cord
+u	Q~cord	ok	Q~cord
+u	qcord	ok	q~cord
+u	cord^-3	ok	cord⁻³
+u	cord⁻²	ok	cord⁻²
+u	acre_feet	ok	ac_ft
+u	acre_foot	ok	ac_ft
+u	ac_ft	ok	ac_ft
+u	k~ac_ft	ok	k~ac_ft
+u	kac_ft	ok	k~ac_ft
+u	Ki~ac_ft	unit_illegal	-
+u	Kiac_ft	unit_illegal	-
+u	mac_ft	ok	m~ac_ft
+u	µ~ac_ft	ok	µ~ac_ft
+u	daac_ft	ok	da~ac_ft
+u	uac_ft	ok	µ~ac_ft
+u	Q~ac_ft	ok	Q~ac_ft
+u	qac_ft	ok	q~ac_ft
+u	ac_ft^-3	ok	ac_ft⁻³
+u	ac_ft⁻²	ok	ac_ft⁻²
+u	darcies	ok	darcy
+u	darcys	ok	darcy
+u	darcy	ok	darcy
+u	k~darcy	ok	k~darcy
+u	kdarcy	ok	k~darcy
+u	Ki~darcy	unit_illegal	-
+u	Kidarcy	unit_illegal	-
+u	mdarcy	ok	m~darcy
+u	µ~darcy	ok	µ~darcy
+u	dadarcy	ok	da~darcy
+u	udarcy	ok	µ~darcy
+u	Q~darcy	ok	Q~darcy
+u	qdarcy	ok	q~darcy
+u	darcy^-3	ok	darcy⁻³
+u	darcy⁻²	ok	darcy⁻²
+u	therm_EC	ok	thm_ec
+u	thm_ec	ok	thm_ec
+u	k~thm_ec	ok	k~thm_ec
+u	kthm_ec	ok	k~thm_ec
+u	Ki~thm_ec	unit_illegal	-
+u	Kithm_ec	unit_illegal	-
+u	mthm_ec	ok	m~thm_ec
+u	µ~thm_ec	ok	µ~thm_ec
+u	dathm_ec	ok	da~thm_ec
+u	uthm_ec	ok	µ~thm_ec
+u	Q~thm_ec	ok	Q~thm_ec
+u	qthm_ec	ok	q~thm_ec
+u	thm_ec^-3	ok	thm_ec⁻³
+u	thm_ec⁻²	ok	thm_ec⁻²
+u	refrigeration_ton	ok	ton_ref
+u	ton_of_refrigeration	ok	ton_ref
+u	ton_ref	ok	ton_ref
+u	k~ton_ref	ok	k~ton_ref
+u	kton_ref	ok	k~ton_ref
+u	Ki~ton_ref	unit_illegal	-
+u	Kiton_ref	unit_illegal	-
+u	mton_ref	ok	m~ton_ref
+u	µ~ton_ref	ok	µ~ton_ref
+u	daton_ref	ok	da~ton_ref
+u	uton_ref	ok	µ~ton_ref
+u	Q~ton_ref	ok	Q~ton_ref
+u	qton_ref	ok	q~ton_ref
+u	ton_ref^-3	ok	ton_ref⁻³
+u	ton_ref⁻²	ok	ton_ref⁻²
+u	dobson_units	ok	DU
+u	dobson_unit	ok	DU
+u	dobson	ok	DU
+u	DU	ok	DU
+u	k~DU	ok	k~DU
+u	kDU	ok	k~DU
+u	Ki~DU	unit_illegal	-
+u	KiDU	unit_illegal	-
+u	mDU	ok	m~DU
+u	µ~DU	ok	µ~DU
+u	daDU	ok	da~DU
+u	uDU	ok	µ~DU
+u	Q~DU	ok	Q~DU
+u	qDU	ok	q~DU
+u	DU^-3	ok	DU⁻³
+u	DU⁻²	ok	DU⁻²
+u	shakes	ok	shake
+u	shake	ok	shake
+u	k~shake	ok	k~shake
+u	kshake	ok	k~shake
+u	Ki~shake	unit_illegal	-
+u	Kishake	unit_illegal	-
+u	mshake	ok	m~shake
+u	µ~shake	ok	µ~shake
+u	dashake	ok	da~shake
+u	ushake	ok	µ~shake
+u	Q~shake	ok	Q~shake
+u	qshake	ok	q~shake
+u	shake^-3	ok	shake⁻³
+u	shake⁻²	ok	shake⁻²
+u	parts_per_trillion	ok	pptr
+u	pptv	ok	pptr
+u	k~pptr	unit_illegal	-
+u	kpptr	unit_illegal	-
+u	Ki~pptr	unit_illegal	-
+u	Kipptr	unit_illegal	-
+u	mpptr	unit_illegal	-
+u	µ~pptr	unit_illegal	-
+u	dapptr	unit_illegal	-
+u	upptr	unit_illegal	-
+u	Q~pptr	unit_illegal	-
+u	qpptr	unit_illegal	-
+u	pptr^-3	ok	pptr⁻³
+u	pptr⁻²	ok	pptr⁻²
+u	parts_per_quadrillion	ok	ppq
+u	ppqv	ok	ppq
+u	ppq	ok	ppq
+u	k~ppq	unit_illegal	-
+u	kppq	unit_illegal	-
+u	Ki~ppq	unit_illegal	-
+u	Kippq	unit_illegal	-
+u	mppq	unit_illegal	-
+u	µ~ppq	unit_illegal	-
+u	dappq	unit_illegal	-
+u	uppq	unit_illegal	-
+u	Q~ppq	unit_illegal	-
+u	qppq	unit_illegal	-
+u	ppq^-3	ok	ppq⁻³
+u	ppq⁻²	ok	ppq⁻²
+u	printers_point	ok	pnt_pr
+u	pnt_pr	ok	pnt_pr
+u	k~pnt_pr	ok	k~pnt_pr
+u	kpnt_pr	ok	k~pnt_pr
+u	Ki~pnt_pr	unit_illegal	-
+u	Kipnt_pr	unit_illegal	-
+u	mpnt_pr	ok	m~pnt_pr
+u	µ~pnt_pr	ok	µ~pnt_pr
+u	dapnt_pr	ok	da~pnt_pr
+u	upnt_pr	ok	µ~pnt_pr
+u	Q~pnt_pr	ok	Q~pnt_pr
+u	qpnt_pr	ok	q~pnt_pr
+u	pnt_pr^-3	ok	pnt_pr⁻³
+u	pnt_pr⁻²	ok	pnt_pr⁻²
+u	printers_pica	ok	pca_pr
+u	pca_pr	ok	pca_pr
+u	k~pca_pr	ok	k~pca_pr
+u	kpca_pr	ok	k~pca_pr
+u	Ki~pca_pr	unit_illegal	-
+u	Kipca_pr	unit_illegal	-
+u	mpca_pr	ok	m~pca_pr
+u	µ~pca_pr	ok	µ~pca_pr
+u	dapca_pr	ok	da~pca_pr
+u	upca_pr	ok	µ~pca_pr
+u	Q~pca_pr	ok	Q~pca_pr
+u	qpca_pr	ok	q~pca_pr
+u	pca_pr^-3	ok	pca_pr⁻³
+u	pca_pr⁻²	ok	pca_pr⁻²
+u	electric_horsepower	ok	hp_E
+u	hp_E	ok	hp_E
+u	k~hp_E	ok	k~hp_E
+u	khp_E	ok	k~hp_E
+u	Ki~hp_E	unit_illegal	-
+u	Kihp_E	unit_illegal	-
+u	mhp_E	ok	m~hp_E
+u	µ~hp_E	ok	µ~hp_E
+u	dahp_E	ok	da~hp_E
+u	uhp_E	ok	µ~hp_E
+u	Q~hp_E	ok	Q~hp_E
+u	qhp_E	ok	q~hp_E
+u	hp_E^-3	ok	hp_E⁻³
+u	hp_E⁻²	ok	hp_E⁻²
+u	boiler_horsepower	ok	hp_B
+u	hp_B	ok	hp_B
+u	k~hp_B	ok	k~hp_B
+u	khp_B	ok	k~hp_B
+u	Ki~hp_B	unit_illegal	-
+u	Kihp_B	unit_illegal	-
+u	mhp_B	ok	m~hp_B
+u	µ~hp_B	ok	µ~hp_B
+u	dahp_B	ok	da~hp_B
+u	uhp_B	ok	µ~hp_B
+u	Q~hp_B	ok	Q~hp_B
+u	qhp_B	ok	q~hp_B
+u	hp_B^-3	ok	hp_B⁻³
+u	hp_B⁻²	ok	hp_B⁻²
+u	abvolt	ok	abV
+u	abV	ok	abV
+u	k~abV	ok	k~abV
+u	kabV	ok	k~abV
+u	Ki~abV	unit_illegal	-
+u	KiabV	unit_illegal	-
+u	mabV	ok	m~abV
+u	µ~abV	ok	µ~abV
+u	daabV	ok	da~abV
+u	uabV	ok	µ~abV
+u	Q~abV	ok	Q~abV
+u	qabV	ok	q~abV
+u	abV^-3	ok	abV⁻³
+u	abV⁻²	ok	abV⁻²
+u	assay_ton	ok	AT
+u	AT	ok	AT
+u	k~AT	ok	k~AT
+u	kAT	ok	k~AT
+u	Ki~AT	unit_illegal	-
+u	KiAT	unit_illegal	-
+u	mAT	ok	m~AT
+u	µ~AT	ok	µ~AT
+u	daAT	ok	da~AT
+u	uAT	ok	µ~AT
+u	Q~AT	ok	Q~AT
+u	qAT	ok	q~AT
+u	AT^-3	ok	AT⁻³
+u	AT⁻²	ok	AT⁻²
+u	bushel_uk	ok	bsh_uk
+u	bsh_uk	ok	bsh_uk
+u	k~bsh_uk	ok	k~bsh_uk
+u	kbsh_uk	ok	k~bsh_uk
+u	Ki~bsh_uk	unit_illegal	-
+u	Kibsh_uk	unit_illegal	-
+u	mbsh_uk	ok	m~bsh_uk
+u	µ~bsh_uk	ok	µ~bsh_uk
+u	dabsh_uk	ok	da~bsh_uk
+u	ubsh_uk	ok	µ~bsh_uk
+u	Q~bsh_uk	ok	Q~bsh_uk
+u	qbsh_uk	ok	q~bsh_uk
+u	bsh_uk^-3	ok	bsh_uk⁻³
+u	bsh_uk⁻²	ok	bsh_uk⁻²
+u	clo	ok	clo
+u	k~clo	ok	k~clo
+u	kclo	ok	k~clo
+u	Ki~clo	unit_illegal	-
+u	Kiclo	unit_illegal	-
+u	mclo	ok	m~clo
+u	µ~clo	ok	µ~clo
+u	daclo	ok	da~clo
+u	uclo	ok	µ~clo
+u	Q~clo	ok	Q~clo
+u	qclo	ok	q~clo
+u	clo^-3	ok	clo⁻³
+u	clo⁻²	ok	clo⁻²
+u	debye	ok	debye
+u	k~debye	ok	k~debye
+u	kdebye	ok	k~debye
+u	Ki~debye	unit_illegal	-
+u	Kidebye	unit_illegal	-
+u	mdebye	ok	m~debye
+u	µ~debye	ok	µ~debye
+u	dadebye	ok	da~debye
+u	udebye	ok	µ~debye
+u	Q~debye	ok	Q~debye
+u	qdebye	ok	q~debye
+u	debye^-3	ok	debye⁻³
+u	debye⁻²	ok	debye⁻²
+u	tropical_year	ok	yr_trop
+u	yr_trop	ok	yr_trop
+u	k~yr_trop	ok	k~yr_trop
+u	kyr_trop	ok	k~yr_trop
+u	Ki~yr_trop	unit_illegal	-
+u	Kiyr_trop	unit_illegal	-
+u	myr_trop	ok	m~yr_trop
+u	µ~yr_trop	ok	µ~yr_trop
+u	dayr_trop	ok	da~yr_trop
+u	uyr_trop	ok	µ~yr_trop
+u	Q~yr_trop	ok	Q~yr_trop
+u	qyr_trop	ok	q~yr_trop
+u	yr_trop^-3	ok	yr_trop⁻³
+u	yr_trop⁻²	ok	yr_trop⁻²
+u	gregorian_year	ok	yr_greg
+u	yr_greg	ok	yr_greg
+u	k~yr_greg	ok	k~yr_greg
+u	kyr_greg	ok	k~yr_greg
+u	Ki~yr_greg	unit_illegal	-
+u	Kiyr_greg	unit_illegal	-
+u	myr_greg	ok	m~yr_greg
+u	µ~yr_greg	ok	µ~yr_greg
+u	dayr_greg	ok	da~yr_greg
+u	uyr_greg	ok	µ~yr_greg
+u	Q~yr_greg	ok	Q~yr_greg
+u	qyr_greg	ok	q~yr_greg
+u	yr_greg^-3	ok	yr_greg⁻³
+u	yr_greg⁻²	ok	yr_greg⁻²
+u	sidereal_year	ok	yr_sid
+u	yr_sid	ok	yr_sid
+u	k~yr_sid	ok	k~yr_sid
+u	kyr_sid	ok	k~yr_sid
+u	Ki~yr_sid	unit_illegal	-
+u	Kiyr_sid	unit_illegal	-
+u	myr_sid	ok	m~yr_sid
+u	µ~yr_sid	ok	µ~yr_sid
+u	dayr_sid	ok	da~yr_sid
+u	uyr_sid	ok	µ~yr_sid
+u	Q~yr_sid	ok	Q~yr_sid
+u	qyr_sid	ok	q~yr_sid
+u	yr_sid^-3	ok	yr_sid⁻³
+u	yr_sid⁻²	ok	yr_sid⁻²
+u	common_year	ok	yr_com
+u	yr_com	ok	yr_com
+u	k~yr_com	ok	k~yr_com
+u	kyr_com	ok	k~yr_com
+u	Ki~yr_com	unit_illegal	-
+u	Kiyr_com	unit_illegal	-
+u	myr_com	ok	m~yr_com
+u	µ~yr_com	ok	µ~yr_com
+u	dayr_com	ok	da~yr_com
+u	uyr_com	ok	µ~yr_com
+u	Q~yr_com	ok	Q~yr_com
+u	qyr_com	ok	q~yr_com
+u	yr_com^-3	ok	yr_com⁻³
+u	yr_com⁻²	ok	yr_com⁻²
+u	synodal_month	ok	mo_syn
+u	mo_syn	ok	mo_syn
+u	k~mo_syn	ok	k~mo_syn
+u	kmo_syn	ok	k~mo_syn
+u	Ki~mo_syn	unit_illegal	-
+u	Kimo_syn	unit_illegal	-
+u	mmo_syn	ok	m~mo_syn
+u	µ~mo_syn	ok	µ~mo_syn
+u	damo_syn	ok	da~mo_syn
+u	umo_syn	ok	µ~mo_syn
+u	Q~mo_syn	ok	Q~mo_syn
+u	qmo_syn	ok	q~mo_syn
+u	mo_syn^-3	ok	mo_syn⁻³
+u	mo_syn⁻²	ok	mo_syn⁻²
+u	tropical_month	ok	mo_trop
+u	mo_trop	ok	mo_trop
+u	k~mo_trop	ok	k~mo_trop
+u	kmo_trop	ok	k~mo_trop
+u	Ki~mo_trop	unit_illegal	-
+u	Kimo_trop	unit_illegal	-
+u	mmo_trop	ok	m~mo_trop
+u	µ~mo_trop	ok	µ~mo_trop
+u	damo_trop	ok	da~mo_trop
+u	umo_trop	ok	µ~mo_trop
+u	Q~mo_trop	ok	Q~mo_trop
+u	qmo_trop	ok	q~mo_trop
+u	mo_trop^-3	ok	mo_trop⁻³
+u	mo_trop⁻²	ok	mo_trop⁻²
+u	sidereal_month	ok	mo_sid
+u	mo_sid	ok	mo_sid
+u	k~mo_sid	ok	k~mo_sid
+u	kmo_sid	ok	k~mo_sid
+u	Ki~mo_sid	unit_illegal	-
+u	Kimo_sid	unit_illegal	-
+u	mmo_sid	ok	m~mo_sid
+u	µ~mo_sid	ok	µ~mo_sid
+u	damo_sid	ok	da~mo_sid
+u	umo_sid	ok	µ~mo_sid
+u	Q~mo_sid	ok	Q~mo_sid
+u	qmo_sid	ok	q~mo_sid
+u	mo_sid^-3	ok	mo_sid⁻³
+u	mo_sid⁻²	ok	mo_sid⁻²
+u	sidereal_day	ok	d_sid
+u	d_sid	ok	d_sid
+u	k~d_sid	ok	k~d_sid
+u	kd_sid	ok	k~d_sid
+u	Ki~d_sid	unit_illegal	-
+u	Kid_sid	unit_illegal	-
+u	md_sid	ok	m~d_sid
+u	µ~d_sid	ok	µ~d_sid
+u	dad_sid	ok	da~d_sid
+u	ud_sid	ok	µ~d_sid
+u	Q~d_sid	ok	Q~d_sid
+u	qd_sid	ok	q~d_sid
+u	d_sid^-3	ok	d_sid⁻³
+u	d_sid⁻²	ok	d_sid⁻²
+u	sidereal_hour	ok	h_sid
+u	h_sid	ok	h_sid
+u	k~h_sid	ok	k~h_sid
+u	kh_sid	ok	k~h_sid
+u	Ki~h_sid	unit_illegal	-
+u	Kih_sid	unit_illegal	-
+u	mh_sid	ok	m~h_sid
+u	µ~h_sid	ok	µ~h_sid
+u	dah_sid	ok	da~h_sid
+u	uh_sid	ok	µ~h_sid
+u	Q~h_sid	ok	Q~h_sid
+u	qh_sid	ok	q~h_sid
+u	h_sid^-3	ok	h_sid⁻³
+u	h_sid⁻²	ok	h_sid⁻²
+u	sidereal_minute	ok	min_sid
+u	min_sid	ok	min_sid
+u	k~min_sid	ok	k~min_sid
+u	kmin_sid	ok	k~min_sid
+u	Ki~min_sid	unit_illegal	-
+u	Kimin_sid	unit_illegal	-
+u	mmin_sid	ok	m~min_sid
+u	µ~min_sid	ok	µ~min_sid
+u	damin_sid	ok	da~min_sid
+u	umin_sid	ok	µ~min_sid
+u	Q~min_sid	ok	Q~min_sid
+u	qmin_sid	ok	q~min_sid
+u	min_sid^-3	ok	min_sid⁻³
+u	min_sid⁻²	ok	min_sid⁻²
+u	sidereal_second	ok	s_sid
+u	s_sid	ok	s_sid
+u	k~s_sid	ok	k~s_sid
+u	ks_sid	ok	k~s_sid
+u	Ki~s_sid	unit_illegal	-
+u	Kis_sid	unit_illegal	-
+u	ms_sid	ok	m~s_sid
+u	µ~s_sid	ok	µ~s_sid
+u	das_sid	ok	da~s_sid
+u	us_sid	ok	µ~s_sid
+u	Q~s_sid	ok	Q~s_sid
+u	qs_sid	ok	q~s_sid
+u	s_sid^-3	ok	s_sid⁻³
+u	s_sid⁻²	ok	s_sid⁻²
+u	statvolt	ok	statV
+u	statV	ok	statV
+u	k~statV	ok	k~statV
+u	kstatV	ok	k~statV
+u	Ki~statV	unit_illegal	-
+u	KistatV	unit_illegal	-
+u	mstatV	ok	m~statV
+u	µ~statV	ok	µ~statV
+u	dastatV	ok	da~statV
+u	ustatV	ok	µ~statV
+u	Q~statV	ok	Q~statV
+u	qstatV	ok	q~statV
+u	statV^-3	ok	statV⁻³
+u	statV⁻²	ok	statV⁻²
+u	statampere	ok	statA
+u	statA	ok	statA
+u	k~statA	ok	k~statA
+u	kstatA	ok	k~statA
+u	Ki~statA	unit_illegal	-
+u	KistatA	unit_illegal	-
+u	mstatA	ok	m~statA
+u	µ~statA	ok	µ~statA
+u	dastatA	ok	da~statA
+u	ustatA	ok	µ~statA
+u	Q~statA	ok	Q~statA
+u	qstatA	ok	q~statA
+u	statA^-3	ok	statA⁻³
+u	statA⁻²	ok	statA⁻²
+u	statcoulomb	ok	statC
+u	franklin	ok	statC
+u	statC	ok	statC
+u	k~statC	ok	k~statC
+u	kstatC	ok	k~statC
+u	Ki~statC	unit_illegal	-
+u	KistatC	unit_illegal	-
+u	mstatC	ok	m~statC
+u	µ~statC	ok	µ~statC
+u	dastatC	ok	da~statC
+u	ustatC	ok	µ~statC
+u	Q~statC	ok	Q~statC
+u	qstatC	ok	q~statC
+u	statC^-3	ok	statC⁻³
+u	statC⁻²	ok	statC⁻²
+u	statfarad	ok	statF
+u	statF	ok	statF
+u	k~statF	ok	k~statF
+u	kstatF	ok	k~statF
+u	Ki~statF	unit_illegal	-
+u	KistatF	unit_illegal	-
+u	mstatF	ok	m~statF
+u	µ~statF	ok	µ~statF
+u	dastatF	ok	da~statF
+u	ustatF	ok	µ~statF
+u	Q~statF	ok	Q~statF
+u	qstatF	ok	q~statF
+u	statF^-3	ok	statF⁻³
+u	statF⁻²	ok	statF⁻²
+u	statohm	ok	statΩ
+u	statΩ	ok	statΩ
+u	k~statΩ	ok	k~statΩ
+u	kstatΩ	ok	k~statΩ
+u	Ki~statΩ	unit_illegal	-
+u	KistatΩ	unit_illegal	-
+u	mstatΩ	ok	m~statΩ
+u	µ~statΩ	ok	µ~statΩ
+u	dastatΩ	ok	da~statΩ
+u	ustatΩ	ok	µ~statΩ
+u	Q~statΩ	ok	Q~statΩ
+u	qstatΩ	ok	q~statΩ
+u	statΩ^-3	ok	statΩ⁻³
+u	statΩ⁻²	ok	statΩ⁻²
+u	stathenry	ok	statH
+u	statH	ok	statH
+u	k~statH	ok	k~statH
+u	kstatH	ok	k~statH
+u	Ki~statH	unit_illegal	-
+u	KistatH	unit_illegal	-
+u	mstatH	ok	m~statH
+u	µ~statH	ok	µ~statH
+u	dastatH	ok	da~statH
+u	ustatH	ok	µ~statH
+u	Q~statH	ok	Q~statH
+u	qstatH	ok	q~statH
+u	statH^-3	ok	statH⁻³
+u	statH⁻²	ok	statH⁻²
+u	statsiemens	ok	statS
+u	statmho	ok	statS
+u	statS	ok	statS
+u	k~statS	ok	k~statS
+u	kstatS	ok	k~statS
+u	Ki~statS	unit_illegal	-
+u	KistatS	unit_illegal	-
+u	mstatS	ok	m~statS
+u	µ~statS	ok	µ~statS
+u	dastatS	ok	da~statS
+u	ustatS	ok	µ~statS
+u	Q~statS	ok	Q~statS
+u	qstatS	ok	q~statS
+u	statS^-3	ok	statS⁻³
+u	statS⁻²	ok	statS⁻²
+u	lambert	ok	Lmb
+u	Lmb	ok	Lmb
+u	k~Lmb	ok	k~Lmb
+u	kLmb	ok	k~Lmb
+u	Ki~Lmb	unit_illegal	-
+u	KiLmb	unit_illegal	-
+u	mLmb	ok	m~Lmb
+u	µ~Lmb	ok	µ~Lmb
+u	daLmb	ok	da~Lmb
+u	uLmb	ok	µ~Lmb
+u	Q~Lmb	ok	Q~Lmb
+u	qLmb	ok	q~Lmb
+u	Lmb^-3	ok	Lmb⁻³
+u	Lmb⁻²	ok	Lmb⁻²
+u	blondel	ok	apostilb
+u	apostilb	ok	apostilb
+u	k~apostilb	ok	k~apostilb
+u	kapostilb	ok	k~apostilb
+u	Ki~apostilb	unit_illegal	-
+u	Kiapostilb	unit_illegal	-
+u	mapostilb	ok	m~apostilb
+u	µ~apostilb	ok	µ~apostilb
+u	daapostilb	ok	da~apostilb
+u	uapostilb	ok	µ~apostilb
+u	Q~apostilb	ok	Q~apostilb
+u	qapostilb	ok	q~apostilb
+u	apostilb^-3	ok	apostilb⁻³
+u	apostilb⁻²	ok	apostilb⁻²
+u	foot_lambert	ok	footlambert
+u	footlambert	ok	footlambert
+u	k~footlambert	ok	k~footlambert
+u	kfootlambert	ok	k~footlambert
+u	Ki~footlambert	unit_illegal	-
+u	Kifootlambert	unit_illegal	-
+u	mfootlambert	ok	m~footlambert
+u	µ~footlambert	ok	µ~footlambert
+u	dafootlambert	ok	da~footlambert
+u	ufootlambert	ok	µ~footlambert
+u	Q~footlambert	ok	Q~footlambert
+u	qfootlambert	ok	q~footlambert
+u	footlambert^-3	ok	footlambert⁻³
+u	footlambert⁻²	ok	footlambert⁻²
+u	perm_0C	ok	perm_0C
+u	k~perm_0C	ok	k~perm_0C
+u	kperm_0C	ok	k~perm_0C
+u	Ki~perm_0C	unit_illegal	-
+u	Kiperm_0C	unit_illegal	-
+u	mperm_0C	ok	m~perm_0C
+u	µ~perm_0C	ok	µ~perm_0C
+u	daperm_0C	ok	da~perm_0C
+u	uperm_0C	ok	µ~perm_0C
+u	Q~perm_0C	ok	Q~perm_0C
+u	qperm_0C	ok	q~perm_0C
+u	perm_0C^-3	ok	perm_0C⁻³
+u	perm_0C⁻²	ok	perm_0C⁻²
+u	perm_23C	ok	perm_23C
+u	k~perm_23C	ok	k~perm_23C
+u	kperm_23C	ok	k~perm_23C
+u	Ki~perm_23C	unit_illegal	-
+u	Kiperm_23C	unit_illegal	-
+u	mperm_23C	ok	m~perm_23C
+u	µ~perm_23C	ok	µ~perm_23C
+u	daperm_23C	ok	da~perm_23C
+u	uperm_23C	ok	µ~perm_23C
+u	Q~perm_23C	ok	Q~perm_23C
+u	qperm_23C	ok	q~perm_23C
+u	perm_23C^-3	ok	perm_23C⁻³
+u	perm_23C⁻²	ok	perm_23C⁻²
+u	perm_metric	ok	perm_m
+u	perm_m	ok	perm_m
+u	k~perm_m	ok	k~perm_m
+u	kperm_m	ok	k~perm_m
+u	Ki~perm_m	unit_illegal	-
+u	Kiperm_m	unit_illegal	-
+u	mperm_m	ok	m~perm_m
+u	µ~perm_m	ok	µ~perm_m
+u	daperm_m	ok	da~perm_m
+u	uperm_m	ok	µ~perm_m
+u	Q~perm_m	ok	Q~perm_m
+u	qperm_m	ok	q~perm_m
+u	perm_m^-3	ok	perm_m⁻³
+u	perm_m⁻²	ok	perm_m⁻²
+u	mean_calorie	ok	cal_m
+u	cal_m	ok	cal_m
+u	k~cal_m	ok	k~cal_m
+u	kcal_m	ok	k~cal_m
+u	Ki~cal_m	unit_illegal	-
+u	Kical_m	unit_illegal	-
+u	mcal_m	ok	m~cal_m
+u	µ~cal_m	ok	µ~cal_m
+u	dacal_m	ok	da~cal_m
+u	ucal_m	ok	µ~cal_m
+u	Q~cal_m	ok	Q~cal_m
+u	qcal_m	ok	q~cal_m
+u	cal_m^-3	ok	cal_m⁻³
+u	cal_m⁻²	ok	cal_m⁻²
+u	calorie_15C	ok	cal_15
+u	cal_15	ok	cal_15
+u	k~cal_15	ok	k~cal_15
+u	kcal_15	ok	k~cal_15
+u	Ki~cal_15	unit_illegal	-
+u	Kical_15	unit_illegal	-
+u	mcal_15	ok	m~cal_15
+u	µ~cal_15	ok	µ~cal_15
+u	dacal_15	ok	da~cal_15
+u	ucal_15	ok	µ~cal_15
+u	Q~cal_15	ok	Q~cal_15
+u	qcal_15	ok	q~cal_15
+u	cal_15^-3	ok	cal_15⁻³
+u	cal_15⁻²	ok	cal_15⁻²
+u	calorie_20C	ok	cal_20
+u	cal_20	ok	cal_20
+u	k~cal_20	ok	k~cal_20
+u	kcal_20	ok	k~cal_20
+u	Ki~cal_20	unit_illegal	-
+u	Kical_20	unit_illegal	-
+u	mcal_20	ok	m~cal_20
+u	µ~cal_20	ok	µ~cal_20
+u	dacal_20	ok	da~cal_20
+u	ucal_20	ok	µ~cal_20
+u	Q~cal_20	ok	Q~cal_20
+u	qcal_20	ok	q~cal_20
+u	cal_20^-3	ok	cal_20⁻³
+u	cal_20⁻²	ok	cal_20⁻²
+u	btu_59F	ok	Btu_59
+u	Btu_59	ok	Btu_59
+u	k~Btu_59	ok	k~Btu_59
+u	kBtu_59	ok	k~Btu_59
+u	Ki~Btu_59	unit_illegal	-
+u	KiBtu_59	unit_illegal	-
+u	mBtu_59	ok	m~Btu_59
+u	µ~Btu_59	ok	µ~Btu_59
+u	daBtu_59	ok	da~Btu_59
+u	uBtu_59	ok	µ~Btu_59
+u	Q~Btu_59	ok	Q~Btu_59
+u	qBtu_59	ok	q~Btu_59
+u	Btu_59^-3	ok	Btu_59⁻³
+u	Btu_59⁻²	ok	Btu_59⁻²
+u	btu_60F	ok	Btu_60
+u	Btu_60	ok	Btu_60
+u	k~Btu_60	ok	k~Btu_60
+u	kBtu_60	ok	k~Btu_60
+u	Ki~Btu_60	unit_illegal	-
+u	KiBtu_60	unit_illegal	-
+u	mBtu_60	ok	m~Btu_60
+u	µ~Btu_60	ok	µ~Btu_60
+u	daBtu_60	ok	da~Btu_60
+u	uBtu_60	ok	µ~Btu_60
+u	Q~Btu_60	ok	Q~Btu_60
+u	qBtu_60	ok	q~Btu_60
+u	Btu_60^-3	ok	Btu_60⁻³
+u	Btu_60⁻²	ok	Btu_60⁻²
+u	mean_btu	ok	Btu_m
+u	Btu_m	ok	Btu_m
+u	k~Btu_m	ok	k~Btu_m
+u	kBtu_m	ok	k~Btu_m
+u	Ki~Btu_m	unit_illegal	-
+u	KiBtu_m	unit_illegal	-
+u	mBtu_m	ok	m~Btu_m
+u	µ~Btu_m	ok	µ~Btu_m
+u	daBtu_m	ok	da~Btu_m
+u	uBtu_m	ok	µ~Btu_m
+u	Q~Btu_m	ok	Q~Btu_m
+u	qBtu_m	ok	q~Btu_m
+u	Btu_m^-3	ok	Btu_m⁻³
+u	Btu_m⁻²	ok	Btu_m⁻²
+u	elementary_charge	ok	e
+u	ke	ok	k~e
+u	Ki~e	unit_illegal	-
+u	Kie	unit_illegal	-
+u	me	ok	m~e
+u	µ~e	ok	µ~e
+u	dae	ok	da~e
+u	ue	ok	µ~e
+u	Q~e	ok	Q~e
+u	qe	ok	q~e
+u	e^-3	ok	e⁻³
+u	e⁻²	ok	e⁻²
+u	spere	ok	sph
+u	spat	ok	sph
+u	sph	ok	sph
+u	k~sph	ok	k~sph
+u	ksph	ok	k~sph
+u	Ki~sph	unit_illegal	-
+u	Kisph	unit_illegal	-
+u	msph	ok	m~sph
+u	µ~sph	ok	µ~sph
+u	dasph	ok	da~sph
+u	usph	ok	µ~sph
+u	Q~sph	ok	Q~sph
+u	qsph	ok	q~sph
+u	sph^-3	ok	sph⁻³
+u	sph⁻²	ok	sph⁻²
+u	circular_mil	ok	cml
+u	cml	ok	cml
+u	k~cml	ok	k~cml
+u	kcml	ok	k~cml
+u	Ki~cml	unit_illegal	-
+u	Kicml	unit_illegal	-
+u	mcml	ok	m~cml
+u	µ~cml	ok	µ~cml
+u	dacml	ok	da~cml
+u	ucml	ok	µ~cml
+u	Q~cml	ok	Q~cml
+u	qcml	ok	q~cml
+u	cml^-3	ok	cml⁻³
+u	cml⁻²	ok	cml⁻²
+u	unitpole	ok	unit_pole
+u	unit_pole	ok	unit_pole
+u	k~unit_pole	ok	k~unit_pole
+u	kunit_pole	ok	k~unit_pole
+u	Ki~unit_pole	unit_illegal	-
+u	Kiunit_pole	unit_illegal	-
+u	munit_pole	ok	m~unit_pole
+u	µ~unit_pole	ok	µ~unit_pole
+u	daunit_pole	ok	da~unit_pole
+u	uunit_pole	ok	µ~unit_pole
+u	Q~unit_pole	ok	Q~unit_pole
+u	qunit_pole	ok	q~unit_pole
+u	unit_pole^-3	ok	unit_pole⁻³
+u	unit_pole⁻²	ok	unit_pole⁻²
+u	water_horsepower	ok	hp_W
+u	hp_W	ok	hp_W
+u	k~hp_W	ok	k~hp_W
+u	khp_W	ok	k~hp_W
+u	Ki~hp_W	unit_illegal	-
+u	Kihp_W	unit_illegal	-
+u	mhp_W	ok	m~hp_W
+u	µ~hp_W	ok	µ~hp_W
+u	dahp_W	ok	da~hp_W
+u	uhp_W	ok	µ~hp_W
+u	Q~hp_W	ok	Q~hp_W
+u	qhp_W	ok	q~hp_W
+u	hp_W^-3	ok	hp_W⁻³
+u	hp_W⁻²	ok	hp_W⁻²
+u	gregorian_month	ok	mo_greg
+u	mo_greg	ok	mo_greg
+u	k~mo_greg	ok	k~mo_greg
+u	kmo_greg	ok	k~mo_greg
+u	Ki~mo_greg	unit_illegal	-
+u	Kimo_greg	unit_illegal	-
+u	mmo_greg	ok	m~mo_greg
+u	µ~mo_greg	ok	µ~mo_greg
+u	damo_greg	ok	da~mo_greg
+u	umo_greg	ok	µ~mo_greg
+u	Q~mo_greg	ok	Q~mo_greg
+u	qmo_greg	ok	q~mo_greg
+u	mo_greg^-3	ok	mo_greg⁻³
+u	mo_greg⁻²	ok	mo_greg⁻²
+u	statweber	ok	statWb
+u	statWb	ok	statWb
+u	k~statWb	ok	k~statWb
+u	kstatWb	ok	k~statWb
+u	Ki~statWb	unit_illegal	-
+u	KistatWb	unit_illegal	-
+u	mstatWb	ok	m~statWb
+u	µ~statWb	ok	µ~statWb
+u	dastatWb	ok	da~statWb
+u	ustatWb	ok	µ~statWb
+u	Q~statWb	ok	Q~statWb
+u	qstatWb	ok	q~statWb
+u	statWb^-3	ok	statWb⁻³
+u	statWb⁻²	ok	statWb⁻²
+u	stattesla	ok	statT
+u	statT	ok	statT
+u	k~statT	ok	k~statT
+u	kstatT	ok	k~statT
+u	Ki~statT	unit_illegal	-
+u	KistatT	unit_illegal	-
+u	mstatT	ok	m~statT
+u	µ~statT	ok	µ~statT
+u	dastatT	ok	da~statT
+u	ustatT	ok	µ~statT
+u	Q~statT	ok	Q~statT
+u	qstatT	ok	q~statT
+u	statT^-3	ok	statT⁻³
+u	statT⁻²	ok	statT⁻²
+u	$AED	ok	$AED
+u	k~$AED	ok	k~$AED
+u	$AUD	ok	$AUD
+u	k~$AUD	ok	k~$AUD
+u	$BHD	ok	$BHD
+u	k~$BHD	ok	k~$BHD
+u	$BTN	ok	$BTN
+u	k~$BTN	ok	k~$BTN
+u	$CLF	ok	$CLF
+u	k~$CLF	ok	k~$CLF
+u	$CZK	ok	$CZK
+u	k~$CZK	ok	k~$CZK
+u	$ETB	ok	$ETB
+u	k~$ETB	ok	k~$ETB
+u	$GIP	ok	$GIP
+u	k~$GIP	ok	k~$GIP
+u	$HRK	ok	$HRK
+u	k~$HRK	ok	k~$HRK
+u	$IRR	ok	$IRR
+u	k~$IRR	ok	k~$IRR
+u	$KHR	ok	$KHR
+u	k~$KHR	ok	k~$KHR
+u	$LAK	ok	$LAK
+u	k~$LAK	ok	k~$LAK
+u	$MDL	ok	$MDL
+u	k~$MDL	ok	k~$MDL
+u	$MUR	ok	$MUR
+u	k~$MUR	ok	k~$MUR
+u	$NGN	ok	$NGN
+u	k~$NGN	ok	k~$NGN
+u	$PEN	ok	$PEN
+u	k~$PEN	ok	k~$PEN
+u	$RON	ok	$RON
+u	k~$RON	ok	k~$RON
+u	$SDG	ok	$SDG
+u	k~$SDG	ok	k~$SDG
+u	$SRD	ok	$SRD
+u	k~$SRD	ok	k~$SRD
+u	$TJS	ok	$TJS
+u	k~$TJS	ok	k~$TJS
+u	$TZS	ok	$TZS
+u	k~$TZS	ok	k~$TZS
+u	$VND	ok	$VND
+u	k~$VND	ok	k~$VND
+u	$XCG	ok	$XCG
+u	k~$XCG	ok	k~$XCG
+u	$YER	ok	$YER
+u	k~$YER	ok	k~$YER
+u	$SOL	ok	$SOL
+u	k~$SOL	ok	k~$SOL
+u	$ETC	ok	$ETC
+u	k~$ETC	ok	k~$ETC
+u	$VET	ok	$VET
+u	k~$VET	ok	k~$VET
+u	$INJ	ok	$INJ
+u	k~$INJ	ok	k~$INJ
+u	k~$USDT	ok	k~$USDT
+u	$HBAR	ok	$HBAR
+u	k~$HBAR	ok	k~$HBAR
+u	$BONK	ok	$BONK
+u	k~$BONK	ok	k~$BONK
+p	m	m	1	1
+p	m	k~m	0	1
+p	m	km	0	1
+p	m	s	0	0
+p	m	m/s	0	0
+p	m	s⁻¹·m	0	0
+p	m	N	0	0
+p	m	k~g·m/s²	0	0
+p	m	J	0	0
+p	m	N·m	0	0
+p	m	W	0	0
+p	m	J/s	0	0
+p	m	Hz	0	0
+p	m	s^-1	0	0
+p	m	rad	0	0
+p	m	°	0	0
+p	m	rev	0	0
+p	m	sr	0	0
+p	m	rad²	0	0
+p	m	lm	0	0
+p	m	cd	0	0
+p	m	cd·sr	0	0
+p	m	lx	0	0
+p	m	b	0	0
+p	m	B	0	0
+p	m	Ki~B	0	0
+p	m	kB	0	0
+p	m	%	0	0
+p	m	ppm	0	0
+p	m	no_unit	0	0
+p	m	pH	0	0
+p	m	dB	0	0
+p	m	Np	0	0
+p	m	K	0	0
+p	m	ΔK	0	0
+p	m	°C	0	0
+p	m	°F	0	0
+p	m	Δ°F	0	0
+p	m	W/(m²·K)	0	0
+p	m	W/(m²·ΔK)	0	0
+p	m	ΔK·m/m	0	0
+p	m	ΔK/k~m	0	0
+p	m	K/k~m	0	0
+p	m	$USD	0	0
+p	m	k~$USD	0	0
+p	m	$EUR	0	0
+p	m	$USD/h	0	0
+p	m	h^-1·$USD	0	0
+p	m	NTU	0	0
+p	m	FNU	0	0
+p	m	PSU	0	0
+p	m	°C/h	0	0
+p	m	K/h	0	0
+p	m	s/°C	0	0
+p	m	s/K	0	0
+p	m	m·m	0	0
+p	m	m²	0	0
+p	m	m/m	0	0
+p	k~m	m	0	1
+p	k~m	k~m	1	1
+p	k~m	km	1	1
+p	k~m	s	0	0
+p	k~m	m/s	0	0
+p	k~m	s⁻¹·m	0	0
+p	k~m	N	0	0
+p	k~m	k~g·m/s²	0	0
+p	k~m	J	0	0
+p	k~m	N·m	0	0
+p	k~m	W	0	0
+p	k~m	J/s	0	0
+p	k~m	Hz	0	0
+p	k~m	s^-1	0	0
+p	k~m	rad	0	0
+p	k~m	°	0	0
+p	k~m	rev	0	0
+p	k~m	sr	0	0
+p	k~m	rad²	0	0
+p	k~m	lm	0	0
+p	k~m	cd	0	0
+p	k~m	cd·sr	0	0
+p	k~m	lx	0	0
+p	k~m	b	0	0
+p	k~m	B	0	0
+p	k~m	Ki~B	0	0
+p	k~m	kB	0	0
+p	k~m	%	0	0
+p	k~m	ppm	0	0
+p	k~m	no_unit	0	0
+p	k~m	pH	0	0
+p	k~m	dB	0	0
+p	k~m	Np	0	0
+p	k~m	K	0	0
+p	k~m	ΔK	0	0
+p	k~m	°C	0	0
+p	k~m	°F	0	0
+p	k~m	Δ°F	0	0
+p	k~m	W/(m²·K)	0	0
+p	k~m	W/(m²·ΔK)	0	0
+p	k~m	ΔK·m/m	0	0
+p	k~m	ΔK/k~m	0	0
+p	k~m	K/k~m	0	0
+p	k~m	$USD	0	0
+p	k~m	k~$USD	0	0
+p	k~m	$EUR	0	0
+p	k~m	$USD/h	0	0
+p	k~m	h^-1·$USD	0	0
+p	k~m	NTU	0	0
+p	k~m	FNU	0	0
+p	k~m	PSU	0	0
+p	k~m	°C/h	0	0
+p	k~m	K/h	0	0
+p	k~m	s/°C	0	0
+p	k~m	s/K	0	0
+p	k~m	m·m	0	0
+p	k~m	m²	0	0
+p	k~m	m/m	0	0
+p	km	m	0	1
+p	km	k~m	1	1
+p	km	km	1	1
+p	km	s	0	0
+p	km	m/s	0	0
+p	km	s⁻¹·m	0	0
+p	km	N	0	0
+p	km	k~g·m/s²	0	0
+p	km	J	0	0
+p	km	N·m	0	0
+p	km	W	0	0
+p	km	J/s	0	0
+p	km	Hz	0	0
+p	km	s^-1	0	0
+p	km	rad	0	0
+p	km	°	0	0
+p	km	rev	0	0
+p	km	sr	0	0
+p	km	rad²	0	0
+p	km	lm	0	0
+p	km	cd	0	0
+p	km	cd·sr	0	0
+p	km	lx	0	0
+p	km	b	0	0
+p	km	B	0	0
+p	km	Ki~B	0	0
+p	km	kB	0	0
+p	km	%	0	0
+p	km	ppm	0	0
+p	km	no_unit	0	0
+p	km	pH	0	0
+p	km	dB	0	0
+p	km	Np	0	0
+p	km	K	0	0
+p	km	ΔK	0	0
+p	km	°C	0	0
+p	km	°F	0	0
+p	km	Δ°F	0	0
+p	km	W/(m²·K)	0	0
+p	km	W/(m²·ΔK)	0	0
+p	km	ΔK·m/m	0	0
+p	km	ΔK/k~m	0	0
+p	km	K/k~m	0	0
+p	km	$USD	0	0
+p	km	k~$USD	0	0
+p	km	$EUR	0	0
+p	km	$USD/h	0	0
+p	km	h^-1·$USD	0	0
+p	km	NTU	0	0
+p	km	FNU	0	0
+p	km	PSU	0	0
+p	km	°C/h	0	0
+p	km	K/h	0	0
+p	km	s/°C	0	0
+p	km	s/K	0	0
+p	km	m·m	0	0
+p	km	m²	0	0
+p	km	m/m	0	0
+p	s	m	0	0
+p	s	k~m	0	0
+p	s	km	0	0
+p	s	s	1	1
+p	s	m/s	0	0
+p	s	s⁻¹·m	0	0
+p	s	N	0	0
+p	s	k~g·m/s²	0	0
+p	s	J	0	0
+p	s	N·m	0	0
+p	s	W	0	0
+p	s	J/s	0	0
+p	s	Hz	0	0
+p	s	s^-1	0	0
+p	s	rad	0	0
+p	s	°	0	0
+p	s	rev	0	0
+p	s	sr	0	0
+p	s	rad²	0	0
+p	s	lm	0	0
+p	s	cd	0	0
+p	s	cd·sr	0	0
+p	s	lx	0	0
+p	s	b	0	0
+p	s	B	0	0
+p	s	Ki~B	0	0
+p	s	kB	0	0
+p	s	%	0	0
+p	s	ppm	0	0
+p	s	no_unit	0	0
+p	s	pH	0	0
+p	s	dB	0	0
+p	s	Np	0	0
+p	s	K	0	0
+p	s	ΔK	0	0
+p	s	°C	0	0
+p	s	°F	0	0
+p	s	Δ°F	0	0
+p	s	W/(m²·K)	0	0
+p	s	W/(m²·ΔK)	0	0
+p	s	ΔK·m/m	0	0
+p	s	ΔK/k~m	0	0
+p	s	K/k~m	0	0
+p	s	$USD	0	0
+p	s	k~$USD	0	0
+p	s	$EUR	0	0
+p	s	$USD/h	0	0
+p	s	h^-1·$USD	0	0
+p	s	NTU	0	0
+p	s	FNU	0	0
+p	s	PSU	0	0
+p	s	°C/h	0	0
+p	s	K/h	0	0
+p	s	s/°C	0	0
+p	s	s/K	0	0
+p	s	m·m	0	0
+p	s	m²	0	0
+p	s	m/m	0	0
+p	m/s	m	0	0
+p	m/s	k~m	0	0
+p	m/s	km	0	0
+p	m/s	s	0	0
+p	m/s	m/s	1	1
+p	m/s	s⁻¹·m	1	1
+p	m/s	N	0	0
+p	m/s	k~g·m/s²	0	0
+p	m/s	J	0	0
+p	m/s	N·m	0	0
+p	m/s	W	0	0
+p	m/s	J/s	0	0
+p	m/s	Hz	0	0
+p	m/s	s^-1	0	0
+p	m/s	rad	0	0
+p	m/s	°	0	0
+p	m/s	rev	0	0
+p	m/s	sr	0	0
+p	m/s	rad²	0	0
+p	m/s	lm	0	0
+p	m/s	cd	0	0
+p	m/s	cd·sr	0	0
+p	m/s	lx	0	0
+p	m/s	b	0	0
+p	m/s	B	0	0
+p	m/s	Ki~B	0	0
+p	m/s	kB	0	0
+p	m/s	%	0	0
+p	m/s	ppm	0	0
+p	m/s	no_unit	0	0
+p	m/s	pH	0	0
+p	m/s	dB	0	0
+p	m/s	Np	0	0
+p	m/s	K	0	0
+p	m/s	ΔK	0	0
+p	m/s	°C	0	0
+p	m/s	°F	0	0
+p	m/s	Δ°F	0	0
+p	m/s	W/(m²·K)	0	0
+p	m/s	W/(m²·ΔK)	0	0
+p	m/s	ΔK·m/m	0	0
+p	m/s	ΔK/k~m	0	0
+p	m/s	K/k~m	0	0
+p	m/s	$USD	0	0
+p	m/s	k~$USD	0	0
+p	m/s	$EUR	0	0
+p	m/s	$USD/h	0	0
+p	m/s	h^-1·$USD	0	0
+p	m/s	NTU	0	0
+p	m/s	FNU	0	0
+p	m/s	PSU	0	0
+p	m/s	°C/h	0	0
+p	m/s	K/h	0	0
+p	m/s	s/°C	0	0
+p	m/s	s/K	0	0
+p	m/s	m·m	0	0
+p	m/s	m²	0	0
+p	m/s	m/m	0	0
+p	s⁻¹·m	m	0	0
+p	s⁻¹·m	k~m	0	0
+p	s⁻¹·m	km	0	0
+p	s⁻¹·m	s	0	0
+p	s⁻¹·m	m/s	1	1
+p	s⁻¹·m	s⁻¹·m	1	1
+p	s⁻¹·m	N	0	0
+p	s⁻¹·m	k~g·m/s²	0	0
+p	s⁻¹·m	J	0	0
+p	s⁻¹·m	N·m	0	0
+p	s⁻¹·m	W	0	0
+p	s⁻¹·m	J/s	0	0
+p	s⁻¹·m	Hz	0	0
+p	s⁻¹·m	s^-1	0	0
+p	s⁻¹·m	rad	0	0
+p	s⁻¹·m	°	0	0
+p	s⁻¹·m	rev	0	0
+p	s⁻¹·m	sr	0	0
+p	s⁻¹·m	rad²	0	0
+p	s⁻¹·m	lm	0	0
+p	s⁻¹·m	cd	0	0
+p	s⁻¹·m	cd·sr	0	0
+p	s⁻¹·m	lx	0	0
+p	s⁻¹·m	b	0	0
+p	s⁻¹·m	B	0	0
+p	s⁻¹·m	Ki~B	0	0
+p	s⁻¹·m	kB	0	0
+p	s⁻¹·m	%	0	0
+p	s⁻¹·m	ppm	0	0
+p	s⁻¹·m	no_unit	0	0
+p	s⁻¹·m	pH	0	0
+p	s⁻¹·m	dB	0	0
+p	s⁻¹·m	Np	0	0
+p	s⁻¹·m	K	0	0
+p	s⁻¹·m	ΔK	0	0
+p	s⁻¹·m	°C	0	0
+p	s⁻¹·m	°F	0	0
+p	s⁻¹·m	Δ°F	0	0
+p	s⁻¹·m	W/(m²·K)	0	0
+p	s⁻¹·m	W/(m²·ΔK)	0	0
+p	s⁻¹·m	ΔK·m/m	0	0
+p	s⁻¹·m	ΔK/k~m	0	0
+p	s⁻¹·m	K/k~m	0	0
+p	s⁻¹·m	$USD	0	0
+p	s⁻¹·m	k~$USD	0	0
+p	s⁻¹·m	$EUR	0	0
+p	s⁻¹·m	$USD/h	0	0
+p	s⁻¹·m	h^-1·$USD	0	0
+p	s⁻¹·m	NTU	0	0
+p	s⁻¹·m	FNU	0	0
+p	s⁻¹·m	PSU	0	0
+p	s⁻¹·m	°C/h	0	0
+p	s⁻¹·m	K/h	0	0
+p	s⁻¹·m	s/°C	0	0
+p	s⁻¹·m	s/K	0	0
+p	s⁻¹·m	m·m	0	0
+p	s⁻¹·m	m²	0	0
+p	s⁻¹·m	m/m	0	0
+p	N	m	0	0
+p	N	k~m	0	0
+p	N	km	0	0
+p	N	s	0	0
+p	N	m/s	0	0
+p	N	s⁻¹·m	0	0
+p	N	N	1	1
+p	N	k~g·m/s²	0	1
+p	N	J	0	0
+p	N	N·m	0	0
+p	N	W	0	0
+p	N	J/s	0	0
+p	N	Hz	0	0
+p	N	s^-1	0	0
+p	N	rad	0	0
+p	N	°	0	0
+p	N	rev	0	0
+p	N	sr	0	0
+p	N	rad²	0	0
+p	N	lm	0	0
+p	N	cd	0	0
+p	N	cd·sr	0	0
+p	N	lx	0	0
+p	N	b	0	0
+p	N	B	0	0
+p	N	Ki~B	0	0
+p	N	kB	0	0
+p	N	%	0	0
+p	N	ppm	0	0
+p	N	no_unit	0	0
+p	N	pH	0	0
+p	N	dB	0	0
+p	N	Np	0	0
+p	N	K	0	0
+p	N	ΔK	0	0
+p	N	°C	0	0
+p	N	°F	0	0
+p	N	Δ°F	0	0
+p	N	W/(m²·K)	0	0
+p	N	W/(m²·ΔK)	0	0
+p	N	ΔK·m/m	0	0
+p	N	ΔK/k~m	0	0
+p	N	K/k~m	0	0
+p	N	$USD	0	0
+p	N	k~$USD	0	0
+p	N	$EUR	0	0
+p	N	$USD/h	0	0
+p	N	h^-1·$USD	0	0
+p	N	NTU	0	0
+p	N	FNU	0	0
+p	N	PSU	0	0
+p	N	°C/h	0	0
+p	N	K/h	0	0
+p	N	s/°C	0	0
+p	N	s/K	0	0
+p	N	m·m	0	0
+p	N	m²	0	0
+p	N	m/m	0	0
+p	k~g·m/s²	m	0	0
+p	k~g·m/s²	k~m	0	0
+p	k~g·m/s²	km	0	0
+p	k~g·m/s²	s	0	0
+p	k~g·m/s²	m/s	0	0
+p	k~g·m/s²	s⁻¹·m	0	0
+p	k~g·m/s²	N	0	1
+p	k~g·m/s²	k~g·m/s²	1	1
+p	k~g·m/s²	J	0	0
+p	k~g·m/s²	N·m	0	0
+p	k~g·m/s²	W	0	0
+p	k~g·m/s²	J/s	0	0
+p	k~g·m/s²	Hz	0	0
+p	k~g·m/s²	s^-1	0	0
+p	k~g·m/s²	rad	0	0
+p	k~g·m/s²	°	0	0
+p	k~g·m/s²	rev	0	0
+p	k~g·m/s²	sr	0	0
+p	k~g·m/s²	rad²	0	0
+p	k~g·m/s²	lm	0	0
+p	k~g·m/s²	cd	0	0
+p	k~g·m/s²	cd·sr	0	0
+p	k~g·m/s²	lx	0	0
+p	k~g·m/s²	b	0	0
+p	k~g·m/s²	B	0	0
+p	k~g·m/s²	Ki~B	0	0
+p	k~g·m/s²	kB	0	0
+p	k~g·m/s²	%	0	0
+p	k~g·m/s²	ppm	0	0
+p	k~g·m/s²	no_unit	0	0
+p	k~g·m/s²	pH	0	0
+p	k~g·m/s²	dB	0	0
+p	k~g·m/s²	Np	0	0
+p	k~g·m/s²	K	0	0
+p	k~g·m/s²	ΔK	0	0
+p	k~g·m/s²	°C	0	0
+p	k~g·m/s²	°F	0	0
+p	k~g·m/s²	Δ°F	0	0
+p	k~g·m/s²	W/(m²·K)	0	0
+p	k~g·m/s²	W/(m²·ΔK)	0	0
+p	k~g·m/s²	ΔK·m/m	0	0
+p	k~g·m/s²	ΔK/k~m	0	0
+p	k~g·m/s²	K/k~m	0	0
+p	k~g·m/s²	$USD	0	0
+p	k~g·m/s²	k~$USD	0	0
+p	k~g·m/s²	$EUR	0	0
+p	k~g·m/s²	$USD/h	0	0
+p	k~g·m/s²	h^-1·$USD	0	0
+p	k~g·m/s²	NTU	0	0
+p	k~g·m/s²	FNU	0	0
+p	k~g·m/s²	PSU	0	0
+p	k~g·m/s²	°C/h	0	0
+p	k~g·m/s²	K/h	0	0
+p	k~g·m/s²	s/°C	0	0
+p	k~g·m/s²	s/K	0	0
+p	k~g·m/s²	m·m	0	0
+p	k~g·m/s²	m²	0	0
+p	k~g·m/s²	m/m	0	0
+p	J	m	0	0
+p	J	k~m	0	0
+p	J	km	0	0
+p	J	s	0	0
+p	J	m/s	0	0
+p	J	s⁻¹·m	0	0
+p	J	N	0	0
+p	J	k~g·m/s²	0	0
+p	J	J	1	1
+p	J	N·m	0	1
+p	J	W	0	0
+p	J	J/s	0	0
+p	J	Hz	0	0
+p	J	s^-1	0	0
+p	J	rad	0	0
+p	J	°	0	0
+p	J	rev	0	0
+p	J	sr	0	0
+p	J	rad²	0	0
+p	J	lm	0	0
+p	J	cd	0	0
+p	J	cd·sr	0	0
+p	J	lx	0	0
+p	J	b	0	0
+p	J	B	0	0
+p	J	Ki~B	0	0
+p	J	kB	0	0
+p	J	%	0	0
+p	J	ppm	0	0
+p	J	no_unit	0	0
+p	J	pH	0	0
+p	J	dB	0	0
+p	J	Np	0	0
+p	J	K	0	0
+p	J	ΔK	0	0
+p	J	°C	0	0
+p	J	°F	0	0
+p	J	Δ°F	0	0
+p	J	W/(m²·K)	0	0
+p	J	W/(m²·ΔK)	0	0
+p	J	ΔK·m/m	0	0
+p	J	ΔK/k~m	0	0
+p	J	K/k~m	0	0
+p	J	$USD	0	0
+p	J	k~$USD	0	0
+p	J	$EUR	0	0
+p	J	$USD/h	0	0
+p	J	h^-1·$USD	0	0
+p	J	NTU	0	0
+p	J	FNU	0	0
+p	J	PSU	0	0
+p	J	°C/h	0	0
+p	J	K/h	0	0
+p	J	s/°C	0	0
+p	J	s/K	0	0
+p	J	m·m	0	0
+p	J	m²	0	0
+p	J	m/m	0	0
+p	N·m	m	0	0
+p	N·m	k~m	0	0
+p	N·m	km	0	0
+p	N·m	s	0	0
+p	N·m	m/s	0	0
+p	N·m	s⁻¹·m	0	0
+p	N·m	N	0	0
+p	N·m	k~g·m/s²	0	0
+p	N·m	J	0	1
+p	N·m	N·m	1	1
+p	N·m	W	0	0
+p	N·m	J/s	0	0
+p	N·m	Hz	0	0
+p	N·m	s^-1	0	0
+p	N·m	rad	0	0
+p	N·m	°	0	0
+p	N·m	rev	0	0
+p	N·m	sr	0	0
+p	N·m	rad²	0	0
+p	N·m	lm	0	0
+p	N·m	cd	0	0
+p	N·m	cd·sr	0	0
+p	N·m	lx	0	0
+p	N·m	b	0	0
+p	N·m	B	0	0
+p	N·m	Ki~B	0	0
+p	N·m	kB	0	0
+p	N·m	%	0	0
+p	N·m	ppm	0	0
+p	N·m	no_unit	0	0
+p	N·m	pH	0	0
+p	N·m	dB	0	0
+p	N·m	Np	0	0
+p	N·m	K	0	0
+p	N·m	ΔK	0	0
+p	N·m	°C	0	0
+p	N·m	°F	0	0
+p	N·m	Δ°F	0	0
+p	N·m	W/(m²·K)	0	0
+p	N·m	W/(m²·ΔK)	0	0
+p	N·m	ΔK·m/m	0	0
+p	N·m	ΔK/k~m	0	0
+p	N·m	K/k~m	0	0
+p	N·m	$USD	0	0
+p	N·m	k~$USD	0	0
+p	N·m	$EUR	0	0
+p	N·m	$USD/h	0	0
+p	N·m	h^-1·$USD	0	0
+p	N·m	NTU	0	0
+p	N·m	FNU	0	0
+p	N·m	PSU	0	0
+p	N·m	°C/h	0	0
+p	N·m	K/h	0	0
+p	N·m	s/°C	0	0
+p	N·m	s/K	0	0
+p	N·m	m·m	0	0
+p	N·m	m²	0	0
+p	N·m	m/m	0	0
+p	W	m	0	0
+p	W	k~m	0	0
+p	W	km	0	0
+p	W	s	0	0
+p	W	m/s	0	0
+p	W	s⁻¹·m	0	0
+p	W	N	0	0
+p	W	k~g·m/s²	0	0
+p	W	J	0	0
+p	W	N·m	0	0
+p	W	W	1	1
+p	W	J/s	0	1
+p	W	Hz	0	0
+p	W	s^-1	0	0
+p	W	rad	0	0
+p	W	°	0	0
+p	W	rev	0	0
+p	W	sr	0	0
+p	W	rad²	0	0
+p	W	lm	0	0
+p	W	cd	0	0
+p	W	cd·sr	0	0
+p	W	lx	0	0
+p	W	b	0	0
+p	W	B	0	0
+p	W	Ki~B	0	0
+p	W	kB	0	0
+p	W	%	0	0
+p	W	ppm	0	0
+p	W	no_unit	0	0
+p	W	pH	0	0
+p	W	dB	0	0
+p	W	Np	0	0
+p	W	K	0	0
+p	W	ΔK	0	0
+p	W	°C	0	0
+p	W	°F	0	0
+p	W	Δ°F	0	0
+p	W	W/(m²·K)	0	0
+p	W	W/(m²·ΔK)	0	0
+p	W	ΔK·m/m	0	0
+p	W	ΔK/k~m	0	0
+p	W	K/k~m	0	0
+p	W	$USD	0	0
+p	W	k~$USD	0	0
+p	W	$EUR	0	0
+p	W	$USD/h	0	0
+p	W	h^-1·$USD	0	0
+p	W	NTU	0	0
+p	W	FNU	0	0
+p	W	PSU	0	0
+p	W	°C/h	0	0
+p	W	K/h	0	0
+p	W	s/°C	0	0
+p	W	s/K	0	0
+p	W	m·m	0	0
+p	W	m²	0	0
+p	W	m/m	0	0
+p	J/s	m	0	0
+p	J/s	k~m	0	0
+p	J/s	km	0	0
+p	J/s	s	0	0
+p	J/s	m/s	0	0
+p	J/s	s⁻¹·m	0	0
+p	J/s	N	0	0
+p	J/s	k~g·m/s²	0	0
+p	J/s	J	0	0
+p	J/s	N·m	0	0
+p	J/s	W	0	1
+p	J/s	J/s	1	1
+p	J/s	Hz	0	0
+p	J/s	s^-1	0	0
+p	J/s	rad	0	0
+p	J/s	°	0	0
+p	J/s	rev	0	0
+p	J/s	sr	0	0
+p	J/s	rad²	0	0
+p	J/s	lm	0	0
+p	J/s	cd	0	0
+p	J/s	cd·sr	0	0
+p	J/s	lx	0	0
+p	J/s	b	0	0
+p	J/s	B	0	0
+p	J/s	Ki~B	0	0
+p	J/s	kB	0	0
+p	J/s	%	0	0
+p	J/s	ppm	0	0
+p	J/s	no_unit	0	0
+p	J/s	pH	0	0
+p	J/s	dB	0	0
+p	J/s	Np	0	0
+p	J/s	K	0	0
+p	J/s	ΔK	0	0
+p	J/s	°C	0	0
+p	J/s	°F	0	0
+p	J/s	Δ°F	0	0
+p	J/s	W/(m²·K)	0	0
+p	J/s	W/(m²·ΔK)	0	0
+p	J/s	ΔK·m/m	0	0
+p	J/s	ΔK/k~m	0	0
+p	J/s	K/k~m	0	0
+p	J/s	$USD	0	0
+p	J/s	k~$USD	0	0
+p	J/s	$EUR	0	0
+p	J/s	$USD/h	0	0
+p	J/s	h^-1·$USD	0	0
+p	J/s	NTU	0	0
+p	J/s	FNU	0	0
+p	J/s	PSU	0	0
+p	J/s	°C/h	0	0
+p	J/s	K/h	0	0
+p	J/s	s/°C	0	0
+p	J/s	s/K	0	0
+p	J/s	m·m	0	0
+p	J/s	m²	0	0
+p	J/s	m/m	0	0
+p	Hz	m	0	0
+p	Hz	k~m	0	0
+p	Hz	km	0	0
+p	Hz	s	0	0
+p	Hz	m/s	0	0
+p	Hz	s⁻¹·m	0	0
+p	Hz	N	0	0
+p	Hz	k~g·m/s²	0	0
+p	Hz	J	0	0
+p	Hz	N·m	0	0
+p	Hz	W	0	0
+p	Hz	J/s	0	0
+p	Hz	Hz	1	1
+p	Hz	s^-1	0	1
+p	Hz	rad	0	0
+p	Hz	°	0	0
+p	Hz	rev	0	0
+p	Hz	sr	0	0
+p	Hz	rad²	0	0
+p	Hz	lm	0	0
+p	Hz	cd	0	0
+p	Hz	cd·sr	0	0
+p	Hz	lx	0	0
+p	Hz	b	0	0
+p	Hz	B	0	0
+p	Hz	Ki~B	0	0
+p	Hz	kB	0	0
+p	Hz	%	0	0
+p	Hz	ppm	0	0
+p	Hz	no_unit	0	0
+p	Hz	pH	0	0
+p	Hz	dB	0	0
+p	Hz	Np	0	0
+p	Hz	K	0	0
+p	Hz	ΔK	0	0
+p	Hz	°C	0	0
+p	Hz	°F	0	0
+p	Hz	Δ°F	0	0
+p	Hz	W/(m²·K)	0	0
+p	Hz	W/(m²·ΔK)	0	0
+p	Hz	ΔK·m/m	0	0
+p	Hz	ΔK/k~m	0	0
+p	Hz	K/k~m	0	0
+p	Hz	$USD	0	0
+p	Hz	k~$USD	0	0
+p	Hz	$EUR	0	0
+p	Hz	$USD/h	0	0
+p	Hz	h^-1·$USD	0	0
+p	Hz	NTU	0	0
+p	Hz	FNU	0	0
+p	Hz	PSU	0	0
+p	Hz	°C/h	0	0
+p	Hz	K/h	0	0
+p	Hz	s/°C	0	0
+p	Hz	s/K	0	0
+p	Hz	m·m	0	0
+p	Hz	m²	0	0
+p	Hz	m/m	0	0
+p	s^-1	m	0	0
+p	s^-1	k~m	0	0
+p	s^-1	km	0	0
+p	s^-1	s	0	0
+p	s^-1	m/s	0	0
+p	s^-1	s⁻¹·m	0	0
+p	s^-1	N	0	0
+p	s^-1	k~g·m/s²	0	0
+p	s^-1	J	0	0
+p	s^-1	N·m	0	0
+p	s^-1	W	0	0
+p	s^-1	J/s	0	0
+p	s^-1	Hz	0	1
+p	s^-1	s^-1	1	1
+p	s^-1	rad	0	0
+p	s^-1	°	0	0
+p	s^-1	rev	0	0
+p	s^-1	sr	0	0
+p	s^-1	rad²	0	0
+p	s^-1	lm	0	0
+p	s^-1	cd	0	0
+p	s^-1	cd·sr	0	0
+p	s^-1	lx	0	0
+p	s^-1	b	0	0
+p	s^-1	B	0	0
+p	s^-1	Ki~B	0	0
+p	s^-1	kB	0	0
+p	s^-1	%	0	0
+p	s^-1	ppm	0	0
+p	s^-1	no_unit	0	0
+p	s^-1	pH	0	0
+p	s^-1	dB	0	0
+p	s^-1	Np	0	0
+p	s^-1	K	0	0
+p	s^-1	ΔK	0	0
+p	s^-1	°C	0	0
+p	s^-1	°F	0	0
+p	s^-1	Δ°F	0	0
+p	s^-1	W/(m²·K)	0	0
+p	s^-1	W/(m²·ΔK)	0	0
+p	s^-1	ΔK·m/m	0	0
+p	s^-1	ΔK/k~m	0	0
+p	s^-1	K/k~m	0	0
+p	s^-1	$USD	0	0
+p	s^-1	k~$USD	0	0
+p	s^-1	$EUR	0	0
+p	s^-1	$USD/h	0	0
+p	s^-1	h^-1·$USD	0	0
+p	s^-1	NTU	0	0
+p	s^-1	FNU	0	0
+p	s^-1	PSU	0	0
+p	s^-1	°C/h	0	0
+p	s^-1	K/h	0	0
+p	s^-1	s/°C	0	0
+p	s^-1	s/K	0	0
+p	s^-1	m·m	0	0
+p	s^-1	m²	0	0
+p	s^-1	m/m	0	0
+p	rad	m	0	0
+p	rad	k~m	0	0
+p	rad	km	0	0
+p	rad	s	0	0
+p	rad	m/s	0	0
+p	rad	s⁻¹·m	0	0
+p	rad	N	0	0
+p	rad	k~g·m/s²	0	0
+p	rad	J	0	0
+p	rad	N·m	0	0
+p	rad	W	0	0
+p	rad	J/s	0	0
+p	rad	Hz	0	0
+p	rad	s^-1	0	0
+p	rad	rad	1	1
+p	rad	°	0	1
+p	rad	rev	0	1
+p	rad	sr	0	0
+p	rad	rad²	0	0
+p	rad	lm	0	0
+p	rad	cd	0	0
+p	rad	cd·sr	0	0
+p	rad	lx	0	0
+p	rad	b	0	0
+p	rad	B	0	0
+p	rad	Ki~B	0	0
+p	rad	kB	0	0
+p	rad	%	0	0
+p	rad	ppm	0	0
+p	rad	no_unit	0	0
+p	rad	pH	0	0
+p	rad	dB	0	0
+p	rad	Np	0	0
+p	rad	K	0	0
+p	rad	ΔK	0	0
+p	rad	°C	0	0
+p	rad	°F	0	0
+p	rad	Δ°F	0	0
+p	rad	W/(m²·K)	0	0
+p	rad	W/(m²·ΔK)	0	0
+p	rad	ΔK·m/m	0	0
+p	rad	ΔK/k~m	0	0
+p	rad	K/k~m	0	0
+p	rad	$USD	0	0
+p	rad	k~$USD	0	0
+p	rad	$EUR	0	0
+p	rad	$USD/h	0	0
+p	rad	h^-1·$USD	0	0
+p	rad	NTU	0	0
+p	rad	FNU	0	0
+p	rad	PSU	0	0
+p	rad	°C/h	0	0
+p	rad	K/h	0	0
+p	rad	s/°C	0	0
+p	rad	s/K	0	0
+p	rad	m·m	0	0
+p	rad	m²	0	0
+p	rad	m/m	0	0
+p	°	m	0	0
+p	°	k~m	0	0
+p	°	km	0	0
+p	°	s	0	0
+p	°	m/s	0	0
+p	°	s⁻¹·m	0	0
+p	°	N	0	0
+p	°	k~g·m/s²	0	0
+p	°	J	0	0
+p	°	N·m	0	0
+p	°	W	0	0
+p	°	J/s	0	0
+p	°	Hz	0	0
+p	°	s^-1	0	0
+p	°	rad	0	1
+p	°	°	1	1
+p	°	rev	0	1
+p	°	sr	0	0
+p	°	rad²	0	0
+p	°	lm	0	0
+p	°	cd	0	0
+p	°	cd·sr	0	0
+p	°	lx	0	0
+p	°	b	0	0
+p	°	B	0	0
+p	°	Ki~B	0	0
+p	°	kB	0	0
+p	°	%	0	0
+p	°	ppm	0	0
+p	°	no_unit	0	0
+p	°	pH	0	0
+p	°	dB	0	0
+p	°	Np	0	0
+p	°	K	0	0
+p	°	ΔK	0	0
+p	°	°C	0	0
+p	°	°F	0	0
+p	°	Δ°F	0	0
+p	°	W/(m²·K)	0	0
+p	°	W/(m²·ΔK)	0	0
+p	°	ΔK·m/m	0	0
+p	°	ΔK/k~m	0	0
+p	°	K/k~m	0	0
+p	°	$USD	0	0
+p	°	k~$USD	0	0
+p	°	$EUR	0	0
+p	°	$USD/h	0	0
+p	°	h^-1·$USD	0	0
+p	°	NTU	0	0
+p	°	FNU	0	0
+p	°	PSU	0	0
+p	°	°C/h	0	0
+p	°	K/h	0	0
+p	°	s/°C	0	0
+p	°	s/K	0	0
+p	°	m·m	0	0
+p	°	m²	0	0
+p	°	m/m	0	0
+p	rev	m	0	0
+p	rev	k~m	0	0
+p	rev	km	0	0
+p	rev	s	0	0
+p	rev	m/s	0	0
+p	rev	s⁻¹·m	0	0
+p	rev	N	0	0
+p	rev	k~g·m/s²	0	0
+p	rev	J	0	0
+p	rev	N·m	0	0
+p	rev	W	0	0
+p	rev	J/s	0	0
+p	rev	Hz	0	0
+p	rev	s^-1	0	0
+p	rev	rad	0	1
+p	rev	°	0	1
+p	rev	rev	1	1
+p	rev	sr	0	0
+p	rev	rad²	0	0
+p	rev	lm	0	0
+p	rev	cd	0	0
+p	rev	cd·sr	0	0
+p	rev	lx	0	0
+p	rev	b	0	0
+p	rev	B	0	0
+p	rev	Ki~B	0	0
+p	rev	kB	0	0
+p	rev	%	0	0
+p	rev	ppm	0	0
+p	rev	no_unit	0	0
+p	rev	pH	0	0
+p	rev	dB	0	0
+p	rev	Np	0	0
+p	rev	K	0	0
+p	rev	ΔK	0	0
+p	rev	°C	0	0
+p	rev	°F	0	0
+p	rev	Δ°F	0	0
+p	rev	W/(m²·K)	0	0
+p	rev	W/(m²·ΔK)	0	0
+p	rev	ΔK·m/m	0	0
+p	rev	ΔK/k~m	0	0
+p	rev	K/k~m	0	0
+p	rev	$USD	0	0
+p	rev	k~$USD	0	0
+p	rev	$EUR	0	0
+p	rev	$USD/h	0	0
+p	rev	h^-1·$USD	0	0
+p	rev	NTU	0	0
+p	rev	FNU	0	0
+p	rev	PSU	0	0
+p	rev	°C/h	0	0
+p	rev	K/h	0	0
+p	rev	s/°C	0	0
+p	rev	s/K	0	0
+p	rev	m·m	0	0
+p	rev	m²	0	0
+p	rev	m/m	0	0
+p	sr	m	0	0
+p	sr	k~m	0	0
+p	sr	km	0	0
+p	sr	s	0	0
+p	sr	m/s	0	0
+p	sr	s⁻¹·m	0	0
+p	sr	N	0	0
+p	sr	k~g·m/s²	0	0
+p	sr	J	0	0
+p	sr	N·m	0	0
+p	sr	W	0	0
+p	sr	J/s	0	0
+p	sr	Hz	0	0
+p	sr	s^-1	0	0
+p	sr	rad	0	0
+p	sr	°	0	0
+p	sr	rev	0	0
+p	sr	sr	1	1
+p	sr	rad²	0	1
+p	sr	lm	0	0
+p	sr	cd	0	0
+p	sr	cd·sr	0	0
+p	sr	lx	0	0
+p	sr	b	0	0
+p	sr	B	0	0
+p	sr	Ki~B	0	0
+p	sr	kB	0	0
+p	sr	%	0	0
+p	sr	ppm	0	0
+p	sr	no_unit	0	0
+p	sr	pH	0	0
+p	sr	dB	0	0
+p	sr	Np	0	0
+p	sr	K	0	0
+p	sr	ΔK	0	0
+p	sr	°C	0	0
+p	sr	°F	0	0
+p	sr	Δ°F	0	0
+p	sr	W/(m²·K)	0	0
+p	sr	W/(m²·ΔK)	0	0
+p	sr	ΔK·m/m	0	0
+p	sr	ΔK/k~m	0	0
+p	sr	K/k~m	0	0
+p	sr	$USD	0	0
+p	sr	k~$USD	0	0
+p	sr	$EUR	0	0
+p	sr	$USD/h	0	0
+p	sr	h^-1·$USD	0	0
+p	sr	NTU	0	0
+p	sr	FNU	0	0
+p	sr	PSU	0	0
+p	sr	°C/h	0	0
+p	sr	K/h	0	0
+p	sr	s/°C	0	0
+p	sr	s/K	0	0
+p	sr	m·m	0	0
+p	sr	m²	0	0
+p	sr	m/m	0	0
+p	rad²	m	0	0
+p	rad²	k~m	0	0
+p	rad²	km	0	0
+p	rad²	s	0	0
+p	rad²	m/s	0	0
+p	rad²	s⁻¹·m	0	0
+p	rad²	N	0	0
+p	rad²	k~g·m/s²	0	0
+p	rad²	J	0	0
+p	rad²	N·m	0	0
+p	rad²	W	0	0
+p	rad²	J/s	0	0
+p	rad²	Hz	0	0
+p	rad²	s^-1	0	0
+p	rad²	rad	0	0
+p	rad²	°	0	0
+p	rad²	rev	0	0
+p	rad²	sr	0	1
+p	rad²	rad²	1	1
+p	rad²	lm	0	0
+p	rad²	cd	0	0
+p	rad²	cd·sr	0	0
+p	rad²	lx	0	0
+p	rad²	b	0	0
+p	rad²	B	0	0
+p	rad²	Ki~B	0	0
+p	rad²	kB	0	0
+p	rad²	%	0	0
+p	rad²	ppm	0	0
+p	rad²	no_unit	0	0
+p	rad²	pH	0	0
+p	rad²	dB	0	0
+p	rad²	Np	0	0
+p	rad²	K	0	0
+p	rad²	ΔK	0	0
+p	rad²	°C	0	0
+p	rad²	°F	0	0
+p	rad²	Δ°F	0	0
+p	rad²	W/(m²·K)	0	0
+p	rad²	W/(m²·ΔK)	0	0
+p	rad²	ΔK·m/m	0	0
+p	rad²	ΔK/k~m	0	0
+p	rad²	K/k~m	0	0
+p	rad²	$USD	0	0
+p	rad²	k~$USD	0	0
+p	rad²	$EUR	0	0
+p	rad²	$USD/h	0	0
+p	rad²	h^-1·$USD	0	0
+p	rad²	NTU	0	0
+p	rad²	FNU	0	0
+p	rad²	PSU	0	0
+p	rad²	°C/h	0	0
+p	rad²	K/h	0	0
+p	rad²	s/°C	0	0
+p	rad²	s/K	0	0
+p	rad²	m·m	0	0
+p	rad²	m²	0	0
+p	rad²	m/m	0	0
+p	lm	m	0	0
+p	lm	k~m	0	0
+p	lm	km	0	0
+p	lm	s	0	0
+p	lm	m/s	0	0
+p	lm	s⁻¹·m	0	0
+p	lm	N	0	0
+p	lm	k~g·m/s²	0	0
+p	lm	J	0	0
+p	lm	N·m	0	0
+p	lm	W	0	0
+p	lm	J/s	0	0
+p	lm	Hz	0	0
+p	lm	s^-1	0	0
+p	lm	rad	0	0
+p	lm	°	0	0
+p	lm	rev	0	0
+p	lm	sr	0	0
+p	lm	rad²	0	0
+p	lm	lm	1	1
+p	lm	cd	0	0
+p	lm	cd·sr	0	1
+p	lm	lx	0	0
+p	lm	b	0	0
+p	lm	B	0	0
+p	lm	Ki~B	0	0
+p	lm	kB	0	0
+p	lm	%	0	0
+p	lm	ppm	0	0
+p	lm	no_unit	0	0
+p	lm	pH	0	0
+p	lm	dB	0	0
+p	lm	Np	0	0
+p	lm	K	0	0
+p	lm	ΔK	0	0
+p	lm	°C	0	0
+p	lm	°F	0	0
+p	lm	Δ°F	0	0
+p	lm	W/(m²·K)	0	0
+p	lm	W/(m²·ΔK)	0	0
+p	lm	ΔK·m/m	0	0
+p	lm	ΔK/k~m	0	0
+p	lm	K/k~m	0	0
+p	lm	$USD	0	0
+p	lm	k~$USD	0	0
+p	lm	$EUR	0	0
+p	lm	$USD/h	0	0
+p	lm	h^-1·$USD	0	0
+p	lm	NTU	0	0
+p	lm	FNU	0	0
+p	lm	PSU	0	0
+p	lm	°C/h	0	0
+p	lm	K/h	0	0
+p	lm	s/°C	0	0
+p	lm	s/K	0	0
+p	lm	m·m	0	0
+p	lm	m²	0	0
+p	lm	m/m	0	0
+p	cd	m	0	0
+p	cd	k~m	0	0
+p	cd	km	0	0
+p	cd	s	0	0
+p	cd	m/s	0	0
+p	cd	s⁻¹·m	0	0
+p	cd	N	0	0
+p	cd	k~g·m/s²	0	0
+p	cd	J	0	0
+p	cd	N·m	0	0
+p	cd	W	0	0
+p	cd	J/s	0	0
+p	cd	Hz	0	0
+p	cd	s^-1	0	0
+p	cd	rad	0	0
+p	cd	°	0	0
+p	cd	rev	0	0
+p	cd	sr	0	0
+p	cd	rad²	0	0
+p	cd	lm	0	0
+p	cd	cd	1	1
+p	cd	cd·sr	0	0
+p	cd	lx	0	0
+p	cd	b	0	0
+p	cd	B	0	0
+p	cd	Ki~B	0	0
+p	cd	kB	0	0
+p	cd	%	0	0
+p	cd	ppm	0	0
+p	cd	no_unit	0	0
+p	cd	pH	0	0
+p	cd	dB	0	0
+p	cd	Np	0	0
+p	cd	K	0	0
+p	cd	ΔK	0	0
+p	cd	°C	0	0
+p	cd	°F	0	0
+p	cd	Δ°F	0	0
+p	cd	W/(m²·K)	0	0
+p	cd	W/(m²·ΔK)	0	0
+p	cd	ΔK·m/m	0	0
+p	cd	ΔK/k~m	0	0
+p	cd	K/k~m	0	0
+p	cd	$USD	0	0
+p	cd	k~$USD	0	0
+p	cd	$EUR	0	0
+p	cd	$USD/h	0	0
+p	cd	h^-1·$USD	0	0
+p	cd	NTU	0	0
+p	cd	FNU	0	0
+p	cd	PSU	0	0
+p	cd	°C/h	0	0
+p	cd	K/h	0	0
+p	cd	s/°C	0	0
+p	cd	s/K	0	0
+p	cd	m·m	0	0
+p	cd	m²	0	0
+p	cd	m/m	0	0
+p	cd·sr	m	0	0
+p	cd·sr	k~m	0	0
+p	cd·sr	km	0	0
+p	cd·sr	s	0	0
+p	cd·sr	m/s	0	0
+p	cd·sr	s⁻¹·m	0	0
+p	cd·sr	N	0	0
+p	cd·sr	k~g·m/s²	0	0
+p	cd·sr	J	0	0
+p	cd·sr	N·m	0	0
+p	cd·sr	W	0	0
+p	cd·sr	J/s	0	0
+p	cd·sr	Hz	0	0
+p	cd·sr	s^-1	0	0
+p	cd·sr	rad	0	0
+p	cd·sr	°	0	0
+p	cd·sr	rev	0	0
+p	cd·sr	sr	0	0
+p	cd·sr	rad²	0	0
+p	cd·sr	lm	0	1
+p	cd·sr	cd	0	0
+p	cd·sr	cd·sr	1	1
+p	cd·sr	lx	0	0
+p	cd·sr	b	0	0
+p	cd·sr	B	0	0
+p	cd·sr	Ki~B	0	0
+p	cd·sr	kB	0	0
+p	cd·sr	%	0	0
+p	cd·sr	ppm	0	0
+p	cd·sr	no_unit	0	0
+p	cd·sr	pH	0	0
+p	cd·sr	dB	0	0
+p	cd·sr	Np	0	0
+p	cd·sr	K	0	0
+p	cd·sr	ΔK	0	0
+p	cd·sr	°C	0	0
+p	cd·sr	°F	0	0
+p	cd·sr	Δ°F	0	0
+p	cd·sr	W/(m²·K)	0	0
+p	cd·sr	W/(m²·ΔK)	0	0
+p	cd·sr	ΔK·m/m	0	0
+p	cd·sr	ΔK/k~m	0	0
+p	cd·sr	K/k~m	0	0
+p	cd·sr	$USD	0	0
+p	cd·sr	k~$USD	0	0
+p	cd·sr	$EUR	0	0
+p	cd·sr	$USD/h	0	0
+p	cd·sr	h^-1·$USD	0	0
+p	cd·sr	NTU	0	0
+p	cd·sr	FNU	0	0
+p	cd·sr	PSU	0	0
+p	cd·sr	°C/h	0	0
+p	cd·sr	K/h	0	0
+p	cd·sr	s/°C	0	0
+p	cd·sr	s/K	0	0
+p	cd·sr	m·m	0	0
+p	cd·sr	m²	0	0
+p	cd·sr	m/m	0	0
+p	lx	m	0	0
+p	lx	k~m	0	0
+p	lx	km	0	0
+p	lx	s	0	0
+p	lx	m/s	0	0
+p	lx	s⁻¹·m	0	0
+p	lx	N	0	0
+p	lx	k~g·m/s²	0	0
+p	lx	J	0	0
+p	lx	N·m	0	0
+p	lx	W	0	0
+p	lx	J/s	0	0
+p	lx	Hz	0	0
+p	lx	s^-1	0	0
+p	lx	rad	0	0
+p	lx	°	0	0
+p	lx	rev	0	0
+p	lx	sr	0	0
+p	lx	rad²	0	0
+p	lx	lm	0	0
+p	lx	cd	0	0
+p	lx	cd·sr	0	0
+p	lx	lx	1	1
+p	lx	b	0	0
+p	lx	B	0	0
+p	lx	Ki~B	0	0
+p	lx	kB	0	0
+p	lx	%	0	0
+p	lx	ppm	0	0
+p	lx	no_unit	0	0
+p	lx	pH	0	0
+p	lx	dB	0	0
+p	lx	Np	0	0
+p	lx	K	0	0
+p	lx	ΔK	0	0
+p	lx	°C	0	0
+p	lx	°F	0	0
+p	lx	Δ°F	0	0
+p	lx	W/(m²·K)	0	0
+p	lx	W/(m²·ΔK)	0	0
+p	lx	ΔK·m/m	0	0
+p	lx	ΔK/k~m	0	0
+p	lx	K/k~m	0	0
+p	lx	$USD	0	0
+p	lx	k~$USD	0	0
+p	lx	$EUR	0	0
+p	lx	$USD/h	0	0
+p	lx	h^-1·$USD	0	0
+p	lx	NTU	0	0
+p	lx	FNU	0	0
+p	lx	PSU	0	0
+p	lx	°C/h	0	0
+p	lx	K/h	0	0
+p	lx	s/°C	0	0
+p	lx	s/K	0	0
+p	lx	m·m	0	0
+p	lx	m²	0	0
+p	lx	m/m	0	0
+p	b	m	0	0
+p	b	k~m	0	0
+p	b	km	0	0
+p	b	s	0	0
+p	b	m/s	0	0
+p	b	s⁻¹·m	0	0
+p	b	N	0	0
+p	b	k~g·m/s²	0	0
+p	b	J	0	0
+p	b	N·m	0	0
+p	b	W	0	0
+p	b	J/s	0	0
+p	b	Hz	0	0
+p	b	s^-1	0	0
+p	b	rad	0	0
+p	b	°	0	0
+p	b	rev	0	0
+p	b	sr	0	0
+p	b	rad²	0	0
+p	b	lm	0	0
+p	b	cd	0	0
+p	b	cd·sr	0	0
+p	b	lx	0	0
+p	b	b	1	1
+p	b	B	0	0
+p	b	Ki~B	0	0
+p	b	kB	0	0
+p	b	%	0	0
+p	b	ppm	0	0
+p	b	no_unit	0	0
+p	b	pH	0	0
+p	b	dB	0	0
+p	b	Np	0	0
+p	b	K	0	0
+p	b	ΔK	0	0
+p	b	°C	0	0
+p	b	°F	0	0
+p	b	Δ°F	0	0
+p	b	W/(m²·K)	0	0
+p	b	W/(m²·ΔK)	0	0
+p	b	ΔK·m/m	0	0
+p	b	ΔK/k~m	0	0
+p	b	K/k~m	0	0
+p	b	$USD	0	0
+p	b	k~$USD	0	0
+p	b	$EUR	0	0
+p	b	$USD/h	0	0
+p	b	h^-1·$USD	0	0
+p	b	NTU	0	0
+p	b	FNU	0	0
+p	b	PSU	0	0
+p	b	°C/h	0	0
+p	b	K/h	0	0
+p	b	s/°C	0	0
+p	b	s/K	0	0
+p	b	m·m	0	0
+p	b	m²	0	0
+p	b	m/m	0	0
+p	B	m	0	0
+p	B	k~m	0	0
+p	B	km	0	0
+p	B	s	0	0
+p	B	m/s	0	0
+p	B	s⁻¹·m	0	0
+p	B	N	0	0
+p	B	k~g·m/s²	0	0
+p	B	J	0	0
+p	B	N·m	0	0
+p	B	W	0	0
+p	B	J/s	0	0
+p	B	Hz	0	0
+p	B	s^-1	0	0
+p	B	rad	0	0
+p	B	°	0	0
+p	B	rev	0	0
+p	B	sr	0	0
+p	B	rad²	0	0
+p	B	lm	0	0
+p	B	cd	0	0
+p	B	cd·sr	0	0
+p	B	lx	0	0
+p	B	b	0	0
+p	B	B	1	1
+p	B	Ki~B	0	1
+p	B	kB	0	1
+p	B	%	0	0
+p	B	ppm	0	0
+p	B	no_unit	0	0
+p	B	pH	0	0
+p	B	dB	0	0
+p	B	Np	0	0
+p	B	K	0	0
+p	B	ΔK	0	0
+p	B	°C	0	0
+p	B	°F	0	0
+p	B	Δ°F	0	0
+p	B	W/(m²·K)	0	0
+p	B	W/(m²·ΔK)	0	0
+p	B	ΔK·m/m	0	0
+p	B	ΔK/k~m	0	0
+p	B	K/k~m	0	0
+p	B	$USD	0	0
+p	B	k~$USD	0	0
+p	B	$EUR	0	0
+p	B	$USD/h	0	0
+p	B	h^-1·$USD	0	0
+p	B	NTU	0	0
+p	B	FNU	0	0
+p	B	PSU	0	0
+p	B	°C/h	0	0
+p	B	K/h	0	0
+p	B	s/°C	0	0
+p	B	s/K	0	0
+p	B	m·m	0	0
+p	B	m²	0	0
+p	B	m/m	0	0
+p	Ki~B	m	0	0
+p	Ki~B	k~m	0	0
+p	Ki~B	km	0	0
+p	Ki~B	s	0	0
+p	Ki~B	m/s	0	0
+p	Ki~B	s⁻¹·m	0	0
+p	Ki~B	N	0	0
+p	Ki~B	k~g·m/s²	0	0
+p	Ki~B	J	0	0
+p	Ki~B	N·m	0	0
+p	Ki~B	W	0	0
+p	Ki~B	J/s	0	0
+p	Ki~B	Hz	0	0
+p	Ki~B	s^-1	0	0
+p	Ki~B	rad	0	0
+p	Ki~B	°	0	0
+p	Ki~B	rev	0	0
+p	Ki~B	sr	0	0
+p	Ki~B	rad²	0	0
+p	Ki~B	lm	0	0
+p	Ki~B	cd	0	0
+p	Ki~B	cd·sr	0	0
+p	Ki~B	lx	0	0
+p	Ki~B	b	0	0
+p	Ki~B	B	0	1
+p	Ki~B	Ki~B	1	1
+p	Ki~B	kB	0	1
+p	Ki~B	%	0	0
+p	Ki~B	ppm	0	0
+p	Ki~B	no_unit	0	0
+p	Ki~B	pH	0	0
+p	Ki~B	dB	0	0
+p	Ki~B	Np	0	0
+p	Ki~B	K	0	0
+p	Ki~B	ΔK	0	0
+p	Ki~B	°C	0	0
+p	Ki~B	°F	0	0
+p	Ki~B	Δ°F	0	0
+p	Ki~B	W/(m²·K)	0	0
+p	Ki~B	W/(m²·ΔK)	0	0
+p	Ki~B	ΔK·m/m	0	0
+p	Ki~B	ΔK/k~m	0	0
+p	Ki~B	K/k~m	0	0
+p	Ki~B	$USD	0	0
+p	Ki~B	k~$USD	0	0
+p	Ki~B	$EUR	0	0
+p	Ki~B	$USD/h	0	0
+p	Ki~B	h^-1·$USD	0	0
+p	Ki~B	NTU	0	0
+p	Ki~B	FNU	0	0
+p	Ki~B	PSU	0	0
+p	Ki~B	°C/h	0	0
+p	Ki~B	K/h	0	0
+p	Ki~B	s/°C	0	0
+p	Ki~B	s/K	0	0
+p	Ki~B	m·m	0	0
+p	Ki~B	m²	0	0
+p	Ki~B	m/m	0	0
+p	kB	m	0	0
+p	kB	k~m	0	0
+p	kB	km	0	0
+p	kB	s	0	0
+p	kB	m/s	0	0
+p	kB	s⁻¹·m	0	0
+p	kB	N	0	0
+p	kB	k~g·m/s²	0	0
+p	kB	J	0	0
+p	kB	N·m	0	0
+p	kB	W	0	0
+p	kB	J/s	0	0
+p	kB	Hz	0	0
+p	kB	s^-1	0	0
+p	kB	rad	0	0
+p	kB	°	0	0
+p	kB	rev	0	0
+p	kB	sr	0	0
+p	kB	rad²	0	0
+p	kB	lm	0	0
+p	kB	cd	0	0
+p	kB	cd·sr	0	0
+p	kB	lx	0	0
+p	kB	b	0	0
+p	kB	B	0	1
+p	kB	Ki~B	0	1
+p	kB	kB	1	1
+p	kB	%	0	0
+p	kB	ppm	0	0
+p	kB	no_unit	0	0
+p	kB	pH	0	0
+p	kB	dB	0	0
+p	kB	Np	0	0
+p	kB	K	0	0
+p	kB	ΔK	0	0
+p	kB	°C	0	0
+p	kB	°F	0	0
+p	kB	Δ°F	0	0
+p	kB	W/(m²·K)	0	0
+p	kB	W/(m²·ΔK)	0	0
+p	kB	ΔK·m/m	0	0
+p	kB	ΔK/k~m	0	0
+p	kB	K/k~m	0	0
+p	kB	$USD	0	0
+p	kB	k~$USD	0	0
+p	kB	$EUR	0	0
+p	kB	$USD/h	0	0
+p	kB	h^-1·$USD	0	0
+p	kB	NTU	0	0
+p	kB	FNU	0	0
+p	kB	PSU	0	0
+p	kB	°C/h	0	0
+p	kB	K/h	0	0
+p	kB	s/°C	0	0
+p	kB	s/K	0	0
+p	kB	m·m	0	0
+p	kB	m²	0	0
+p	kB	m/m	0	0
+p	%	m	0	0
+p	%	k~m	0	0
+p	%	km	0	0
+p	%	s	0	0
+p	%	m/s	0	0
+p	%	s⁻¹·m	0	0
+p	%	N	0	0
+p	%	k~g·m/s²	0	0
+p	%	J	0	0
+p	%	N·m	0	0
+p	%	W	0	0
+p	%	J/s	0	0
+p	%	Hz	0	0
+p	%	s^-1	0	0
+p	%	rad	0	0
+p	%	°	0	0
+p	%	rev	0	0
+p	%	sr	0	0
+p	%	rad²	0	0
+p	%	lm	0	0
+p	%	cd	0	0
+p	%	cd·sr	0	0
+p	%	lx	0	0
+p	%	b	0	0
+p	%	B	0	0
+p	%	Ki~B	0	0
+p	%	kB	0	0
+p	%	%	1	1
+p	%	ppm	0	1
+p	%	no_unit	0	1
+p	%	pH	0	0
+p	%	dB	0	0
+p	%	Np	0	0
+p	%	K	0	0
+p	%	ΔK	0	0
+p	%	°C	0	0
+p	%	°F	0	0
+p	%	Δ°F	0	0
+p	%	W/(m²·K)	0	0
+p	%	W/(m²·ΔK)	0	0
+p	%	ΔK·m/m	0	0
+p	%	ΔK/k~m	0	0
+p	%	K/k~m	0	0
+p	%	$USD	0	0
+p	%	k~$USD	0	0
+p	%	$EUR	0	0
+p	%	$USD/h	0	0
+p	%	h^-1·$USD	0	0
+p	%	NTU	0	0
+p	%	FNU	0	0
+p	%	PSU	0	0
+p	%	°C/h	0	0
+p	%	K/h	0	0
+p	%	s/°C	0	0
+p	%	s/K	0	0
+p	%	m·m	0	0
+p	%	m²	0	0
+p	%	m/m	0	1
+p	ppm	m	0	0
+p	ppm	k~m	0	0
+p	ppm	km	0	0
+p	ppm	s	0	0
+p	ppm	m/s	0	0
+p	ppm	s⁻¹·m	0	0
+p	ppm	N	0	0
+p	ppm	k~g·m/s²	0	0
+p	ppm	J	0	0
+p	ppm	N·m	0	0
+p	ppm	W	0	0
+p	ppm	J/s	0	0
+p	ppm	Hz	0	0
+p	ppm	s^-1	0	0
+p	ppm	rad	0	0
+p	ppm	°	0	0
+p	ppm	rev	0	0
+p	ppm	sr	0	0
+p	ppm	rad²	0	0
+p	ppm	lm	0	0
+p	ppm	cd	0	0
+p	ppm	cd·sr	0	0
+p	ppm	lx	0	0
+p	ppm	b	0	0
+p	ppm	B	0	0
+p	ppm	Ki~B	0	0
+p	ppm	kB	0	0
+p	ppm	%	0	1
+p	ppm	ppm	1	1
+p	ppm	no_unit	0	1
+p	ppm	pH	0	0
+p	ppm	dB	0	0
+p	ppm	Np	0	0
+p	ppm	K	0	0
+p	ppm	ΔK	0	0
+p	ppm	°C	0	0
+p	ppm	°F	0	0
+p	ppm	Δ°F	0	0
+p	ppm	W/(m²·K)	0	0
+p	ppm	W/(m²·ΔK)	0	0
+p	ppm	ΔK·m/m	0	0
+p	ppm	ΔK/k~m	0	0
+p	ppm	K/k~m	0	0
+p	ppm	$USD	0	0
+p	ppm	k~$USD	0	0
+p	ppm	$EUR	0	0
+p	ppm	$USD/h	0	0
+p	ppm	h^-1·$USD	0	0
+p	ppm	NTU	0	0
+p	ppm	FNU	0	0
+p	ppm	PSU	0	0
+p	ppm	°C/h	0	0
+p	ppm	K/h	0	0
+p	ppm	s/°C	0	0
+p	ppm	s/K	0	0
+p	ppm	m·m	0	0
+p	ppm	m²	0	0
+p	ppm	m/m	0	1
+p	no_unit	m	0	0
+p	no_unit	k~m	0	0
+p	no_unit	km	0	0
+p	no_unit	s	0	0
+p	no_unit	m/s	0	0
+p	no_unit	s⁻¹·m	0	0
+p	no_unit	N	0	0
+p	no_unit	k~g·m/s²	0	0
+p	no_unit	J	0	0
+p	no_unit	N·m	0	0
+p	no_unit	W	0	0
+p	no_unit	J/s	0	0
+p	no_unit	Hz	0	0
+p	no_unit	s^-1	0	0
+p	no_unit	rad	0	0
+p	no_unit	°	0	0
+p	no_unit	rev	0	0
+p	no_unit	sr	0	0
+p	no_unit	rad²	0	0
+p	no_unit	lm	0	0
+p	no_unit	cd	0	0
+p	no_unit	cd·sr	0	0
+p	no_unit	lx	0	0
+p	no_unit	b	0	0
+p	no_unit	B	0	0
+p	no_unit	Ki~B	0	0
+p	no_unit	kB	0	0
+p	no_unit	%	0	1
+p	no_unit	ppm	0	1
+p	no_unit	no_unit	1	1
+p	no_unit	pH	0	0
+p	no_unit	dB	0	0
+p	no_unit	Np	0	0
+p	no_unit	K	0	0
+p	no_unit	ΔK	0	0
+p	no_unit	°C	0	0
+p	no_unit	°F	0	0
+p	no_unit	Δ°F	0	0
+p	no_unit	W/(m²·K)	0	0
+p	no_unit	W/(m²·ΔK)	0	0
+p	no_unit	ΔK·m/m	0	0
+p	no_unit	ΔK/k~m	0	0
+p	no_unit	K/k~m	0	0
+p	no_unit	$USD	0	0
+p	no_unit	k~$USD	0	0
+p	no_unit	$EUR	0	0
+p	no_unit	$USD/h	0	0
+p	no_unit	h^-1·$USD	0	0
+p	no_unit	NTU	0	0
+p	no_unit	FNU	0	0
+p	no_unit	PSU	0	0
+p	no_unit	°C/h	0	0
+p	no_unit	K/h	0	0
+p	no_unit	s/°C	0	0
+p	no_unit	s/K	0	0
+p	no_unit	m·m	0	0
+p	no_unit	m²	0	0
+p	no_unit	m/m	0	1
+p	pH	m	0	0
+p	pH	k~m	0	0
+p	pH	km	0	0
+p	pH	s	0	0
+p	pH	m/s	0	0
+p	pH	s⁻¹·m	0	0
+p	pH	N	0	0
+p	pH	k~g·m/s²	0	0
+p	pH	J	0	0
+p	pH	N·m	0	0
+p	pH	W	0	0
+p	pH	J/s	0	0
+p	pH	Hz	0	0
+p	pH	s^-1	0	0
+p	pH	rad	0	0
+p	pH	°	0	0
+p	pH	rev	0	0
+p	pH	sr	0	0
+p	pH	rad²	0	0
+p	pH	lm	0	0
+p	pH	cd	0	0
+p	pH	cd·sr	0	0
+p	pH	lx	0	0
+p	pH	b	0	0
+p	pH	B	0	0
+p	pH	Ki~B	0	0
+p	pH	kB	0	0
+p	pH	%	0	0
+p	pH	ppm	0	0
+p	pH	no_unit	0	0
+p	pH	pH	1	1
+p	pH	dB	0	0
+p	pH	Np	0	0
+p	pH	K	0	0
+p	pH	ΔK	0	0
+p	pH	°C	0	0
+p	pH	°F	0	0
+p	pH	Δ°F	0	0
+p	pH	W/(m²·K)	0	0
+p	pH	W/(m²·ΔK)	0	0
+p	pH	ΔK·m/m	0	0
+p	pH	ΔK/k~m	0	0
+p	pH	K/k~m	0	0
+p	pH	$USD	0	0
+p	pH	k~$USD	0	0
+p	pH	$EUR	0	0
+p	pH	$USD/h	0	0
+p	pH	h^-1·$USD	0	0
+p	pH	NTU	0	0
+p	pH	FNU	0	0
+p	pH	PSU	0	0
+p	pH	°C/h	0	0
+p	pH	K/h	0	0
+p	pH	s/°C	0	0
+p	pH	s/K	0	0
+p	pH	m·m	0	0
+p	pH	m²	0	0
+p	pH	m/m	0	0
+p	dB	m	0	0
+p	dB	k~m	0	0
+p	dB	km	0	0
+p	dB	s	0	0
+p	dB	m/s	0	0
+p	dB	s⁻¹·m	0	0
+p	dB	N	0	0
+p	dB	k~g·m/s²	0	0
+p	dB	J	0	0
+p	dB	N·m	0	0
+p	dB	W	0	0
+p	dB	J/s	0	0
+p	dB	Hz	0	0
+p	dB	s^-1	0	0
+p	dB	rad	0	0
+p	dB	°	0	0
+p	dB	rev	0	0
+p	dB	sr	0	0
+p	dB	rad²	0	0
+p	dB	lm	0	0
+p	dB	cd	0	0
+p	dB	cd·sr	0	0
+p	dB	lx	0	0
+p	dB	b	0	0
+p	dB	B	0	0
+p	dB	Ki~B	0	0
+p	dB	kB	0	0
+p	dB	%	0	0
+p	dB	ppm	0	0
+p	dB	no_unit	0	0
+p	dB	pH	0	0
+p	dB	dB	1	1
+p	dB	Np	0	0
+p	dB	K	0	0
+p	dB	ΔK	0	0
+p	dB	°C	0	0
+p	dB	°F	0	0
+p	dB	Δ°F	0	0
+p	dB	W/(m²·K)	0	0
+p	dB	W/(m²·ΔK)	0	0
+p	dB	ΔK·m/m	0	0
+p	dB	ΔK/k~m	0	0
+p	dB	K/k~m	0	0
+p	dB	$USD	0	0
+p	dB	k~$USD	0	0
+p	dB	$EUR	0	0
+p	dB	$USD/h	0	0
+p	dB	h^-1·$USD	0	0
+p	dB	NTU	0	0
+p	dB	FNU	0	0
+p	dB	PSU	0	0
+p	dB	°C/h	0	0
+p	dB	K/h	0	0
+p	dB	s/°C	0	0
+p	dB	s/K	0	0
+p	dB	m·m	0	0
+p	dB	m²	0	0
+p	dB	m/m	0	0
+p	Np	m	0	0
+p	Np	k~m	0	0
+p	Np	km	0	0
+p	Np	s	0	0
+p	Np	m/s	0	0
+p	Np	s⁻¹·m	0	0
+p	Np	N	0	0
+p	Np	k~g·m/s²	0	0
+p	Np	J	0	0
+p	Np	N·m	0	0
+p	Np	W	0	0
+p	Np	J/s	0	0
+p	Np	Hz	0	0
+p	Np	s^-1	0	0
+p	Np	rad	0	0
+p	Np	°	0	0
+p	Np	rev	0	0
+p	Np	sr	0	0
+p	Np	rad²	0	0
+p	Np	lm	0	0
+p	Np	cd	0	0
+p	Np	cd·sr	0	0
+p	Np	lx	0	0
+p	Np	b	0	0
+p	Np	B	0	0
+p	Np	Ki~B	0	0
+p	Np	kB	0	0
+p	Np	%	0	0
+p	Np	ppm	0	0
+p	Np	no_unit	0	0
+p	Np	pH	0	0
+p	Np	dB	0	0
+p	Np	Np	1	1
+p	Np	K	0	0
+p	Np	ΔK	0	0
+p	Np	°C	0	0
+p	Np	°F	0	0
+p	Np	Δ°F	0	0
+p	Np	W/(m²·K)	0	0
+p	Np	W/(m²·ΔK)	0	0
+p	Np	ΔK·m/m	0	0
+p	Np	ΔK/k~m	0	0
+p	Np	K/k~m	0	0
+p	Np	$USD	0	0
+p	Np	k~$USD	0	0
+p	Np	$EUR	0	0
+p	Np	$USD/h	0	0
+p	Np	h^-1·$USD	0	0
+p	Np	NTU	0	0
+p	Np	FNU	0	0
+p	Np	PSU	0	0
+p	Np	°C/h	0	0
+p	Np	K/h	0	0
+p	Np	s/°C	0	0
+p	Np	s/K	0	0
+p	Np	m·m	0	0
+p	Np	m²	0	0
+p	Np	m/m	0	0
+p	K	m	0	0
+p	K	k~m	0	0
+p	K	km	0	0
+p	K	s	0	0
+p	K	m/s	0	0
+p	K	s⁻¹·m	0	0
+p	K	N	0	0
+p	K	k~g·m/s²	0	0
+p	K	J	0	0
+p	K	N·m	0	0
+p	K	W	0	0
+p	K	J/s	0	0
+p	K	Hz	0	0
+p	K	s^-1	0	0
+p	K	rad	0	0
+p	K	°	0	0
+p	K	rev	0	0
+p	K	sr	0	0
+p	K	rad²	0	0
+p	K	lm	0	0
+p	K	cd	0	0
+p	K	cd·sr	0	0
+p	K	lx	0	0
+p	K	b	0	0
+p	K	B	0	0
+p	K	Ki~B	0	0
+p	K	kB	0	0
+p	K	%	0	0
+p	K	ppm	0	0
+p	K	no_unit	0	0
+p	K	pH	0	0
+p	K	dB	0	0
+p	K	Np	0	0
+p	K	K	1	1
+p	K	ΔK	0	0
+p	K	°C	0	1
+p	K	°F	0	1
+p	K	Δ°F	0	0
+p	K	W/(m²·K)	0	0
+p	K	W/(m²·ΔK)	0	0
+p	K	ΔK·m/m	0	0
+p	K	ΔK/k~m	0	0
+p	K	K/k~m	0	0
+p	K	$USD	0	0
+p	K	k~$USD	0	0
+p	K	$EUR	0	0
+p	K	$USD/h	0	0
+p	K	h^-1·$USD	0	0
+p	K	NTU	0	0
+p	K	FNU	0	0
+p	K	PSU	0	0
+p	K	°C/h	0	0
+p	K	K/h	0	0
+p	K	s/°C	0	0
+p	K	s/K	0	0
+p	K	m·m	0	0
+p	K	m²	0	0
+p	K	m/m	0	0
+p	ΔK	m	0	0
+p	ΔK	k~m	0	0
+p	ΔK	km	0	0
+p	ΔK	s	0	0
+p	ΔK	m/s	0	0
+p	ΔK	s⁻¹·m	0	0
+p	ΔK	N	0	0
+p	ΔK	k~g·m/s²	0	0
+p	ΔK	J	0	0
+p	ΔK	N·m	0	0
+p	ΔK	W	0	0
+p	ΔK	J/s	0	0
+p	ΔK	Hz	0	0
+p	ΔK	s^-1	0	0
+p	ΔK	rad	0	0
+p	ΔK	°	0	0
+p	ΔK	rev	0	0
+p	ΔK	sr	0	0
+p	ΔK	rad²	0	0
+p	ΔK	lm	0	0
+p	ΔK	cd	0	0
+p	ΔK	cd·sr	0	0
+p	ΔK	lx	0	0
+p	ΔK	b	0	0
+p	ΔK	B	0	0
+p	ΔK	Ki~B	0	0
+p	ΔK	kB	0	0
+p	ΔK	%	0	0
+p	ΔK	ppm	0	0
+p	ΔK	no_unit	0	0
+p	ΔK	pH	0	0
+p	ΔK	dB	0	0
+p	ΔK	Np	0	0
+p	ΔK	K	0	0
+p	ΔK	ΔK	1	1
+p	ΔK	°C	0	0
+p	ΔK	°F	0	0
+p	ΔK	Δ°F	0	1
+p	ΔK	W/(m²·K)	0	0
+p	ΔK	W/(m²·ΔK)	0	0
+p	ΔK	ΔK·m/m	0	1
+p	ΔK	ΔK/k~m	0	0
+p	ΔK	K/k~m	0	0
+p	ΔK	$USD	0	0
+p	ΔK	k~$USD	0	0
+p	ΔK	$EUR	0	0
+p	ΔK	$USD/h	0	0
+p	ΔK	h^-1·$USD	0	0
+p	ΔK	NTU	0	0
+p	ΔK	FNU	0	0
+p	ΔK	PSU	0	0
+p	ΔK	°C/h	0	0
+p	ΔK	K/h	0	0
+p	ΔK	s/°C	0	0
+p	ΔK	s/K	0	0
+p	ΔK	m·m	0	0
+p	ΔK	m²	0	0
+p	ΔK	m/m	0	0
+p	°C	m	0	0
+p	°C	k~m	0	0
+p	°C	km	0	0
+p	°C	s	0	0
+p	°C	m/s	0	0
+p	°C	s⁻¹·m	0	0
+p	°C	N	0	0
+p	°C	k~g·m/s²	0	0
+p	°C	J	0	0
+p	°C	N·m	0	0
+p	°C	W	0	0
+p	°C	J/s	0	0
+p	°C	Hz	0	0
+p	°C	s^-1	0	0
+p	°C	rad	0	0
+p	°C	°	0	0
+p	°C	rev	0	0
+p	°C	sr	0	0
+p	°C	rad²	0	0
+p	°C	lm	0	0
+p	°C	cd	0	0
+p	°C	cd·sr	0	0
+p	°C	lx	0	0
+p	°C	b	0	0
+p	°C	B	0	0
+p	°C	Ki~B	0	0
+p	°C	kB	0	0
+p	°C	%	0	0
+p	°C	ppm	0	0
+p	°C	no_unit	0	0
+p	°C	pH	0	0
+p	°C	dB	0	0
+p	°C	Np	0	0
+p	°C	K	0	1
+p	°C	ΔK	0	0
+p	°C	°C	1	1
+p	°C	°F	0	1
+p	°C	Δ°F	0	0
+p	°C	W/(m²·K)	0	0
+p	°C	W/(m²·ΔK)	0	0
+p	°C	ΔK·m/m	0	0
+p	°C	ΔK/k~m	0	0
+p	°C	K/k~m	0	0
+p	°C	$USD	0	0
+p	°C	k~$USD	0	0
+p	°C	$EUR	0	0
+p	°C	$USD/h	0	0
+p	°C	h^-1·$USD	0	0
+p	°C	NTU	0	0
+p	°C	FNU	0	0
+p	°C	PSU	0	0
+p	°C	°C/h	0	0
+p	°C	K/h	0	0
+p	°C	s/°C	0	0
+p	°C	s/K	0	0
+p	°C	m·m	0	0
+p	°C	m²	0	0
+p	°C	m/m	0	0
+p	°F	m	0	0
+p	°F	k~m	0	0
+p	°F	km	0	0
+p	°F	s	0	0
+p	°F	m/s	0	0
+p	°F	s⁻¹·m	0	0
+p	°F	N	0	0
+p	°F	k~g·m/s²	0	0
+p	°F	J	0	0
+p	°F	N·m	0	0
+p	°F	W	0	0
+p	°F	J/s	0	0
+p	°F	Hz	0	0
+p	°F	s^-1	0	0
+p	°F	rad	0	0
+p	°F	°	0	0
+p	°F	rev	0	0
+p	°F	sr	0	0
+p	°F	rad²	0	0
+p	°F	lm	0	0
+p	°F	cd	0	0
+p	°F	cd·sr	0	0
+p	°F	lx	0	0
+p	°F	b	0	0
+p	°F	B	0	0
+p	°F	Ki~B	0	0
+p	°F	kB	0	0
+p	°F	%	0	0
+p	°F	ppm	0	0
+p	°F	no_unit	0	0
+p	°F	pH	0	0
+p	°F	dB	0	0
+p	°F	Np	0	0
+p	°F	K	0	1
+p	°F	ΔK	0	0
+p	°F	°C	0	1
+p	°F	°F	1	1
+p	°F	Δ°F	0	0
+p	°F	W/(m²·K)	0	0
+p	°F	W/(m²·ΔK)	0	0
+p	°F	ΔK·m/m	0	0
+p	°F	ΔK/k~m	0	0
+p	°F	K/k~m	0	0
+p	°F	$USD	0	0
+p	°F	k~$USD	0	0
+p	°F	$EUR	0	0
+p	°F	$USD/h	0	0
+p	°F	h^-1·$USD	0	0
+p	°F	NTU	0	0
+p	°F	FNU	0	0
+p	°F	PSU	0	0
+p	°F	°C/h	0	0
+p	°F	K/h	0	0
+p	°F	s/°C	0	0
+p	°F	s/K	0	0
+p	°F	m·m	0	0
+p	°F	m²	0	0
+p	°F	m/m	0	0
+p	Δ°F	m	0	0
+p	Δ°F	k~m	0	0
+p	Δ°F	km	0	0
+p	Δ°F	s	0	0
+p	Δ°F	m/s	0	0
+p	Δ°F	s⁻¹·m	0	0
+p	Δ°F	N	0	0
+p	Δ°F	k~g·m/s²	0	0
+p	Δ°F	J	0	0
+p	Δ°F	N·m	0	0
+p	Δ°F	W	0	0
+p	Δ°F	J/s	0	0
+p	Δ°F	Hz	0	0
+p	Δ°F	s^-1	0	0
+p	Δ°F	rad	0	0
+p	Δ°F	°	0	0
+p	Δ°F	rev	0	0
+p	Δ°F	sr	0	0
+p	Δ°F	rad²	0	0
+p	Δ°F	lm	0	0
+p	Δ°F	cd	0	0
+p	Δ°F	cd·sr	0	0
+p	Δ°F	lx	0	0
+p	Δ°F	b	0	0
+p	Δ°F	B	0	0
+p	Δ°F	Ki~B	0	0
+p	Δ°F	kB	0	0
+p	Δ°F	%	0	0
+p	Δ°F	ppm	0	0
+p	Δ°F	no_unit	0	0
+p	Δ°F	pH	0	0
+p	Δ°F	dB	0	0
+p	Δ°F	Np	0	0
+p	Δ°F	K	0	0
+p	Δ°F	ΔK	0	1
+p	Δ°F	°C	0	0
+p	Δ°F	°F	0	0
+p	Δ°F	Δ°F	1	1
+p	Δ°F	W/(m²·K)	0	0
+p	Δ°F	W/(m²·ΔK)	0	0
+p	Δ°F	ΔK·m/m	0	1
+p	Δ°F	ΔK/k~m	0	0
+p	Δ°F	K/k~m	0	0
+p	Δ°F	$USD	0	0
+p	Δ°F	k~$USD	0	0
+p	Δ°F	$EUR	0	0
+p	Δ°F	$USD/h	0	0
+p	Δ°F	h^-1·$USD	0	0
+p	Δ°F	NTU	0	0
+p	Δ°F	FNU	0	0
+p	Δ°F	PSU	0	0
+p	Δ°F	°C/h	0	0
+p	Δ°F	K/h	0	0
+p	Δ°F	s/°C	0	0
+p	Δ°F	s/K	0	0
+p	Δ°F	m·m	0	0
+p	Δ°F	m²	0	0
+p	Δ°F	m/m	0	0
+p	W/(m²·K)	m	0	0
+p	W/(m²·K)	k~m	0	0
+p	W/(m²·K)	km	0	0
+p	W/(m²·K)	s	0	0
+p	W/(m²·K)	m/s	0	0
+p	W/(m²·K)	s⁻¹·m	0	0
+p	W/(m²·K)	N	0	0
+p	W/(m²·K)	k~g·m/s²	0	0
+p	W/(m²·K)	J	0	0
+p	W/(m²·K)	N·m	0	0
+p	W/(m²·K)	W	0	0
+p	W/(m²·K)	J/s	0	0
+p	W/(m²·K)	Hz	0	0
+p	W/(m²·K)	s^-1	0	0
+p	W/(m²·K)	rad	0	0
+p	W/(m²·K)	°	0	0
+p	W/(m²·K)	rev	0	0
+p	W/(m²·K)	sr	0	0
+p	W/(m²·K)	rad²	0	0
+p	W/(m²·K)	lm	0	0
+p	W/(m²·K)	cd	0	0
+p	W/(m²·K)	cd·sr	0	0
+p	W/(m²·K)	lx	0	0
+p	W/(m²·K)	b	0	0
+p	W/(m²·K)	B	0	0
+p	W/(m²·K)	Ki~B	0	0
+p	W/(m²·K)	kB	0	0
+p	W/(m²·K)	%	0	0
+p	W/(m²·K)	ppm	0	0
+p	W/(m²·K)	no_unit	0	0
+p	W/(m²·K)	pH	0	0
+p	W/(m²·K)	dB	0	0
+p	W/(m²·K)	Np	0	0
+p	W/(m²·K)	K	0	0
+p	W/(m²·K)	ΔK	0	0
+p	W/(m²·K)	°C	0	0
+p	W/(m²·K)	°F	0	0
+p	W/(m²·K)	Δ°F	0	0
+p	W/(m²·K)	W/(m²·K)	1	1
+p	W/(m²·K)	W/(m²·ΔK)	1	1
+p	W/(m²·K)	ΔK·m/m	0	0
+p	W/(m²·K)	ΔK/k~m	0	0
+p	W/(m²·K)	K/k~m	0	0
+p	W/(m²·K)	$USD	0	0
+p	W/(m²·K)	k~$USD	0	0
+p	W/(m²·K)	$EUR	0	0
+p	W/(m²·K)	$USD/h	0	0
+p	W/(m²·K)	h^-1·$USD	0	0
+p	W/(m²·K)	NTU	0	0
+p	W/(m²·K)	FNU	0	0
+p	W/(m²·K)	PSU	0	0
+p	W/(m²·K)	°C/h	0	0
+p	W/(m²·K)	K/h	0	0
+p	W/(m²·K)	s/°C	0	0
+p	W/(m²·K)	s/K	0	0
+p	W/(m²·K)	m·m	0	0
+p	W/(m²·K)	m²	0	0
+p	W/(m²·K)	m/m	0	0
+p	W/(m²·ΔK)	m	0	0
+p	W/(m²·ΔK)	k~m	0	0
+p	W/(m²·ΔK)	km	0	0
+p	W/(m²·ΔK)	s	0	0
+p	W/(m²·ΔK)	m/s	0	0
+p	W/(m²·ΔK)	s⁻¹·m	0	0
+p	W/(m²·ΔK)	N	0	0
+p	W/(m²·ΔK)	k~g·m/s²	0	0
+p	W/(m²·ΔK)	J	0	0
+p	W/(m²·ΔK)	N·m	0	0
+p	W/(m²·ΔK)	W	0	0
+p	W/(m²·ΔK)	J/s	0	0
+p	W/(m²·ΔK)	Hz	0	0
+p	W/(m²·ΔK)	s^-1	0	0
+p	W/(m²·ΔK)	rad	0	0
+p	W/(m²·ΔK)	°	0	0
+p	W/(m²·ΔK)	rev	0	0
+p	W/(m²·ΔK)	sr	0	0
+p	W/(m²·ΔK)	rad²	0	0
+p	W/(m²·ΔK)	lm	0	0
+p	W/(m²·ΔK)	cd	0	0
+p	W/(m²·ΔK)	cd·sr	0	0
+p	W/(m²·ΔK)	lx	0	0
+p	W/(m²·ΔK)	b	0	0
+p	W/(m²·ΔK)	B	0	0
+p	W/(m²·ΔK)	Ki~B	0	0
+p	W/(m²·ΔK)	kB	0	0
+p	W/(m²·ΔK)	%	0	0
+p	W/(m²·ΔK)	ppm	0	0
+p	W/(m²·ΔK)	no_unit	0	0
+p	W/(m²·ΔK)	pH	0	0
+p	W/(m²·ΔK)	dB	0	0
+p	W/(m²·ΔK)	Np	0	0
+p	W/(m²·ΔK)	K	0	0
+p	W/(m²·ΔK)	ΔK	0	0
+p	W/(m²·ΔK)	°C	0	0
+p	W/(m²·ΔK)	°F	0	0
+p	W/(m²·ΔK)	Δ°F	0	0
+p	W/(m²·ΔK)	W/(m²·K)	1	1
+p	W/(m²·ΔK)	W/(m²·ΔK)	1	1
+p	W/(m²·ΔK)	ΔK·m/m	0	0
+p	W/(m²·ΔK)	ΔK/k~m	0	0
+p	W/(m²·ΔK)	K/k~m	0	0
+p	W/(m²·ΔK)	$USD	0	0
+p	W/(m²·ΔK)	k~$USD	0	0
+p	W/(m²·ΔK)	$EUR	0	0
+p	W/(m²·ΔK)	$USD/h	0	0
+p	W/(m²·ΔK)	h^-1·$USD	0	0
+p	W/(m²·ΔK)	NTU	0	0
+p	W/(m²·ΔK)	FNU	0	0
+p	W/(m²·ΔK)	PSU	0	0
+p	W/(m²·ΔK)	°C/h	0	0
+p	W/(m²·ΔK)	K/h	0	0
+p	W/(m²·ΔK)	s/°C	0	0
+p	W/(m²·ΔK)	s/K	0	0
+p	W/(m²·ΔK)	m·m	0	0
+p	W/(m²·ΔK)	m²	0	0
+p	W/(m²·ΔK)	m/m	0	0
+p	ΔK·m/m	m	0	0
+p	ΔK·m/m	k~m	0	0
+p	ΔK·m/m	km	0	0
+p	ΔK·m/m	s	0	0
+p	ΔK·m/m	m/s	0	0
+p	ΔK·m/m	s⁻¹·m	0	0
+p	ΔK·m/m	N	0	0
+p	ΔK·m/m	k~g·m/s²	0	0
+p	ΔK·m/m	J	0	0
+p	ΔK·m/m	N·m	0	0
+p	ΔK·m/m	W	0	0
+p	ΔK·m/m	J/s	0	0
+p	ΔK·m/m	Hz	0	0
+p	ΔK·m/m	s^-1	0	0
+p	ΔK·m/m	rad	0	0
+p	ΔK·m/m	°	0	0
+p	ΔK·m/m	rev	0	0
+p	ΔK·m/m	sr	0	0
+p	ΔK·m/m	rad²	0	0
+p	ΔK·m/m	lm	0	0
+p	ΔK·m/m	cd	0	0
+p	ΔK·m/m	cd·sr	0	0
+p	ΔK·m/m	lx	0	0
+p	ΔK·m/m	b	0	0
+p	ΔK·m/m	B	0	0
+p	ΔK·m/m	Ki~B	0	0
+p	ΔK·m/m	kB	0	0
+p	ΔK·m/m	%	0	0
+p	ΔK·m/m	ppm	0	0
+p	ΔK·m/m	no_unit	0	0
+p	ΔK·m/m	pH	0	0
+p	ΔK·m/m	dB	0	0
+p	ΔK·m/m	Np	0	0
+p	ΔK·m/m	K	0	0
+p	ΔK·m/m	ΔK	0	1
+p	ΔK·m/m	°C	0	0
+p	ΔK·m/m	°F	0	0
+p	ΔK·m/m	Δ°F	0	1
+p	ΔK·m/m	W/(m²·K)	0	0
+p	ΔK·m/m	W/(m²·ΔK)	0	0
+p	ΔK·m/m	ΔK·m/m	1	1
+p	ΔK·m/m	ΔK/k~m	0	0
+p	ΔK·m/m	K/k~m	0	0
+p	ΔK·m/m	$USD	0	0
+p	ΔK·m/m	k~$USD	0	0
+p	ΔK·m/m	$EUR	0	0
+p	ΔK·m/m	$USD/h	0	0
+p	ΔK·m/m	h^-1·$USD	0	0
+p	ΔK·m/m	NTU	0	0
+p	ΔK·m/m	FNU	0	0
+p	ΔK·m/m	PSU	0	0
+p	ΔK·m/m	°C/h	0	0
+p	ΔK·m/m	K/h	0	0
+p	ΔK·m/m	s/°C	0	0
+p	ΔK·m/m	s/K	0	0
+p	ΔK·m/m	m·m	0	0
+p	ΔK·m/m	m²	0	0
+p	ΔK·m/m	m/m	0	0
+p	ΔK/k~m	m	0	0
+p	ΔK/k~m	k~m	0	0
+p	ΔK/k~m	km	0	0
+p	ΔK/k~m	s	0	0
+p	ΔK/k~m	m/s	0	0
+p	ΔK/k~m	s⁻¹·m	0	0
+p	ΔK/k~m	N	0	0
+p	ΔK/k~m	k~g·m/s²	0	0
+p	ΔK/k~m	J	0	0
+p	ΔK/k~m	N·m	0	0
+p	ΔK/k~m	W	0	0
+p	ΔK/k~m	J/s	0	0
+p	ΔK/k~m	Hz	0	0
+p	ΔK/k~m	s^-1	0	0
+p	ΔK/k~m	rad	0	0
+p	ΔK/k~m	°	0	0
+p	ΔK/k~m	rev	0	0
+p	ΔK/k~m	sr	0	0
+p	ΔK/k~m	rad²	0	0
+p	ΔK/k~m	lm	0	0
+p	ΔK/k~m	cd	0	0
+p	ΔK/k~m	cd·sr	0	0
+p	ΔK/k~m	lx	0	0
+p	ΔK/k~m	b	0	0
+p	ΔK/k~m	B	0	0
+p	ΔK/k~m	Ki~B	0	0
+p	ΔK/k~m	kB	0	0
+p	ΔK/k~m	%	0	0
+p	ΔK/k~m	ppm	0	0
+p	ΔK/k~m	no_unit	0	0
+p	ΔK/k~m	pH	0	0
+p	ΔK/k~m	dB	0	0
+p	ΔK/k~m	Np	0	0
+p	ΔK/k~m	K	0	0
+p	ΔK/k~m	ΔK	0	0
+p	ΔK/k~m	°C	0	0
+p	ΔK/k~m	°F	0	0
+p	ΔK/k~m	Δ°F	0	0
+p	ΔK/k~m	W/(m²·K)	0	0
+p	ΔK/k~m	W/(m²·ΔK)	0	0
+p	ΔK/k~m	ΔK·m/m	0	0
+p	ΔK/k~m	ΔK/k~m	1	1
+p	ΔK/k~m	K/k~m	1	1
+p	ΔK/k~m	$USD	0	0
+p	ΔK/k~m	k~$USD	0	0
+p	ΔK/k~m	$EUR	0	0
+p	ΔK/k~m	$USD/h	0	0
+p	ΔK/k~m	h^-1·$USD	0	0
+p	ΔK/k~m	NTU	0	0
+p	ΔK/k~m	FNU	0	0
+p	ΔK/k~m	PSU	0	0
+p	ΔK/k~m	°C/h	0	0
+p	ΔK/k~m	K/h	0	0
+p	ΔK/k~m	s/°C	0	0
+p	ΔK/k~m	s/K	0	0
+p	ΔK/k~m	m·m	0	0
+p	ΔK/k~m	m²	0	0
+p	ΔK/k~m	m/m	0	0
+p	K/k~m	m	0	0
+p	K/k~m	k~m	0	0
+p	K/k~m	km	0	0
+p	K/k~m	s	0	0
+p	K/k~m	m/s	0	0
+p	K/k~m	s⁻¹·m	0	0
+p	K/k~m	N	0	0
+p	K/k~m	k~g·m/s²	0	0
+p	K/k~m	J	0	0
+p	K/k~m	N·m	0	0
+p	K/k~m	W	0	0
+p	K/k~m	J/s	0	0
+p	K/k~m	Hz	0	0
+p	K/k~m	s^-1	0	0
+p	K/k~m	rad	0	0
+p	K/k~m	°	0	0
+p	K/k~m	rev	0	0
+p	K/k~m	sr	0	0
+p	K/k~m	rad²	0	0
+p	K/k~m	lm	0	0
+p	K/k~m	cd	0	0
+p	K/k~m	cd·sr	0	0
+p	K/k~m	lx	0	0
+p	K/k~m	b	0	0
+p	K/k~m	B	0	0
+p	K/k~m	Ki~B	0	0
+p	K/k~m	kB	0	0
+p	K/k~m	%	0	0
+p	K/k~m	ppm	0	0
+p	K/k~m	no_unit	0	0
+p	K/k~m	pH	0	0
+p	K/k~m	dB	0	0
+p	K/k~m	Np	0	0
+p	K/k~m	K	0	0
+p	K/k~m	ΔK	0	0
+p	K/k~m	°C	0	0
+p	K/k~m	°F	0	0
+p	K/k~m	Δ°F	0	0
+p	K/k~m	W/(m²·K)	0	0
+p	K/k~m	W/(m²·ΔK)	0	0
+p	K/k~m	ΔK·m/m	0	0
+p	K/k~m	ΔK/k~m	1	1
+p	K/k~m	K/k~m	1	1
+p	K/k~m	$USD	0	0
+p	K/k~m	k~$USD	0	0
+p	K/k~m	$EUR	0	0
+p	K/k~m	$USD/h	0	0
+p	K/k~m	h^-1·$USD	0	0
+p	K/k~m	NTU	0	0
+p	K/k~m	FNU	0	0
+p	K/k~m	PSU	0	0
+p	K/k~m	°C/h	0	0
+p	K/k~m	K/h	0	0
+p	K/k~m	s/°C	0	0
+p	K/k~m	s/K	0	0
+p	K/k~m	m·m	0	0
+p	K/k~m	m²	0	0
+p	K/k~m	m/m	0	0
+p	$USD	m	0	0
+p	$USD	k~m	0	0
+p	$USD	km	0	0
+p	$USD	s	0	0
+p	$USD	m/s	0	0
+p	$USD	s⁻¹·m	0	0
+p	$USD	N	0	0
+p	$USD	k~g·m/s²	0	0
+p	$USD	J	0	0
+p	$USD	N·m	0	0
+p	$USD	W	0	0
+p	$USD	J/s	0	0
+p	$USD	Hz	0	0
+p	$USD	s^-1	0	0
+p	$USD	rad	0	0
+p	$USD	°	0	0
+p	$USD	rev	0	0
+p	$USD	sr	0	0
+p	$USD	rad²	0	0
+p	$USD	lm	0	0
+p	$USD	cd	0	0
+p	$USD	cd·sr	0	0
+p	$USD	lx	0	0
+p	$USD	b	0	0
+p	$USD	B	0	0
+p	$USD	Ki~B	0	0
+p	$USD	kB	0	0
+p	$USD	%	0	0
+p	$USD	ppm	0	0
+p	$USD	no_unit	0	0
+p	$USD	pH	0	0
+p	$USD	dB	0	0
+p	$USD	Np	0	0
+p	$USD	K	0	0
+p	$USD	ΔK	0	0
+p	$USD	°C	0	0
+p	$USD	°F	0	0
+p	$USD	Δ°F	0	0
+p	$USD	W/(m²·K)	0	0
+p	$USD	W/(m²·ΔK)	0	0
+p	$USD	ΔK·m/m	0	0
+p	$USD	ΔK/k~m	0	0
+p	$USD	K/k~m	0	0
+p	$USD	$USD	1	1
+p	$USD	k~$USD	0	1
+p	$USD	$EUR	0	0
+p	$USD	$USD/h	0	0
+p	$USD	h^-1·$USD	0	0
+p	$USD	NTU	0	0
+p	$USD	FNU	0	0
+p	$USD	PSU	0	0
+p	$USD	°C/h	0	0
+p	$USD	K/h	0	0
+p	$USD	s/°C	0	0
+p	$USD	s/K	0	0
+p	$USD	m·m	0	0
+p	$USD	m²	0	0
+p	$USD	m/m	0	0
+p	k~$USD	m	0	0
+p	k~$USD	k~m	0	0
+p	k~$USD	km	0	0
+p	k~$USD	s	0	0
+p	k~$USD	m/s	0	0
+p	k~$USD	s⁻¹·m	0	0
+p	k~$USD	N	0	0
+p	k~$USD	k~g·m/s²	0	0
+p	k~$USD	J	0	0
+p	k~$USD	N·m	0	0
+p	k~$USD	W	0	0
+p	k~$USD	J/s	0	0
+p	k~$USD	Hz	0	0
+p	k~$USD	s^-1	0	0
+p	k~$USD	rad	0	0
+p	k~$USD	°	0	0
+p	k~$USD	rev	0	0
+p	k~$USD	sr	0	0
+p	k~$USD	rad²	0	0
+p	k~$USD	lm	0	0
+p	k~$USD	cd	0	0
+p	k~$USD	cd·sr	0	0
+p	k~$USD	lx	0	0
+p	k~$USD	b	0	0
+p	k~$USD	B	0	0
+p	k~$USD	Ki~B	0	0
+p	k~$USD	kB	0	0
+p	k~$USD	%	0	0
+p	k~$USD	ppm	0	0
+p	k~$USD	no_unit	0	0
+p	k~$USD	pH	0	0
+p	k~$USD	dB	0	0
+p	k~$USD	Np	0	0
+p	k~$USD	K	0	0
+p	k~$USD	ΔK	0	0
+p	k~$USD	°C	0	0
+p	k~$USD	°F	0	0
+p	k~$USD	Δ°F	0	0
+p	k~$USD	W/(m²·K)	0	0
+p	k~$USD	W/(m²·ΔK)	0	0
+p	k~$USD	ΔK·m/m	0	0
+p	k~$USD	ΔK/k~m	0	0
+p	k~$USD	K/k~m	0	0
+p	k~$USD	$USD	0	1
+p	k~$USD	k~$USD	1	1
+p	k~$USD	$EUR	0	0
+p	k~$USD	$USD/h	0	0
+p	k~$USD	h^-1·$USD	0	0
+p	k~$USD	NTU	0	0
+p	k~$USD	FNU	0	0
+p	k~$USD	PSU	0	0
+p	k~$USD	°C/h	0	0
+p	k~$USD	K/h	0	0
+p	k~$USD	s/°C	0	0
+p	k~$USD	s/K	0	0
+p	k~$USD	m·m	0	0
+p	k~$USD	m²	0	0
+p	k~$USD	m/m	0	0
+p	$EUR	m	0	0
+p	$EUR	k~m	0	0
+p	$EUR	km	0	0
+p	$EUR	s	0	0
+p	$EUR	m/s	0	0
+p	$EUR	s⁻¹·m	0	0
+p	$EUR	N	0	0
+p	$EUR	k~g·m/s²	0	0
+p	$EUR	J	0	0
+p	$EUR	N·m	0	0
+p	$EUR	W	0	0
+p	$EUR	J/s	0	0
+p	$EUR	Hz	0	0
+p	$EUR	s^-1	0	0
+p	$EUR	rad	0	0
+p	$EUR	°	0	0
+p	$EUR	rev	0	0
+p	$EUR	sr	0	0
+p	$EUR	rad²	0	0
+p	$EUR	lm	0	0
+p	$EUR	cd	0	0
+p	$EUR	cd·sr	0	0
+p	$EUR	lx	0	0
+p	$EUR	b	0	0
+p	$EUR	B	0	0
+p	$EUR	Ki~B	0	0
+p	$EUR	kB	0	0
+p	$EUR	%	0	0
+p	$EUR	ppm	0	0
+p	$EUR	no_unit	0	0
+p	$EUR	pH	0	0
+p	$EUR	dB	0	0
+p	$EUR	Np	0	0
+p	$EUR	K	0	0
+p	$EUR	ΔK	0	0
+p	$EUR	°C	0	0
+p	$EUR	°F	0	0
+p	$EUR	Δ°F	0	0
+p	$EUR	W/(m²·K)	0	0
+p	$EUR	W/(m²·ΔK)	0	0
+p	$EUR	ΔK·m/m	0	0
+p	$EUR	ΔK/k~m	0	0
+p	$EUR	K/k~m	0	0
+p	$EUR	$USD	0	0
+p	$EUR	k~$USD	0	0
+p	$EUR	$EUR	1	1
+p	$EUR	$USD/h	0	0
+p	$EUR	h^-1·$USD	0	0
+p	$EUR	NTU	0	0
+p	$EUR	FNU	0	0
+p	$EUR	PSU	0	0
+p	$EUR	°C/h	0	0
+p	$EUR	K/h	0	0
+p	$EUR	s/°C	0	0
+p	$EUR	s/K	0	0
+p	$EUR	m·m	0	0
+p	$EUR	m²	0	0
+p	$EUR	m/m	0	0
+p	$USD/h	m	0	0
+p	$USD/h	k~m	0	0
+p	$USD/h	km	0	0
+p	$USD/h	s	0	0
+p	$USD/h	m/s	0	0
+p	$USD/h	s⁻¹·m	0	0
+p	$USD/h	N	0	0
+p	$USD/h	k~g·m/s²	0	0
+p	$USD/h	J	0	0
+p	$USD/h	N·m	0	0
+p	$USD/h	W	0	0
+p	$USD/h	J/s	0	0
+p	$USD/h	Hz	0	0
+p	$USD/h	s^-1	0	0
+p	$USD/h	rad	0	0
+p	$USD/h	°	0	0
+p	$USD/h	rev	0	0
+p	$USD/h	sr	0	0
+p	$USD/h	rad²	0	0
+p	$USD/h	lm	0	0
+p	$USD/h	cd	0	0
+p	$USD/h	cd·sr	0	0
+p	$USD/h	lx	0	0
+p	$USD/h	b	0	0
+p	$USD/h	B	0	0
+p	$USD/h	Ki~B	0	0
+p	$USD/h	kB	0	0
+p	$USD/h	%	0	0
+p	$USD/h	ppm	0	0
+p	$USD/h	no_unit	0	0
+p	$USD/h	pH	0	0
+p	$USD/h	dB	0	0
+p	$USD/h	Np	0	0
+p	$USD/h	K	0	0
+p	$USD/h	ΔK	0	0
+p	$USD/h	°C	0	0
+p	$USD/h	°F	0	0
+p	$USD/h	Δ°F	0	0
+p	$USD/h	W/(m²·K)	0	0
+p	$USD/h	W/(m²·ΔK)	0	0
+p	$USD/h	ΔK·m/m	0	0
+p	$USD/h	ΔK/k~m	0	0
+p	$USD/h	K/k~m	0	0
+p	$USD/h	$USD	0	0
+p	$USD/h	k~$USD	0	0
+p	$USD/h	$EUR	0	0
+p	$USD/h	$USD/h	1	1
+p	$USD/h	h^-1·$USD	1	1
+p	$USD/h	NTU	0	0
+p	$USD/h	FNU	0	0
+p	$USD/h	PSU	0	0
+p	$USD/h	°C/h	0	0
+p	$USD/h	K/h	0	0
+p	$USD/h	s/°C	0	0
+p	$USD/h	s/K	0	0
+p	$USD/h	m·m	0	0
+p	$USD/h	m²	0	0
+p	$USD/h	m/m	0	0
+p	h^-1·$USD	m	0	0
+p	h^-1·$USD	k~m	0	0
+p	h^-1·$USD	km	0	0
+p	h^-1·$USD	s	0	0
+p	h^-1·$USD	m/s	0	0
+p	h^-1·$USD	s⁻¹·m	0	0
+p	h^-1·$USD	N	0	0
+p	h^-1·$USD	k~g·m/s²	0	0
+p	h^-1·$USD	J	0	0
+p	h^-1·$USD	N·m	0	0
+p	h^-1·$USD	W	0	0
+p	h^-1·$USD	J/s	0	0
+p	h^-1·$USD	Hz	0	0
+p	h^-1·$USD	s^-1	0	0
+p	h^-1·$USD	rad	0	0
+p	h^-1·$USD	°	0	0
+p	h^-1·$USD	rev	0	0
+p	h^-1·$USD	sr	0	0
+p	h^-1·$USD	rad²	0	0
+p	h^-1·$USD	lm	0	0
+p	h^-1·$USD	cd	0	0
+p	h^-1·$USD	cd·sr	0	0
+p	h^-1·$USD	lx	0	0
+p	h^-1·$USD	b	0	0
+p	h^-1·$USD	B	0	0
+p	h^-1·$USD	Ki~B	0	0
+p	h^-1·$USD	kB	0	0
+p	h^-1·$USD	%	0	0
+p	h^-1·$USD	ppm	0	0
+p	h^-1·$USD	no_unit	0	0
+p	h^-1·$USD	pH	0	0
+p	h^-1·$USD	dB	0	0
+p	h^-1·$USD	Np	0	0
+p	h^-1·$USD	K	0	0
+p	h^-1·$USD	ΔK	0	0
+p	h^-1·$USD	°C	0	0
+p	h^-1·$USD	°F	0	0
+p	h^-1·$USD	Δ°F	0	0
+p	h^-1·$USD	W/(m²·K)	0	0
+p	h^-1·$USD	W/(m²·ΔK)	0	0
+p	h^-1·$USD	ΔK·m/m	0	0
+p	h^-1·$USD	ΔK/k~m	0	0
+p	h^-1·$USD	K/k~m	0	0
+p	h^-1·$USD	$USD	0	0
+p	h^-1·$USD	k~$USD	0	0
+p	h^-1·$USD	$EUR	0	0
+p	h^-1·$USD	$USD/h	1	1
+p	h^-1·$USD	h^-1·$USD	1	1
+p	h^-1·$USD	NTU	0	0
+p	h^-1·$USD	FNU	0	0
+p	h^-1·$USD	PSU	0	0
+p	h^-1·$USD	°C/h	0	0
+p	h^-1·$USD	K/h	0	0
+p	h^-1·$USD	s/°C	0	0
+p	h^-1·$USD	s/K	0	0
+p	h^-1·$USD	m·m	0	0
+p	h^-1·$USD	m²	0	0
+p	h^-1·$USD	m/m	0	0
+p	NTU	m	0	0
+p	NTU	k~m	0	0
+p	NTU	km	0	0
+p	NTU	s	0	0
+p	NTU	m/s	0	0
+p	NTU	s⁻¹·m	0	0
+p	NTU	N	0	0
+p	NTU	k~g·m/s²	0	0
+p	NTU	J	0	0
+p	NTU	N·m	0	0
+p	NTU	W	0	0
+p	NTU	J/s	0	0
+p	NTU	Hz	0	0
+p	NTU	s^-1	0	0
+p	NTU	rad	0	0
+p	NTU	°	0	0
+p	NTU	rev	0	0
+p	NTU	sr	0	0
+p	NTU	rad²	0	0
+p	NTU	lm	0	0
+p	NTU	cd	0	0
+p	NTU	cd·sr	0	0
+p	NTU	lx	0	0
+p	NTU	b	0	0
+p	NTU	B	0	0
+p	NTU	Ki~B	0	0
+p	NTU	kB	0	0
+p	NTU	%	0	0
+p	NTU	ppm	0	0
+p	NTU	no_unit	0	0
+p	NTU	pH	0	0
+p	NTU	dB	0	0
+p	NTU	Np	0	0
+p	NTU	K	0	0
+p	NTU	ΔK	0	0
+p	NTU	°C	0	0
+p	NTU	°F	0	0
+p	NTU	Δ°F	0	0
+p	NTU	W/(m²·K)	0	0
+p	NTU	W/(m²·ΔK)	0	0
+p	NTU	ΔK·m/m	0	0
+p	NTU	ΔK/k~m	0	0
+p	NTU	K/k~m	0	0
+p	NTU	$USD	0	0
+p	NTU	k~$USD	0	0
+p	NTU	$EUR	0	0
+p	NTU	$USD/h	0	0
+p	NTU	h^-1·$USD	0	0
+p	NTU	NTU	1	1
+p	NTU	FNU	0	0
+p	NTU	PSU	0	0
+p	NTU	°C/h	0	0
+p	NTU	K/h	0	0
+p	NTU	s/°C	0	0
+p	NTU	s/K	0	0
+p	NTU	m·m	0	0
+p	NTU	m²	0	0
+p	NTU	m/m	0	0
+p	FNU	m	0	0
+p	FNU	k~m	0	0
+p	FNU	km	0	0
+p	FNU	s	0	0
+p	FNU	m/s	0	0
+p	FNU	s⁻¹·m	0	0
+p	FNU	N	0	0
+p	FNU	k~g·m/s²	0	0
+p	FNU	J	0	0
+p	FNU	N·m	0	0
+p	FNU	W	0	0
+p	FNU	J/s	0	0
+p	FNU	Hz	0	0
+p	FNU	s^-1	0	0
+p	FNU	rad	0	0
+p	FNU	°	0	0
+p	FNU	rev	0	0
+p	FNU	sr	0	0
+p	FNU	rad²	0	0
+p	FNU	lm	0	0
+p	FNU	cd	0	0
+p	FNU	cd·sr	0	0
+p	FNU	lx	0	0
+p	FNU	b	0	0
+p	FNU	B	0	0
+p	FNU	Ki~B	0	0
+p	FNU	kB	0	0
+p	FNU	%	0	0
+p	FNU	ppm	0	0
+p	FNU	no_unit	0	0
+p	FNU	pH	0	0
+p	FNU	dB	0	0
+p	FNU	Np	0	0
+p	FNU	K	0	0
+p	FNU	ΔK	0	0
+p	FNU	°C	0	0
+p	FNU	°F	0	0
+p	FNU	Δ°F	0	0
+p	FNU	W/(m²·K)	0	0
+p	FNU	W/(m²·ΔK)	0	0
+p	FNU	ΔK·m/m	0	0
+p	FNU	ΔK/k~m	0	0
+p	FNU	K/k~m	0	0
+p	FNU	$USD	0	0
+p	FNU	k~$USD	0	0
+p	FNU	$EUR	0	0
+p	FNU	$USD/h	0	0
+p	FNU	h^-1·$USD	0	0
+p	FNU	NTU	0	0
+p	FNU	FNU	1	1
+p	FNU	PSU	0	0
+p	FNU	°C/h	0	0
+p	FNU	K/h	0	0
+p	FNU	s/°C	0	0
+p	FNU	s/K	0	0
+p	FNU	m·m	0	0
+p	FNU	m²	0	0
+p	FNU	m/m	0	0
+p	PSU	m	0	0
+p	PSU	k~m	0	0
+p	PSU	km	0	0
+p	PSU	s	0	0
+p	PSU	m/s	0	0
+p	PSU	s⁻¹·m	0	0
+p	PSU	N	0	0
+p	PSU	k~g·m/s²	0	0
+p	PSU	J	0	0
+p	PSU	N·m	0	0
+p	PSU	W	0	0
+p	PSU	J/s	0	0
+p	PSU	Hz	0	0
+p	PSU	s^-1	0	0
+p	PSU	rad	0	0
+p	PSU	°	0	0
+p	PSU	rev	0	0
+p	PSU	sr	0	0
+p	PSU	rad²	0	0
+p	PSU	lm	0	0
+p	PSU	cd	0	0
+p	PSU	cd·sr	0	0
+p	PSU	lx	0	0
+p	PSU	b	0	0
+p	PSU	B	0	0
+p	PSU	Ki~B	0	0
+p	PSU	kB	0	0
+p	PSU	%	0	0
+p	PSU	ppm	0	0
+p	PSU	no_unit	0	0
+p	PSU	pH	0	0
+p	PSU	dB	0	0
+p	PSU	Np	0	0
+p	PSU	K	0	0
+p	PSU	ΔK	0	0
+p	PSU	°C	0	0
+p	PSU	°F	0	0
+p	PSU	Δ°F	0	0
+p	PSU	W/(m²·K)	0	0
+p	PSU	W/(m²·ΔK)	0	0
+p	PSU	ΔK·m/m	0	0
+p	PSU	ΔK/k~m	0	0
+p	PSU	K/k~m	0	0
+p	PSU	$USD	0	0
+p	PSU	k~$USD	0	0
+p	PSU	$EUR	0	0
+p	PSU	$USD/h	0	0
+p	PSU	h^-1·$USD	0	0
+p	PSU	NTU	0	0
+p	PSU	FNU	0	0
+p	PSU	PSU	1	1
+p	PSU	°C/h	0	0
+p	PSU	K/h	0	0
+p	PSU	s/°C	0	0
+p	PSU	s/K	0	0
+p	PSU	m·m	0	0
+p	PSU	m²	0	0
+p	PSU	m/m	0	0
+p	°C/h	m	0	0
+p	°C/h	k~m	0	0
+p	°C/h	km	0	0
+p	°C/h	s	0	0
+p	°C/h	m/s	0	0
+p	°C/h	s⁻¹·m	0	0
+p	°C/h	N	0	0
+p	°C/h	k~g·m/s²	0	0
+p	°C/h	J	0	0
+p	°C/h	N·m	0	0
+p	°C/h	W	0	0
+p	°C/h	J/s	0	0
+p	°C/h	Hz	0	0
+p	°C/h	s^-1	0	0
+p	°C/h	rad	0	0
+p	°C/h	°	0	0
+p	°C/h	rev	0	0
+p	°C/h	sr	0	0
+p	°C/h	rad²	0	0
+p	°C/h	lm	0	0
+p	°C/h	cd	0	0
+p	°C/h	cd·sr	0	0
+p	°C/h	lx	0	0
+p	°C/h	b	0	0
+p	°C/h	B	0	0
+p	°C/h	Ki~B	0	0
+p	°C/h	kB	0	0
+p	°C/h	%	0	0
+p	°C/h	ppm	0	0
+p	°C/h	no_unit	0	0
+p	°C/h	pH	0	0
+p	°C/h	dB	0	0
+p	°C/h	Np	0	0
+p	°C/h	K	0	0
+p	°C/h	ΔK	0	0
+p	°C/h	°C	0	0
+p	°C/h	°F	0	0
+p	°C/h	Δ°F	0	0
+p	°C/h	W/(m²·K)	0	0
+p	°C/h	W/(m²·ΔK)	0	0
+p	°C/h	ΔK·m/m	0	0
+p	°C/h	ΔK/k~m	0	0
+p	°C/h	K/k~m	0	0
+p	°C/h	$USD	0	0
+p	°C/h	k~$USD	0	0
+p	°C/h	$EUR	0	0
+p	°C/h	$USD/h	0	0
+p	°C/h	h^-1·$USD	0	0
+p	°C/h	NTU	0	0
+p	°C/h	FNU	0	0
+p	°C/h	PSU	0	0
+p	°C/h	°C/h	1	1
+p	°C/h	K/h	0	1
+p	°C/h	s/°C	0	0
+p	°C/h	s/K	0	0
+p	°C/h	m·m	0	0
+p	°C/h	m²	0	0
+p	°C/h	m/m	0	0
+p	K/h	m	0	0
+p	K/h	k~m	0	0
+p	K/h	km	0	0
+p	K/h	s	0	0
+p	K/h	m/s	0	0
+p	K/h	s⁻¹·m	0	0
+p	K/h	N	0	0
+p	K/h	k~g·m/s²	0	0
+p	K/h	J	0	0
+p	K/h	N·m	0	0
+p	K/h	W	0	0
+p	K/h	J/s	0	0
+p	K/h	Hz	0	0
+p	K/h	s^-1	0	0
+p	K/h	rad	0	0
+p	K/h	°	0	0
+p	K/h	rev	0	0
+p	K/h	sr	0	0
+p	K/h	rad²	0	0
+p	K/h	lm	0	0
+p	K/h	cd	0	0
+p	K/h	cd·sr	0	0
+p	K/h	lx	0	0
+p	K/h	b	0	0
+p	K/h	B	0	0
+p	K/h	Ki~B	0	0
+p	K/h	kB	0	0
+p	K/h	%	0	0
+p	K/h	ppm	0	0
+p	K/h	no_unit	0	0
+p	K/h	pH	0	0
+p	K/h	dB	0	0
+p	K/h	Np	0	0
+p	K/h	K	0	0
+p	K/h	ΔK	0	0
+p	K/h	°C	0	0
+p	K/h	°F	0	0
+p	K/h	Δ°F	0	0
+p	K/h	W/(m²·K)	0	0
+p	K/h	W/(m²·ΔK)	0	0
+p	K/h	ΔK·m/m	0	0
+p	K/h	ΔK/k~m	0	0
+p	K/h	K/k~m	0	0
+p	K/h	$USD	0	0
+p	K/h	k~$USD	0	0
+p	K/h	$EUR	0	0
+p	K/h	$USD/h	0	0
+p	K/h	h^-1·$USD	0	0
+p	K/h	NTU	0	0
+p	K/h	FNU	0	0
+p	K/h	PSU	0	0
+p	K/h	°C/h	0	1
+p	K/h	K/h	1	1
+p	K/h	s/°C	0	0
+p	K/h	s/K	0	0
+p	K/h	m·m	0	0
+p	K/h	m²	0	0
+p	K/h	m/m	0	0
+p	s/°C	m	0	0
+p	s/°C	k~m	0	0
+p	s/°C	km	0	0
+p	s/°C	s	0	0
+p	s/°C	m/s	0	0
+p	s/°C	s⁻¹·m	0	0
+p	s/°C	N	0	0
+p	s/°C	k~g·m/s²	0	0
+p	s/°C	J	0	0
+p	s/°C	N·m	0	0
+p	s/°C	W	0	0
+p	s/°C	J/s	0	0
+p	s/°C	Hz	0	0
+p	s/°C	s^-1	0	0
+p	s/°C	rad	0	0
+p	s/°C	°	0	0
+p	s/°C	rev	0	0
+p	s/°C	sr	0	0
+p	s/°C	rad²	0	0
+p	s/°C	lm	0	0
+p	s/°C	cd	0	0
+p	s/°C	cd·sr	0	0
+p	s/°C	lx	0	0
+p	s/°C	b	0	0
+p	s/°C	B	0	0
+p	s/°C	Ki~B	0	0
+p	s/°C	kB	0	0
+p	s/°C	%	0	0
+p	s/°C	ppm	0	0
+p	s/°C	no_unit	0	0
+p	s/°C	pH	0	0
+p	s/°C	dB	0	0
+p	s/°C	Np	0	0
+p	s/°C	K	0	0
+p	s/°C	ΔK	0	0
+p	s/°C	°C	0	0
+p	s/°C	°F	0	0
+p	s/°C	Δ°F	0	0
+p	s/°C	W/(m²·K)	0	0
+p	s/°C	W/(m²·ΔK)	0	0
+p	s/°C	ΔK·m/m	0	0
+p	s/°C	ΔK/k~m	0	0
+p	s/°C	K/k~m	0	0
+p	s/°C	$USD	0	0
+p	s/°C	k~$USD	0	0
+p	s/°C	$EUR	0	0
+p	s/°C	$USD/h	0	0
+p	s/°C	h^-1·$USD	0	0
+p	s/°C	NTU	0	0
+p	s/°C	FNU	0	0
+p	s/°C	PSU	0	0
+p	s/°C	°C/h	0	0
+p	s/°C	K/h	0	0
+p	s/°C	s/°C	1	1
+p	s/°C	s/K	0	1
+p	s/°C	m·m	0	0
+p	s/°C	m²	0	0
+p	s/°C	m/m	0	0
+p	s/K	m	0	0
+p	s/K	k~m	0	0
+p	s/K	km	0	0
+p	s/K	s	0	0
+p	s/K	m/s	0	0
+p	s/K	s⁻¹·m	0	0
+p	s/K	N	0	0
+p	s/K	k~g·m/s²	0	0
+p	s/K	J	0	0
+p	s/K	N·m	0	0
+p	s/K	W	0	0
+p	s/K	J/s	0	0
+p	s/K	Hz	0	0
+p	s/K	s^-1	0	0
+p	s/K	rad	0	0
+p	s/K	°	0	0
+p	s/K	rev	0	0
+p	s/K	sr	0	0
+p	s/K	rad²	0	0
+p	s/K	lm	0	0
+p	s/K	cd	0	0
+p	s/K	cd·sr	0	0
+p	s/K	lx	0	0
+p	s/K	b	0	0
+p	s/K	B	0	0
+p	s/K	Ki~B	0	0
+p	s/K	kB	0	0
+p	s/K	%	0	0
+p	s/K	ppm	0	0
+p	s/K	no_unit	0	0
+p	s/K	pH	0	0
+p	s/K	dB	0	0
+p	s/K	Np	0	0
+p	s/K	K	0	0
+p	s/K	ΔK	0	0
+p	s/K	°C	0	0
+p	s/K	°F	0	0
+p	s/K	Δ°F	0	0
+p	s/K	W/(m²·K)	0	0
+p	s/K	W/(m²·ΔK)	0	0
+p	s/K	ΔK·m/m	0	0
+p	s/K	ΔK/k~m	0	0
+p	s/K	K/k~m	0	0
+p	s/K	$USD	0	0
+p	s/K	k~$USD	0	0
+p	s/K	$EUR	0	0
+p	s/K	$USD/h	0	0
+p	s/K	h^-1·$USD	0	0
+p	s/K	NTU	0	0
+p	s/K	FNU	0	0
+p	s/K	PSU	0	0
+p	s/K	°C/h	0	0
+p	s/K	K/h	0	0
+p	s/K	s/°C	0	1
+p	s/K	s/K	1	1
+p	s/K	m·m	0	0
+p	s/K	m²	0	0
+p	s/K	m/m	0	0
+p	m·m	m	0	0
+p	m·m	k~m	0	0
+p	m·m	km	0	0
+p	m·m	s	0	0
+p	m·m	m/s	0	0
+p	m·m	s⁻¹·m	0	0
+p	m·m	N	0	0
+p	m·m	k~g·m/s²	0	0
+p	m·m	J	0	0
+p	m·m	N·m	0	0
+p	m·m	W	0	0
+p	m·m	J/s	0	0
+p	m·m	Hz	0	0
+p	m·m	s^-1	0	0
+p	m·m	rad	0	0
+p	m·m	°	0	0
+p	m·m	rev	0	0
+p	m·m	sr	0	0
+p	m·m	rad²	0	0
+p	m·m	lm	0	0
+p	m·m	cd	0	0
+p	m·m	cd·sr	0	0
+p	m·m	lx	0	0
+p	m·m	b	0	0
+p	m·m	B	0	0
+p	m·m	Ki~B	0	0
+p	m·m	kB	0	0
+p	m·m	%	0	0
+p	m·m	ppm	0	0
+p	m·m	no_unit	0	0
+p	m·m	pH	0	0
+p	m·m	dB	0	0
+p	m·m	Np	0	0
+p	m·m	K	0	0
+p	m·m	ΔK	0	0
+p	m·m	°C	0	0
+p	m·m	°F	0	0
+p	m·m	Δ°F	0	0
+p	m·m	W/(m²·K)	0	0
+p	m·m	W/(m²·ΔK)	0	0
+p	m·m	ΔK·m/m	0	0
+p	m·m	ΔK/k~m	0	0
+p	m·m	K/k~m	0	0
+p	m·m	$USD	0	0
+p	m·m	k~$USD	0	0
+p	m·m	$EUR	0	0
+p	m·m	$USD/h	0	0
+p	m·m	h^-1·$USD	0	0
+p	m·m	NTU	0	0
+p	m·m	FNU	0	0
+p	m·m	PSU	0	0
+p	m·m	°C/h	0	0
+p	m·m	K/h	0	0
+p	m·m	s/°C	0	0
+p	m·m	s/K	0	0
+p	m·m	m·m	1	1
+p	m·m	m²	0	1
+p	m·m	m/m	0	0
+p	m²	m	0	0
+p	m²	k~m	0	0
+p	m²	km	0	0
+p	m²	s	0	0
+p	m²	m/s	0	0
+p	m²	s⁻¹·m	0	0
+p	m²	N	0	0
+p	m²	k~g·m/s²	0	0
+p	m²	J	0	0
+p	m²	N·m	0	0
+p	m²	W	0	0
+p	m²	J/s	0	0
+p	m²	Hz	0	0
+p	m²	s^-1	0	0
+p	m²	rad	0	0
+p	m²	°	0	0
+p	m²	rev	0	0
+p	m²	sr	0	0
+p	m²	rad²	0	0
+p	m²	lm	0	0
+p	m²	cd	0	0
+p	m²	cd·sr	0	0
+p	m²	lx	0	0
+p	m²	b	0	0
+p	m²	B	0	0
+p	m²	Ki~B	0	0
+p	m²	kB	0	0
+p	m²	%	0	0
+p	m²	ppm	0	0
+p	m²	no_unit	0	0
+p	m²	pH	0	0
+p	m²	dB	0	0
+p	m²	Np	0	0
+p	m²	K	0	0
+p	m²	ΔK	0	0
+p	m²	°C	0	0
+p	m²	°F	0	0
+p	m²	Δ°F	0	0
+p	m²	W/(m²·K)	0	0
+p	m²	W/(m²·ΔK)	0	0
+p	m²	ΔK·m/m	0	0
+p	m²	ΔK/k~m	0	0
+p	m²	K/k~m	0	0
+p	m²	$USD	0	0
+p	m²	k~$USD	0	0
+p	m²	$EUR	0	0
+p	m²	$USD/h	0	0
+p	m²	h^-1·$USD	0	0
+p	m²	NTU	0	0
+p	m²	FNU	0	0
+p	m²	PSU	0	0
+p	m²	°C/h	0	0
+p	m²	K/h	0	0
+p	m²	s/°C	0	0
+p	m²	s/K	0	0
+p	m²	m·m	0	1
+p	m²	m²	1	1
+p	m²	m/m	0	0
+p	m/m	m	0	0
+p	m/m	k~m	0	0
+p	m/m	km	0	0
+p	m/m	s	0	0
+p	m/m	m/s	0	0
+p	m/m	s⁻¹·m	0	0
+p	m/m	N	0	0
+p	m/m	k~g·m/s²	0	0
+p	m/m	J	0	0
+p	m/m	N·m	0	0
+p	m/m	W	0	0
+p	m/m	J/s	0	0
+p	m/m	Hz	0	0
+p	m/m	s^-1	0	0
+p	m/m	rad	0	0
+p	m/m	°	0	0
+p	m/m	rev	0	0
+p	m/m	sr	0	0
+p	m/m	rad²	0	0
+p	m/m	lm	0	0
+p	m/m	cd	0	0
+p	m/m	cd·sr	0	0
+p	m/m	lx	0	0
+p	m/m	b	0	0
+p	m/m	B	0	0
+p	m/m	Ki~B	0	0
+p	m/m	kB	0	0
+p	m/m	%	0	1
+p	m/m	ppm	0	1
+p	m/m	no_unit	0	1
+p	m/m	pH	0	0
+p	m/m	dB	0	0
+p	m/m	Np	0	0
+p	m/m	K	0	0
+p	m/m	ΔK	0	0
+p	m/m	°C	0	0
+p	m/m	°F	0	0
+p	m/m	Δ°F	0	0
+p	m/m	W/(m²·K)	0	0
+p	m/m	W/(m²·ΔK)	0	0
+p	m/m	ΔK·m/m	0	0
+p	m/m	ΔK/k~m	0	0
+p	m/m	K/k~m	0	0
+p	m/m	$USD	0	0
+p	m/m	k~$USD	0	0
+p	m/m	$EUR	0	0
+p	m/m	$USD/h	0	0
+p	m/m	h^-1·$USD	0	0
+p	m/m	NTU	0	0
+p	m/m	FNU	0	0
+p	m/m	PSU	0	0
+p	m/m	°C/h	0	0
+p	m/m	K/h	0	0
+p	m/m	s/°C	0	0
+p	m/m	s/K	0	0
+p	m/m	m·m	0	0
+p	m/m	m²	0	0
+p	m/m	m/m	1	1
