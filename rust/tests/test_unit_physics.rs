@@ -76,7 +76,7 @@ fn force() -> Unit {
 }
 
 fn is_argument_error<T: std::fmt::Debug>(r: Result<T, Error>) -> bool {
-    matches!(r, Err(Error::Argument(_)))
+    matches!(r, Err(Error::Argument { .. }))
 }
 
 mod si_dim_names {

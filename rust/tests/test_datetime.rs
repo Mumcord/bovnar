@@ -179,7 +179,7 @@ fn test_datetime_array_mixed_epochs_rejected() {
         panic!("not an array")
     };
     items.push(extra);
-    assert!(matches!(to_string(&doc, true), Err(Error::Argument(_))));
+    assert!(matches!(to_string(&doc, true), Err(Error::Argument { .. })));
 }
 
 #[test]

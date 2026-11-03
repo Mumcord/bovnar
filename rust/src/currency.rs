@@ -53,7 +53,7 @@ pub fn is_crypto(base: BaseUnit) -> bool {
 /// The record for `base`; fails when it is not a currency.
 pub fn currency_info(base: BaseUnit) -> Result<CurrencyInfo> {
     let (code, numeric_code, minor_unit, is_crypto, name) = ffi::currency_info(base as i32)
-        .ok_or_else(|| Error::Argument(format!("{} is not a currency unit", base.name())))?;
+        .ok_or_else(|| Error::argument(format!("{} is not a currency unit", base.name())))?;
     Ok(CurrencyInfo {
         base,
         code,
@@ -82,9 +82,9 @@ pub fn currency_code(base: BaseUnit) -> Result<String> {
 /// The base unit of a code; surrounding space and case are ignored.
 pub fn from_code(code: &str) -> Result<BaseUnit> {
     match ffi::parse_currency(&code.trim().to_ascii_uppercase()) {
-        0 => Err(Error::Argument(format!("unknown currency code: {code:?}"))),
+        0 => Err(Error::argument(format!("unknown currency code: {code:?}"))),
         base => BaseUnit::from_raw(base)
-            .ok_or_else(|| Error::Argument(format!("C currency id {base} is not in BaseUnit"))),
+            .ok_or_else(|| Error::argument(format!("C currency id {base} is not in BaseUnit"))),
     }
 }
 

@@ -506,7 +506,7 @@ mod write_bvnf_base {
     #[test]
     fn test_invalid_base_raises() {
         let r = mem().write_bvnf_base("x", "1.0", 64, 8);
-        assert!(matches!(r, Err(Error::Argument(_))), "{r:?}");
+        assert!(matches!(r, Err(Error::Argument { .. })), "{r:?}");
     }
 }
 
@@ -1222,7 +1222,7 @@ mod signed_high_base_refused_by_name {
 
     fn assert_unsigned_refusal(r: bovnar::Result<()>) {
         match r {
-            Err(Error::Argument(msg)) => assert!(msg.contains("unsigned"), "{msg}"),
+            Err(Error::Argument { message: msg, .. }) => assert!(msg.contains("unsigned"), "{msg}"),
             other => panic!("expected an argument error, got {other:?}"),
         }
     }

@@ -64,7 +64,7 @@ fn spec(family: ValueTypeFamily, width: u32, base: u32) -> ValueTypeSpec {
 
 fn arg_err_contains<T: std::fmt::Debug>(r: bovnar::Result<T>, needle: &str) {
     match r {
-        Err(Error::Argument(msg)) => assert!(msg.contains(needle), "{msg}"),
+        Err(Error::Argument { message: msg, .. }) => assert!(msg.contains(needle), "{msg}"),
         other => panic!("expected an argument error, got {other:?}"),
     }
 }

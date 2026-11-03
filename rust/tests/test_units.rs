@@ -44,7 +44,7 @@ fn c0(s: &str) -> UnitComponent {
 }
 
 fn is_arg_err<T: std::fmt::Debug>(r: Result<T>) -> bool {
-    matches!(r, Err(Error::Argument(_)))
+    matches!(r, Err(Error::Argument { .. }))
 }
 
 /// `math.isclose` with its default relative tolerance.

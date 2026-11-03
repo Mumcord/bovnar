@@ -5,42 +5,99 @@ use std::fmt;
 use crate::enums::ErrorCode;
 use crate::ffi;
 
-/// Everything a bovnar call can fail with.
+/// The C library's error names (`error_code_t`): the kind of an [`Error`]
+/// that has one, as [`Error::kind`] reports it.
+pub type ErrorKind = ErrorCode;
+
+/// Where in the input a parse error was raised.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct Position {
+    pub line: u64,
+    pub column: u64,
+    /// The byte offset from the start of the input.
+    pub offset: u64,
+    /// The byte the error was raised on.
+    pub byte: u32,
+}
+
+/// Everything a bovnar call can fail with: Python's exception classes in
+/// `exceptions.py`, each with the library's error code where there is one.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
     /// The reader or DOM parser refused the input (`BovnarParseError`).
-    /// `line`, `column`, `offset` and `byte` locate the error for the
-    /// streaming reader; the DOM parser reports only `code` and leaves them
-    /// all 0.
+    /// `position` is `None` where the library reports none: the DOM parser
+    /// gives only the code, and so do the stream helpers' framing errors.
     Parse {
         code: i32,
-        line: u64,
-        column: u64,
-        offset: u64,
-        byte: u32,
+        position: Option<Position>,
     },
     /// The writer refused an event or ran out of room (`BovnarWriteError`).
     Write { code: i32, offset: u64 },
-    /// A caller-side mistake caught before reaching the library
-    /// (`BovnarArgumentError`).
-    Argument(String),
+    /// A caller-side mistake caught before or by the library
+    /// (`BovnarArgumentError`): `code` names the library's verdict where it
+    /// gave one (an unparsable unit, a refused unit policy), and `message`
+    /// says what was wrong.
+    Argument {
+        code: Option<ErrorKind>,
+        message: String,
+    },
     /// The library could not allocate (Python's `MemoryError`); names the
     /// call that failed.
     OutOfMemory(&'static str),
 }
 
 impl Error {
-    /// The raw C error code, or `None` for an argument or memory error.
-    pub fn code_raw(&self) -> Option<i32> {
-        match self {
-            Error::Parse { code, .. } | Error::Write { code, .. } => Some(*code),
-            Error::Argument(_) | Error::OutOfMemory(_) => None,
+    /// An argument error the library gave no code for.
+    pub fn argument(message: impl Into<String>) -> Self {
+        Error::Argument {
+            code: None,
+            message: message.into(),
         }
     }
 
-    /// The error code as an enum, when the binding knows it.
-    pub fn code(&self) -> Option<ErrorCode> {
+    /// An argument error with the library's code.
+    pub fn argument_with(code: ErrorKind, message: impl Into<String>) -> Self {
+        Error::Argument {
+            code: Some(code),
+            message: message.into(),
+        }
+    }
+
+    /// A parse error the library reported without a position.
+    pub(crate) fn parse_code(code: i32) -> Self {
+        Error::Parse {
+            code,
+            position: None,
+        }
+    }
+
+    /// The raw C error code, or `None` where the library gave none.
+    pub fn code_raw(&self) -> Option<i32> {
+        match self {
+            Error::Parse { code, .. } | Error::Write { code, .. } => Some(*code),
+            Error::Argument { code, .. } => code.map(i32::from),
+            Error::OutOfMemory(_) => None,
+        }
+    }
+
+    /// The kind: the C error name, when the library gave a code (Python's
+    /// `.code`). `None` for an argument error caught before the library and
+    /// for an allocation failure.
+    pub fn kind(&self) -> Option<ErrorKind> {
         self.code_raw().and_then(ErrorCode::from_raw)
+    }
+
+    /// Same as [`Error::kind`] (the name Python uses).
+    pub fn code(&self) -> Option<ErrorCode> {
+        self.kind()
+    }
+
+    /// Where a parse error was raised, when the library said.
+    pub fn position(&self) -> Option<Position> {
+        match self {
+            Error::Parse { position, .. } => *position,
+            _ => None,
+        }
     }
 
     /// The C name of the error code (`bvn_error_to_string`), such as
@@ -53,16 +110,14 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Parse {
-                code,
-                line,
-                column,
-                offset,
-                ..
-            } => {
+            Error::Parse { code, position } => {
                 write!(f, "Parse error: {} (code {code})", ffi::error_name(*code))?;
-                if *line != 0 {
-                    write!(f, " at line {line} col {column} offset {offset}")?;
+                if let Some(p) = position {
+                    write!(
+                        f,
+                        " at line {} col {} offset {}",
+                        p.line, p.column, p.offset
+                    )?;
                 }
                 Ok(())
             }
@@ -71,7 +126,7 @@ impl fmt::Display for Error {
                 "Write error: {} (code {code}) at offset {offset}",
                 ffi::error_name(*code)
             ),
-            Error::Argument(msg) => f.write_str(msg),
+            Error::Argument { message, .. } => f.write_str(message),
             Error::OutOfMemory(call) => write!(f, "out of memory: {call} failed"),
         }
     }

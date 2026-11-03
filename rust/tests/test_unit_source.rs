@@ -195,11 +195,11 @@ fn test_dumps_refuses_an_array_whose_units_it_cannot_write() {
     // came out as [1, 3]. The format refuses that array as well, so there is
     // nothing valid to write; dumps() says so instead of dropping the units.
     let d = parse_typed(b".a = [<float:64,s> 1, <float:64,m> 3];").unwrap();
-    assert!(matches!(dumps(&d), Err(Error::Argument(_))));
+    assert!(matches!(dumps(&d), Err(Error::Argument { .. })));
     // A Quantity beside a plain number is the same loss by another route.
     let mut d = parse_typed(b".a = <float:64,s> [1, 3];").unwrap();
     items_mut(field_mut(&mut d, "a"))[1] = Value::Float(3.0);
-    assert!(matches!(dumps(&d), Err(Error::Argument(_))));
+    assert!(matches!(dumps(&d), Err(Error::Argument { .. })));
     // Units that agree are written under the one annotation, as before.
     let d = parse_typed(b".a = <float:64,s> [1, 3];").unwrap();
     assert_eq!(dumps(&d).unwrap(), b".a = <float:64,s> [1, 3];\n");
@@ -214,7 +214,7 @@ fn test_a_spelling_on_a_unitless_quantity_is_refused() {
         q.unit_source = Some(src.into());
         doc_of(q)
     };
-    assert!(matches!(dumps(&unitless("m")), Err(Error::Argument(_))));
+    assert!(matches!(dumps(&unitless("m")), Err(Error::Argument { .. })));
     // A spelling that itself means "no unit" says nothing false.
     assert_eq!(to_string(&unitless("no_unit"), false).unwrap(), b".a=5;");
 }

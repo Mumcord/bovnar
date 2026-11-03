@@ -72,7 +72,9 @@ fn from_number(text: &str, family: F, width: u32, frac: Option<u32>) -> Result<Q
 
 fn assert_argument_error(r: Result<Quantity, Error>, needle: &str) {
     match r {
-        Err(Error::Argument(msg)) => assert!(msg.contains(needle), "{msg:?} lacks {needle:?}"),
+        Err(Error::Argument { message: msg, .. }) => {
+            assert!(msg.contains(needle), "{msg:?} lacks {needle:?}")
+        }
         other => panic!("expected an argument error matching {needle:?}, got {other:?}"),
     }
 }
@@ -164,7 +166,7 @@ fn test_from_number_refuses_a_decimal_past_the_width() {
     // `dumps({'a': Decimal('-1e400')})`, needs a Decimal value: not mirrored.)
     assert!(matches!(
         from_number("1e+400", F::FloatDec, 64, None),
-        Err(Error::Argument(_))
+        Err(Error::Argument { .. })
     ));
     assert_eq!(
         from_number("1e+400", F::FloatDec, 128, None)

@@ -105,7 +105,7 @@ fn is_parse_err<T: std::fmt::Debug>(r: Result<T, Error>) -> bool {
 }
 
 fn is_arg_err<T: std::fmt::Debug>(r: Result<T, Error>) -> bool {
-    matches!(r, Err(Error::Argument(_)))
+    matches!(r, Err(Error::Argument { .. }))
 }
 
 fn u(text: &str) -> Unit {
@@ -554,11 +554,11 @@ fn test_a_bad_policy_is_not_a_parse_error() {
     // gives the same argument error, naming the bad entry.
     let bad = policy_targets(&["not_a_unit_at_all"]);
     let dom_msg = match dom_err(DomDoc::parse_with_policy(b".a = 5 m;", &bad)) {
-        Error::Argument(m) => m,
+        Error::Argument { message: m, .. } => m,
         other => panic!("expected an argument error, got {other:?}"),
     };
     let reader_msg = match Reader::new().unwrap().set_unit_policy(Some(&bad)) {
-        Err(Error::Argument(m)) => m,
+        Err(Error::Argument { message: m, .. }) => m,
         other => panic!("expected an argument error, got {other:?}"),
     };
     assert!(dom_msg.contains("not_a_unit_at_all"), "{dom_msg}");
@@ -568,7 +568,7 @@ fn test_a_bad_policy_is_not_a_parse_error() {
         ..UnitPolicy::default()
     };
     match dom_err(DomDoc::parse_with_policy(b".a = 5 m;", &rule)) {
-        Error::Argument(m) => assert!(m.contains("\"zz\""), "{m}"),
+        Error::Argument { message: m, .. } => assert!(m.contains("\"zz\""), "{m}"),
         other => panic!("expected an argument error, got {other:?}"),
     }
 }
@@ -703,7 +703,7 @@ const BAD_UNIT: &str = "not_a_unit_at_all";
 fn msg(policy: UnitPolicy) -> String {
     let mut r = Reader::new().unwrap();
     match r.set_unit_policy(Some(&policy)) {
-        Err(Error::Argument(m)) => m,
+        Err(Error::Argument { message: m, .. }) => m,
         other => panic!("expected an argument error, got {other:?}"),
     }
 }
@@ -769,7 +769,7 @@ fn test_the_writer_names_rules_too() {
     let e = w
         .set_unit_policy(Some(&policy_rules(vec![assertion(".a", BAD_UNIT)])))
         .unwrap_err();
-    let Error::Argument(m) = e else {
+    let Error::Argument { message: m, .. } = e else {
         panic!("expected an argument error, got {e:?}");
     };
     assert!(m.contains(".a") && m.contains(BAD_UNIT), "{m}");

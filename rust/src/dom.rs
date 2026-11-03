@@ -52,9 +52,8 @@ impl DomDoc {
     /// [`Error::Parse`] carrying the C error code.
     ///
     /// The error has no position: the C DOM reports only the code
-    /// (`bvn_dom_doc_get_parse_error`), so `line`, `column`, `offset` and
-    /// `byte` are always 0. Read the document with a [`crate::Reader`] to
-    /// locate the error.
+    /// (`bvn_dom_doc_get_parse_error`), so [`Error::position`] is `None`.
+    /// Read the document with a [`crate::Reader`] to locate the error.
     pub fn parse(data: &[u8]) -> Result<Self> {
         Self::checked(data, ffi::DocHandle::parse(data))
     }
@@ -71,7 +70,10 @@ impl DomDoc {
         // worked out, by the same probe Reader::set_unit_policy uses.
         Self::checked(data, ffi::DocHandle::parse_policy(data, &policy.spec())).map_err(|e| {
             if e.code() == Some(ErrorCode::InvalidArgument) {
-                Error::Argument(crate::reader::describe_unit_policy_refusal(policy))
+                Error::argument_with(
+                    ErrorCode::InvalidArgument,
+                    crate::reader::describe_unit_policy_refusal(policy),
+                )
             } else {
                 e
             }
@@ -82,7 +84,7 @@ impl DomDoc {
     /// `uint32_t` length) or the library could not allocate.
     fn checked(data: &[u8], handle: Option<ffi::DocHandle>) -> Result<Self> {
         if u32::try_from(data.len()).is_err() {
-            return Err(Error::Argument(format!(
+            return Err(Error::argument(format!(
                 "a DOM document is at most 4 GiB, got {} bytes",
                 data.len()
             )));
@@ -90,13 +92,7 @@ impl DomDoc {
         let handle = handle.ok_or(Error::OutOfMemory("bvn_dom_parse()"))?;
         match handle.parse_error() {
             0 => Ok(DomDoc { handle }),
-            code => Err(Error::Parse {
-                code,
-                line: 0,
-                column: 0,
-                offset: 0,
-                byte: 0,
-            }),
+            code => Err(Error::parse_code(code)),
         }
     }
 
@@ -139,7 +135,7 @@ fn strict_entries(raw: Vec<(&[u8], ffi::Node<'_>)>) -> Result<Vec<(String, Value
     raw.into_iter()
         .map(|(k, n)| {
             let key = std::str::from_utf8(k)
-                .map_err(|_| Error::Argument(format!("DOM key {k:?} is not valid UTF-8")))?;
+                .map_err(|_| Error::argument(format!("DOM key {k:?} is not valid UTF-8")))?;
             Ok((key.to_owned(), DomNode(n).to_value()?))
         })
         .collect()
@@ -147,7 +143,7 @@ fn strict_entries(raw: Vec<(&[u8], ffi::Node<'_>)>) -> Result<Vec<(String, Value
 
 /// The error for a node [`DomNode::to_value`] cannot read as its kind.
 fn unreadable(what: &str) -> Error {
-    Error::Argument(format!("DOM node cannot be read: {what}"))
+    Error::argument(format!("DOM node cannot be read: {what}"))
 }
 
 fn to_entries<'a>(raw: Vec<(&'a [u8], ffi::Node<'a>)>) -> Vec<(String, DomNode<'a>)> {

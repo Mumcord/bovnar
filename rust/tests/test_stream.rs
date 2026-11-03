@@ -268,10 +268,10 @@ fn test_parse_embedded_reports_the_real_error() {
     // Every failure was GOT_INCOMPLETE_BVNR_STREAM, whatever went wrong.
     let err = stream::parse_embedded(b".a=@;", false).unwrap_err();
     assert_eq!(err.code(), Some(ErrorCode::UnexpectedInputByte));
-    let Error::Parse { line, offset, .. } = err else {
-        panic!("not a parse error: {err:?}");
+    let Some(pos) = err.position() else {
+        panic!("no position: {err:?}");
     };
-    assert_eq!((line, offset), (1, 3));
+    assert_eq!((pos.line, pos.offset), (1, 3));
     let err = stream::parse_embedded(b".a={.b=1;", false).unwrap_err();
     assert!(matches!(err, Error::Parse { .. }));
     assert_eq!(err.code(), Some(ErrorCode::GotIncompleteBvnrStream));
@@ -314,6 +314,6 @@ fn test_mux_load_names_the_demux_error() {
 fn test_mux_load_refuses_a_key_with_a_nul() {
     let blob = mux_dump(&[(1, b"x".to_vec())]);
     let err = stream::mux_load(&blob, 0, Some("m\0ux")).unwrap_err();
-    assert!(matches!(err, Error::Argument(_)), "{err:?}");
+    assert!(matches!(err, Error::Argument { .. }), "{err:?}");
     assert!(err.to_string().contains("NUL"), "{err}");
 }

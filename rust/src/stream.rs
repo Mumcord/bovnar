@@ -6,7 +6,7 @@ use std::cell::RefCell;
 
 use crate::dict_parser::DictParser;
 use crate::enums::ErrorCode;
-use crate::error::{Error, Result};
+use crate::error::{Error, Position, Result};
 use crate::ffi::{self, BvnrReadFlags, DemuxError};
 use crate::reader::{EventData, wrap};
 use crate::writer;
@@ -30,19 +30,13 @@ fn read_flags() -> BvnrReadFlags {
 }
 
 fn parse_error(code: i32) -> Error {
-    Error::Parse {
-        code,
-        line: 0,
-        column: 0,
-        offset: 0,
-        byte: 0,
-    }
+    Error::parse_code(code)
 }
 
 /// Frames already-serialised documents into one stream.
 pub fn frame_documents<D: AsRef<[u8]>>(docs: &[D]) -> Result<Vec<u8>> {
     let docs: Vec<&[u8]> = docs.iter().map(AsRef::as_ref).collect();
-    ffi::frame_documents(&docs).ok_or_else(|| Error::Argument("bvnr_frame_write failed".into()))
+    ffi::frame_documents(&docs).ok_or_else(|| Error::argument("bvnr_frame_write failed"))
 }
 
 /// Serialises each value with [`to_string`] and frames the results.
@@ -116,15 +110,17 @@ pub fn mux_load(data: &[u8], max_message: u64, key: Option<&str>) -> Result<Vec<
     let key = key
         .map(std::ffi::CString::new)
         .transpose()
-        .map_err(|_| Error::Argument("mux key contains a NUL byte".into()))?;
+        .map_err(|_| Error::argument("mux key contains a NUL byte"))?;
     ffi::demux_read(data, read_flags(), max_message, key.as_deref()).map_err(|e| match e {
         DemuxError::Demux(code) => parse_error(code),
         DemuxError::Read(r) => Error::Parse {
             code: r.code,
-            line: r.line,
-            column: r.column,
-            offset: r.offset,
-            byte: r.byte,
+            position: Some(Position {
+                line: r.line,
+                column: r.column,
+                offset: r.offset,
+                byte: r.byte,
+            }),
         },
         DemuxError::OutOfMemory(call) => Error::OutOfMemory(call),
     })
@@ -160,10 +156,12 @@ pub fn parse_embedded(inner: &[u8], typed: bool) -> Result<Value> {
         return Err(match first_error {
             Some((code, line, column, byte, offset)) => Error::Parse {
                 code,
-                line,
-                column,
-                offset,
-                byte,
+                position: Some(Position {
+                    line,
+                    column,
+                    offset,
+                    byte,
+                }),
             },
             None => parse_error(ErrorCode::GotIncompleteBvnrStream as i32),
         });

@@ -104,10 +104,11 @@ impl Unit {
     pub fn parse(text: &str) -> Result<Self> {
         ffi::parse_unit(text).map(Unit).ok_or_else(|| {
             let code = ffi::unit_error_code(text);
-            Error::Argument(format!(
-                "invalid unit string {text:?}: {}",
-                ffi::error_name(code)
-            ))
+            let message = format!("invalid unit string {text:?}: {}", ffi::error_name(code));
+            match crate::ErrorCode::from_raw(code) {
+                Some(kind) => Error::argument_with(kind, message),
+                None => Error::argument(message),
+            }
         })
     }
 
@@ -115,7 +116,7 @@ impl Unit {
     /// fails beyond [`MAX_UNIT_COMPONENTS`].
     pub fn compound(components: &[UnitComponent]) -> Result<Self> {
         if components.len() > MAX_UNIT_COMPONENTS {
-            return Err(Error::Argument(format!(
+            return Err(Error::argument(format!(
                 "Too many unit components: {} > {MAX_UNIT_COMPONENTS}",
                 components.len()
             )));
@@ -189,7 +190,7 @@ impl Unit {
     pub fn factor(&self) -> Result<f64> {
         let conv = crate::units::unit_to_si_factor(self)?;
         if conv.is_affine {
-            return Err(Error::Argument(format!(
+            return Err(Error::argument(format!(
                 "{} is an affine unit: its SI value is value * factor + offset, not a factor. \
                  Use unit_to_si_factor() for both, or convert_value() to convert a value.",
                 if self.is_dimensionless() {
@@ -212,7 +213,7 @@ impl Unit {
     pub fn convert_factor(&self, other: &Unit) -> Result<f64> {
         let conv = crate::units::unit_convert_factor(self, other)?;
         if conv.requires_affine && conv.factor == 0.0 {
-            return Err(Error::Argument(format!(
+            return Err(Error::argument(format!(
                 "{self} -> {other} is an affine conversion and has no multiplicative factor; \
                  use convert_value()"
             )));

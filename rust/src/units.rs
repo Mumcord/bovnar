@@ -69,10 +69,10 @@ pub fn unit_to_str(unit: &Unit) -> Result<String> {
 /// The spelling of `unit` under [`UnitFlags`].
 pub fn unit_to_str_ex(unit: &Unit, flags: u32) -> Result<String> {
     ffi::unit_to_string_ex(&unit.0, flags).map_err(|_| {
-        Error::Argument(if unit_valid(unit) {
-            "unit_to_str_ex: the unit has no spelling under these flags".into()
+        Error::argument(if unit_valid(unit) {
+            "unit_to_str_ex: the unit has no spelling under these flags"
         } else {
-            "unit_to_str_ex: structurally invalid unit".into()
+            "unit_to_str_ex: structurally invalid unit"
         })
     })
 }
@@ -80,7 +80,7 @@ pub fn unit_to_str_ex(unit: &Unit, flags: u32) -> Result<String> {
 /// `unit` as a code in vocabulary `namespace`, without the `ns:` prefix.
 pub fn unit_to_profile(namespace: &str, unit: &Unit) -> Result<String> {
     ffi::unit_to_profile(namespace, &unit.0).ok_or_else(|| {
-        Error::Argument(format!(
+        Error::argument(format!(
             "{unit} has no code in the {namespace:?} vocabulary"
         ))
     })
@@ -88,7 +88,7 @@ pub fn unit_to_profile(namespace: &str, unit: &Unit) -> Result<String> {
 
 /// `unit` as a UCUM code.
 pub fn unit_to_ucum(unit: &Unit) -> Result<String> {
-    ffi::unit_to_ucum(&unit.0).ok_or_else(|| Error::Argument(format!("{unit} has no UCUM code")))
+    ffi::unit_to_ucum(&unit.0).ok_or_else(|| Error::argument(format!("{unit} has no UCUM code")))
 }
 
 /// True when `unit` can only be written in a profile notation.
@@ -129,7 +129,7 @@ pub fn prefix_unit_valid(prefix: Prefix, base: BaseUnit) -> bool {
 /// The SI conversion of `unit`; fails for a unit with none (a currency).
 pub fn unit_to_si_factor(unit: &Unit) -> Result<SIConversion> {
     let (factor, is_affine, affine_offset) = unit_fns::to_si_factor(unit.0)
-        .ok_or_else(|| Error::Argument(format!("{unit} has no SI conversion")))?;
+        .ok_or_else(|| Error::argument(format!("{unit} has no SI conversion")))?;
     Ok(SIConversion {
         factor,
         is_affine,
@@ -162,7 +162,7 @@ pub fn unit_si_normal_form(unit: &Unit) -> Option<Unit> {
 pub fn unit_convert_factor(from: &Unit, to: &Unit) -> Result<UnitConversion> {
     let (factor, ok, requires_affine) = unit_fns::convert_factor(from.0, to.0);
     if !ok && !requires_affine {
-        return Err(Error::Argument(format!(
+        return Err(Error::argument(format!(
             "cannot convert {from} to {to}: the units are incompatible"
         )));
     }
@@ -175,13 +175,13 @@ pub fn unit_convert_factor(from: &Unit, to: &Unit) -> Result<UnitConversion> {
 /// The exponents of the seven SI base dimensions, in [`SI_DIM_NAMES`] order.
 pub fn unit_dimension_vector(unit: &Unit) -> Result<[i32; 7]> {
     unit_fns::dimension_vector(unit.0)
-        .ok_or_else(|| Error::Argument(format!("{unit} has no SI dimension vector")))
+        .ok_or_else(|| Error::argument(format!("{unit} has no SI dimension vector")))
 }
 
 /// `unit` simplified to the fewest components, with the scale that costs.
 pub fn unit_reduce(unit: &Unit) -> Result<ReducedUnit> {
     let (u, scale) = unit_fns::reduce(unit.0)
-        .ok_or_else(|| Error::Argument(format!("reducing {unit} overflows its scale")))?;
+        .ok_or_else(|| Error::argument(format!("reducing {unit} overflows its scale")))?;
     Ok(ReducedUnit {
         unit: Unit(u),
         scale,
@@ -202,7 +202,7 @@ pub fn int_to_exponent(n: i32) -> Exponent {
 /// `value` in `from` converted to `to`, affine conversions included.
 pub fn convert_value(value: f64, from: &Unit, to: &Unit) -> Result<f64> {
     unit_fns::convert_value(value, from.0, to.0)
-        .ok_or_else(|| Error::Argument(format!("cannot convert a value from {from} to {to}")))
+        .ok_or_else(|| Error::argument(format!("cannot convert a value from {from} to {to}")))
 }
 
 #[cfg(test)]

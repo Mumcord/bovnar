@@ -88,7 +88,7 @@ pub fn from_json(json: &str) -> Result<Vec<u8>> {
 }
 
 fn refuse(msg: String) -> Error {
-    Error::Argument(format!("convert: {msg}"))
+    Error::argument(format!("convert: {msg}"))
 }
 
 struct Parser<'a> {
@@ -384,7 +384,7 @@ fn write_element(w: &mut Writer, e: &Json) -> Result<()> {
         Json::Float(f) => {
             let vt = writer::type_spec(ValueTypeFamily::Float, 64, 0);
             let text = ffi::format_f64(*f, vt)
-                .ok_or_else(|| Error::Argument(format!("cannot format {f}")))?;
+                .ok_or_else(|| Error::argument(format!("cannot format {f}")))?;
             // "2" would read back as a uint inside an array, unlike at the
             // top level: annotate it as a float.
             if !text.contains(['.', 'e', 'E']) {
@@ -588,7 +588,10 @@ mod tests {
             fixture!("bad_overflow.json"),
             fixture!("bad_trailing.json"),
         ] {
-            assert!(matches!(from_json(bad), Err(Error::Argument(_))), "{bad}");
+            assert!(
+                matches!(from_json(bad), Err(Error::Argument { .. })),
+                "{bad}"
+            );
         }
     }
 

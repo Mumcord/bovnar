@@ -25,7 +25,7 @@ pub use enums::{
     BaseUnit, ErrorCode, Event, Exponent, IECPrefix, Prefix, PrefixSystem, SIPrefix, TokenType,
     UnknownValue, ValueTypeFamily,
 };
-pub use error::{Error, Result};
+pub use error::{Error, ErrorKind, Position, Result};
 pub use ffi::ValueTypeSpec;
 pub use quantity::Quantity;
 pub use reader::{EventData, EventPayload, ReadOptions, Reader, UnitPolicy, UnitRule};
@@ -109,8 +109,8 @@ fn parse_with(data: &[u8], typed: bool) -> Result<Value> {
 /// quantities.
 pub fn to_string(value: &Value, pretty: bool) -> Result<Vec<u8>> {
     let Value::Struct(entries) = value else {
-        return Err(Error::Argument(
-            "to_string() requires a struct at the top level".into(),
+        return Err(Error::argument(
+            "to_string() requires a struct at the top level",
         ));
     };
     // A datetime or array-indexing reference needs spec 1.1, a profile unit
@@ -170,7 +170,7 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
                 return emit_rows(w, rows, true, None);
             }
             if unit.is_none() && has_unit {
-                return Err(Error::Argument(format!(
+                return Err(Error::argument(format!(
                     "cannot serialise {key:?}: its elements carry units but do not \
                      agree on one type and unit, and a Bovnar array has a single \
                      annotation for all of them; give them a common unit, or use a \
@@ -185,7 +185,7 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
                 vt = int_annotation(rows);
             }
             if vt.is_none() && has_wide_int(rows) {
-                return Err(Error::Argument(format!(
+                return Err(Error::argument(format!(
                     "cannot serialise {key:?}: it holds an integer wider than 64 \
                      bits beside elements that are not integers, and a Bovnar \
                      array has a single annotation to give the width in"
@@ -286,10 +286,9 @@ fn datetime_annotation(rows: &[Value]) -> Result<Option<ValueTypeSpec>> {
         return Ok(None);
     }
     if mixed {
-        return Err(Error::Argument(
+        return Err(Error::argument(
             "cannot serialise a datetime array whose elements use different \
-             epochs; split it into one array per epoch"
-                .into(),
+             epochs; split it into one array per epoch",
         ));
     }
     let width = if width == 0 { 64 } else { width };
@@ -568,7 +567,7 @@ fn emit_element(
         Value::Float(f) => {
             let vt = writer::type_spec(ValueTypeFamily::Float, 64, 0);
             let text = ffi::format_f64(*f, vt)
-                .ok_or_else(|| Error::Argument(format!("cannot format {f}")))?;
+                .ok_or_else(|| Error::argument(format!("cannot format {f}")))?;
             data(w, TokenType::ArrayNumber, vt, text.as_bytes())
         }
         Value::String(s) => data(
@@ -595,7 +594,7 @@ fn refuse_under(elem: &Value, vt: ValueTypeSpec, why: &str) -> Error {
     } else {
         format!("{fam}:{}", vt.width)
     };
-    Error::Argument(format!(
+    Error::argument(format!(
         "array element {elem:?} cannot be written under <{spec}>: {why}"
     ))
 }

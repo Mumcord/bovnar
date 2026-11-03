@@ -1,7 +1,7 @@
 //! The streaming reader, mirroring `python/bovnar/reader.py`.
 
 use crate::enums::{ErrorCode, Event, TokenType};
-use crate::error::{Error, Result};
+use crate::error::{Error, Position, Result};
 use crate::ffi::{self, BvnrReadFlags, ValueTypeSpec};
 use crate::unit::Unit;
 
@@ -83,7 +83,7 @@ impl UnitPolicy {
     /// The counts the C side would refuse anyway, reported by name.
     pub(crate) fn check_counts(&self) -> Result<()> {
         let too_many = |what: &str, n: usize, max: usize| {
-            Err(Error::Argument(format!("at most {max} {what}, got {n}")))
+            Err(Error::argument(format!("at most {max} {what}, got {n}")))
         };
         if self.targets.len() > MAX_UNIT_TARGETS {
             return too_many("unit targets", self.targets.len(), MAX_UNIT_TARGETS);
@@ -298,7 +298,7 @@ impl<'a> EventData<'a> {
         };
         exact
             .in_base(base)
-            .map_err(|()| Error::Argument(format!("base {base} is not one bovnar can write")))
+            .map_err(|()| Error::argument(format!("base {base} is not one bovnar can write")))
     }
 
     /// The payload as text, with invalid UTF-8 replaced.
@@ -401,10 +401,13 @@ impl Reader {
         {
             Ok(())
         } else {
-            Err(Error::Argument(match policy {
-                Some(p) => describe_unit_policy_refusal(p),
-                None => "bvnr_reader_set_unit_policy failed".into(),
-            }))
+            Err(Error::argument_with(
+                ErrorCode::InvalidArgument,
+                match policy {
+                    Some(p) => describe_unit_policy_refusal(p),
+                    None => "bvnr_reader_set_unit_policy failed".into(),
+                },
+            ))
         }
     }
 
@@ -505,10 +508,12 @@ impl Reader {
         let e = self.handle.error();
         Error::Parse {
             code: e.code,
-            line: e.line,
-            column: e.column,
-            offset: e.offset,
-            byte: e.byte,
+            position: Some(Position {
+                line: e.line,
+                column: e.column,
+                offset: e.offset,
+                byte: e.byte,
+            }),
         }
     }
 }

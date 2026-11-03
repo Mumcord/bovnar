@@ -69,9 +69,10 @@ assert_eq!(dom.get("port").and_then(|n| n.as_u64()), Some(443));
 
 Lower level: `Reader` (streaming events) and `Writer` (streaming output into
 memory). Errors carry the library's error code and its C name
-(`Error::name()`, e.g. `"unexpected_input_byte"`). A `DomDoc::parse` error has
-no position (line, column and offset are 0): the C DOM reports only the code.
-Read the document with `Reader` to locate it.
+(`Error::name()`, e.g. `"unexpected_input_byte"`; `Error::kind()` as an
+`ErrorKind`). A `DomDoc::parse` error has no position (`Error::position()` is
+`None`): the C DOM reports only the code. Read the document with `Reader` to
+locate it.
 
 `Reader`, `Writer` and `DomDoc` are `Send` but not `Sync`: as `bovnar.h`
 (THREADING) allows, each can be moved to another thread, and distinct ones

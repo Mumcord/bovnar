@@ -123,21 +123,21 @@ impl Writer {
     pub fn write_uint(&mut self, key: &str, value: u64, width: u32, base: u32) -> Result<()> {
         let vt = type_spec(ValueTypeFamily::Uint, width, base);
         let text = ffi::format_u64(value, base)
-            .ok_or_else(|| Error::Argument(format!("cannot format {value} in base {base}")))?;
+            .ok_or_else(|| Error::argument(format!("cannot format {value} in base {base}")))?;
         self.write_scalar(key, vt, &text)
     }
 
     /// `.key = <sint:width[,_base]> value;`
     pub fn write_sint(&mut self, key: &str, value: i64, width: u32, base: u32) -> Result<()> {
         if base == 64 || base == 85 {
-            return Err(Error::Argument(format!(
+            return Err(Error::argument(format!(
                 "base {base} is unsigned: its alphabet uses '+' and '-' as digits, \
                  so a signed integer cannot be written in it"
             )));
         }
         let vt = type_spec(ValueTypeFamily::Sint, width, base);
         let text = ffi::format_i64(value, base)
-            .ok_or_else(|| Error::Argument(format!("cannot format {value} in base {base}")))?;
+            .ok_or_else(|| Error::argument(format!("cannot format {value} in base {base}")))?;
         self.write_scalar(key, vt, &text)
     }
 
@@ -145,7 +145,7 @@ impl Writer {
     pub fn write_float(&mut self, key: &str, value: f64, width: u32) -> Result<()> {
         let vt = type_spec(ValueTypeFamily::Float, width, 0);
         let text = ffi::format_f64(value, vt)
-            .ok_or_else(|| Error::Argument(format!("cannot format {value}")))?;
+            .ok_or_else(|| Error::argument(format!("cannot format {value}")))?;
         self.write_scalar(key, vt, &text)
     }
 
@@ -176,7 +176,7 @@ impl Writer {
             10 => 0,
             16 => 16,
             _ => {
-                return Err(Error::Argument(format!(
+                return Err(Error::argument(format!(
                     "write_bvnf_base: base must be 10 or 16, got {base}"
                 )));
             }
@@ -219,7 +219,7 @@ impl Writer {
             && q.unit.is_dimensionless()
             && !Unit::parse(src).is_ok_and(|u| u.is_dimensionless())
         {
-            return Err(Error::Argument(format!(
+            return Err(Error::argument(format!(
                 "cannot serialise {key:?}: unit_source {src:?} does not spell this \
                  Quantity's unit, which is no unit at all"
             )));
@@ -242,10 +242,9 @@ impl Writer {
                 || p.leave_inexact
                 || p.rules.iter().any(|r| r.convert))
         {
-            return Err(Error::Argument(
+            return Err(Error::argument(
                 "the writer takes only the validation half of a UnitPolicy \
-                 (require_unit / require_dimension_of, and rules with convert=false)"
-                    .into(),
+                 (require_unit / require_dimension_of, and rules with convert=false)",
             ));
         }
         if let Some(p) = policy {
@@ -260,7 +259,7 @@ impl Writer {
             // The write-side-only fields are refused above with their own
             // message, so what reaches here is a unit or a rule path the
             // parser will not take: what the reader's setter refuses too.
-            Err(Error::Argument(match policy {
+            Err(Error::argument(match policy {
                 Some(p) => crate::reader::describe_unit_policy_refusal(p),
                 None => "bvnr_writer_set_unit_policy failed".into(),
             }))
@@ -348,7 +347,7 @@ impl Writer {
             return Ok(());
         }
         if self.struct_depth != 0 {
-            return Err(Error::Argument(format!(
+            return Err(Error::argument(format!(
                 "finish() called with {} unclosed struct(s)",
                 self.struct_depth
             )));
@@ -435,10 +434,9 @@ impl Writer {
         }
         if unit.0.num_components > 0 && !matches!(fam, Some(F::Datetime | F::Utf8)) {
             let text = ffi::unit_to_string_ex(&unit.0, self.handle.unit_flags()).map_err(|_| {
-                Error::Argument(
+                Error::argument(
                     "cannot serialise this unit: bvn_unit_to_string_ex refused it, and \
-                     writing the value without its unit would change what it means"
-                        .into(),
+                     writing the value without its unit would change what it means",
                 )
             })?;
             if !text.is_empty() {
@@ -490,7 +488,7 @@ impl Writer {
         parts: [&[u8]; 3],
     ) -> Result<()> {
         if parts.iter().any(|p| u32::try_from(p.len()).is_err()) {
-            return Err(Error::Argument("a single value cannot exceed 4 GiB".into()));
+            return Err(Error::argument("a single value cannot exceed 4 GiB"));
         }
         self.check(|h| h.write_event_full(event as i32, token as i32, vt, &unit.0, parts))
     }
@@ -505,7 +503,7 @@ impl Writer {
         data: &[u8],
     ) -> Result<()> {
         if u32::try_from(data.len()).is_err() {
-            return Err(Error::Argument("a single value cannot exceed 4 GiB".into()));
+            return Err(Error::argument("a single value cannot exceed 4 GiB"));
         }
         self.check(|h| h.write_event(event as i32, token as i32, vt, data))
     }
@@ -560,12 +558,12 @@ pub(crate) fn needs_annotation(q: &Quantity) -> bool {
 
 fn format_float(value: f64, width: u32) -> Result<String> {
     ffi::format_f64(value, type_spec(ValueTypeFamily::Float, width, 0))
-        .ok_or_else(|| Error::Argument(format!("cannot format {value}")))
+        .ok_or_else(|| Error::argument(format!("cannot format {value}")))
 }
 
 fn refuse_signed_high_base(base: u32) -> Result<()> {
     if base == 64 || base == 85 {
-        return Err(Error::Argument(format!(
+        return Err(Error::argument(format!(
             "base {base} is unsigned: its alphabet uses '+' and '-' as digits, \
              so a signed integer cannot be written in it"
         )));
@@ -577,7 +575,7 @@ fn refuse_signed_high_base(base: u32) -> Result<()> {
 pub fn format_bigint(value: i128, base: u32) -> Result<String> {
     const B64: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     if !(2..=62).contains(&base) && base != 64 && base != 85 {
-        return Err(Error::Argument(format!("unsupported integer base {base}")));
+        return Err(Error::argument(format!("unsupported integer base {base}")));
     }
     let digit = |d: u32| -> char {
         let d8 = d as u8;

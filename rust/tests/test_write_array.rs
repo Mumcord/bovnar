@@ -696,7 +696,7 @@ mod typed_arrays_survive_dumps {
     fn test_two_units_are_still_refused() {
         let doc = parse_typed(b".a=[<float:64,s>1,<float:64,m>3];").unwrap();
         let r = to_string(&doc, true);
-        assert!(matches!(r, Err(Error::Argument(_))), "{r:?}");
+        assert!(matches!(r, Err(Error::Argument { .. })), "{r:?}");
     }
 
     #[test]
@@ -739,7 +739,7 @@ mod write_array_held_to_annotation {
 
     fn assert_refused(rows: Value, spec: ValueTypeSpec) {
         let r = write(rows, spec, None);
-        assert!(matches!(r, Err(Error::Argument(_))), "{r:?}");
+        assert!(matches!(r, Err(Error::Argument { .. })), "{r:?}");
     }
 
     /// The refusal used to come at the bad element, after `.p=<uint:16>[80,443,`
@@ -766,7 +766,7 @@ mod write_array_held_to_annotation {
             w.write_string("before", "x").unwrap();
             let mark = w.get_output().to_vec();
             let r = write_array(&mut w, "p", &items(rows), Some(spec), None, None);
-            assert!(matches!(r, Err(Error::Argument(_))), "{r:?}");
+            assert!(matches!(r, Err(Error::Argument { .. })), "{r:?}");
             assert_eq!(w.get_output(), mark.as_slice());
             write_array(&mut w, "q", &items(v!([1, 2])), Some(u16_), None, None).unwrap();
             w.write_string("after", "y").unwrap();

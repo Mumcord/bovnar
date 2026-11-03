@@ -47,24 +47,24 @@ impl Quantity {
         let base = match (family, frac) {
             (ValueTypeFamily::FloatFix, Some(q)) => q,
             (ValueTypeFamily::FloatFix, None) => {
-                return Err(Error::Argument(
-                    "float_fix requires the number of fractional bits".into(),
+                return Err(Error::argument(
+                    "float_fix requires the number of fractional bits",
                 ));
             }
             (ValueTypeFamily::Float | ValueTypeFamily::FloatDec, _) => 0,
             _ => {
-                return Err(Error::Argument(
-                    "from_number: family must be Float, FloatDec or FloatFix".into(),
+                return Err(Error::argument(
+                    "from_number: family must be Float, FloatDec or FloatFix",
                 ));
             }
         };
         let total = if width == 0 { 64 } else { width };
         validate_float_width(family, total)?;
         if text.parse::<f64>().is_err() {
-            return Err(Error::Argument(format!("{text:?} is not a decimal number")));
+            return Err(Error::argument(format!("{text:?} is not a decimal number")));
         }
         if family == ValueTypeFamily::FloatFix && !ffi::float_str_fits_fix(text, total, base) {
-            return Err(Error::Argument(format!(
+            return Err(Error::argument(format!(
                 "{text} does not fit a signed float_fix:{width},q{base}"
             )));
         }
@@ -133,7 +133,7 @@ fn validate_float_width(family: ValueTypeFamily, width: u32) -> Result<()> {
     if ok {
         return Ok(());
     }
-    Err(Error::Argument(match family {
+    Err(Error::argument(match family {
         ValueTypeFamily::Float => {
             format!("binary float width must be 16 or a multiple of 32 (up to 32768), not {width}")
         }
@@ -159,7 +159,7 @@ fn check_decimal_fits(text: &str, width: u32) -> Result<()> {
     // Combination field 11110 after the sign bit: infinity.
     let top = bits.last().copied().unwrap_or(0);
     if top & 0x7C == 0x78 {
-        return Err(Error::Argument(format!(
+        return Err(Error::argument(format!(
             "{text} is out of range for float_dec:{width} (it would materialise to infinity); \
              use a wider float_dec"
         )));

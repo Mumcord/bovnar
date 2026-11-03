@@ -164,7 +164,7 @@ fn test_wide_int_in_an_array_with_no_annotation_is_refused() {
     ] {
         let doc = obj(vec![("k", Value::Array(vec![Value::Int(1 << 70), other]))]);
         let err = to_string(&doc, true).unwrap_err();
-        assert!(matches!(err, Error::Argument(_)), "{err:?}");
+        assert!(matches!(err, Error::Argument { .. }), "{err:?}");
     }
 }
 

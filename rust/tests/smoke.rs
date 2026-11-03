@@ -149,3 +149,25 @@ fn reader_writer_and_dom_move_between_threads() {
     .unwrap();
     assert_eq!(out, (b".s=\"x\";".to_vec(), 1));
 }
+
+/// Each error carries the library's kind where there is one, and a position
+/// only where the library reported one.
+#[test]
+fn errors_carry_their_kind_and_position() {
+    use bovnar::{Error, ErrorKind, Unit};
+    let reader = bovnar::parse(b".a = @;").unwrap_err();
+    assert_eq!(reader.kind(), Some(ErrorKind::UnexpectedInputByte));
+    assert_eq!(reader.position().map(|p| p.line), Some(1));
+    let Err(dom) = bovnar::DomDoc::parse(b".a = @;") else {
+        panic!("the DOM accepted a bad document");
+    };
+    assert_eq!(dom.kind(), Some(ErrorKind::UnexpectedInputByte));
+    assert_eq!(dom.position(), None);
+    let unit = Unit::parse("not_a_unit").unwrap_err();
+    assert!(
+        matches!(unit, Error::Argument { code: Some(_), .. }),
+        "{unit:?}"
+    );
+    let caller = bovnar::to_string(&bovnar::Value::Int(1), false).unwrap_err();
+    assert_eq!(caller.kind(), None);
+}
