@@ -12,12 +12,14 @@ pub mod error;
 #[allow(unsafe_code)]
 mod ffi;
 pub mod reader;
+pub mod writer;
 
 pub use dom::{DomDoc, DomNode, DomType};
 pub use enums::{ErrorCode, Event, TokenType, ValueTypeFamily};
 pub use error::{Error, Result};
 pub use ffi::ValueTypeSpec;
 pub use reader::{EventData, EventPayload, ReadOptions, Reader};
+pub use writer::Writer;
 
 /// A plain BVNR value, the Rust counterpart of what Python's `loads` returns
 /// and `dumps` takes. Type annotations and units are not carried.

@@ -888,6 +888,127 @@ impl<'a> Node<'a> {
     }
 }
 
+/// An owned `bvnr_writer_t` writing into a buffer it owns.
+pub struct WriterHandle {
+    ptr: std::ptr::NonNull<c_void>,
+    /// The memory sink. Allocated once in `open_mem` and never resized, so the
+    /// address the library holds stays valid until the writer is destroyed.
+    buf: Vec<u8>,
+}
+
+impl WriterHandle {
+    /// `bvnr_writer_create`; `None` when the library is out of memory.
+    pub fn new() -> Option<Self> {
+        // SAFETY: no preconditions; the result is NULL or a fresh writer.
+        let ptr = std::ptr::NonNull::new(unsafe { bvnr_writer_create() })?;
+        Some(WriterHandle {
+            ptr,
+            buf: Vec::new(),
+        })
+    }
+
+    /// `bvnr_open_write_mem` into a fresh buffer of `cap` bytes.
+    pub fn open_mem(&mut self, cap: usize, pretty: bool, mut flags: BvnrWriteFlags) -> bool {
+        self.buf = vec![0; cap];
+        // SAFETY: the writer is live and `buf` (cap bytes) lives, unmoved and
+        // unresized, as long as the writer; `flags` is only read during the call.
+        unsafe {
+            bvnr_open_write_mem(
+                self.ptr.as_ptr(),
+                self.buf.as_mut_ptr().cast(),
+                cap as u64,
+                pretty,
+                &mut flags,
+            )
+        }
+    }
+
+    /// `bvnr_write_event` with a payload of `data` (key, literal or octet
+    /// chunk). False when the library refuses it or `data` exceeds 4 GiB.
+    pub fn write_event(
+        &mut self,
+        event: c_int,
+        token_type: c_int,
+        value_type: ValueTypeSpec,
+        data: &[u8],
+    ) -> bool {
+        let Ok(length) = u32::try_from(data.len()) else {
+            return false;
+        };
+        let mut d = BvnrData::zeroed();
+        d.type_ = token_type;
+        d.value_type = value_type;
+        d.data = data.as_ptr().cast();
+        d.length = length;
+        // SAFETY: the writer is live; `d` and the bytes it points at are
+        // valid for the call, and the library copies what it keeps.
+        unsafe { bvnr_write_event(self.ptr.as_ptr(), event, &mut d) }
+    }
+
+    /// `bvnr_write_version`.
+    pub fn write_version(&mut self, major: u16, minor: u16) -> bool {
+        // SAFETY: the writer is live.
+        unsafe { bvnr_write_version(self.ptr.as_ptr(), major, minor) }
+    }
+
+    /// `bvnr_write_finish`.
+    pub fn finish(&mut self) -> bool {
+        // SAFETY: the writer is live.
+        unsafe { bvnr_write_finish(self.ptr.as_ptr()) }
+    }
+
+    /// `bvnr_writer_get_error` and `bvnr_writer_get_error_offset`.
+    pub fn error(&self) -> (c_int, u64) {
+        let w = self.ptr.as_ptr();
+        // SAFETY: the writer is live; the getters only read it.
+        unsafe { (bvnr_writer_get_error(w), bvnr_writer_get_error_offset(w)) }
+    }
+
+    /// `bvnr_writer_bytes_written`.
+    pub fn bytes_written(&self) -> u64 {
+        // SAFETY: the writer is live.
+        unsafe { bvnr_writer_bytes_written(self.ptr.as_ptr()) }
+    }
+
+    /// What the writer has put into its buffer so far.
+    pub fn output(&self) -> &[u8] {
+        let n = usize::try_from(self.bytes_written()).unwrap_or(usize::MAX);
+        &self.buf[..n.min(self.buf.len())]
+    }
+}
+
+impl Drop for WriterHandle {
+    fn drop(&mut self) {
+        // SAFETY: the writer is live and destroyed exactly once, before `buf`.
+        unsafe { bvnr_writer_destroy(self.ptr.as_ptr()) }
+    }
+}
+
+/// Runs one of the `bvn_format_*` functions on a 128-byte buffer.
+fn format(f: impl FnOnce(*mut c_char, usize) -> i32) -> Option<String> {
+    let mut buf = [0u8; 128];
+    let n = usize::try_from(f(buf.as_mut_ptr().cast(), buf.len())).ok()?;
+    String::from_utf8(buf.get(..n)?.to_vec()).ok()
+}
+
+/// `bvn_format_uint64`: `value` as digits in `base`.
+pub fn format_u64(value: u64, base: u32) -> Option<String> {
+    // SAFETY: `buf` has `len` writable bytes for the call.
+    format(|buf, len| unsafe { bvn_format_uint64(buf, len, value, base, 0) })
+}
+
+/// `bvn_format_int64`: `value` as digits in `base`.
+pub fn format_i64(value: i64, base: u32) -> Option<String> {
+    // SAFETY: as above.
+    format(|buf, len| unsafe { bvn_format_int64(buf, len, value, base, 0) })
+}
+
+/// `bvn_format_double`: `value` as the literal for type `vt`.
+pub fn format_f64(value: f64, vt: ValueTypeSpec) -> Option<String> {
+    // SAFETY: as above.
+    format(|buf, len| unsafe { bvn_format_double(buf, len, value, vt) })
+}
+
 /// Checks every mirrored struct against the compiler's own layout, as printed
 /// by the upstream ABI manifest generator (tests/bvnr_abi_dump.c).
 #[cfg(all(test, not(target_family = "wasm")))]
