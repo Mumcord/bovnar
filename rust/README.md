@@ -13,43 +13,41 @@ behaviour as `../python`, so the two bindings stay as simple as each other and
 a change upstream maps onto both the same way. Expect Python's shapes
 (`parse`/`to_string` over a dynamic `Value`, `Reader` callbacks, `Writer`
 events) rather than serde integration, builders or typed deserialisation.
+Where Rust's types can say more than Python's at no cost to that mirror, they
+do: the C enums are Rust enums, and errors carry the library's error kind.
+
+## Versioning
+
+The crate carries the version of the C library it wraps, currently **2.0.0**:
+`version` in `Cargo.toml` is the `project(bovnar VERSION x.y.z)` of the
+top-level `CMakeLists.txt`, and CI fails when the two differ. A release tag
+`vX.Y.Z` names that same version. The minimum supported Rust version is
+**1.88** (`rust-version`), which CI builds and tests.
 
 ## Building
 
-Requirements: a C compiler and `python3` (the build runs the upstream table
-generators, exactly as CMake does).
+Requirements: Rust 1.88 or later, a C compiler, and `python3` on `PATH` (the
+build runs the upstream table generators, exactly as CMake does).
 
 ```bash
 cargo build
 cargo test
 ```
 
-For `wasm32-wasip2`, point `WASI_SDK_PATH` at a wasi-sdk:
+### Building for WebAssembly (wasm32-wasip2)
 
-```bash
-WASI_SDK_PATH=/opt/wasi-sdk cargo build --target wasm32-wasip2
+The crate compiles its C sources itself, so a WebAssembly build needs a C
+compiler for WASI: [wasi-sdk](https://github.com/WebAssembly/wasi-sdk). Point
+`WASI_SDK_PATH` at it and build for `wasm32-wasip2`:
+
+```sh
+rustup target add wasm32-wasip2
+export WASI_SDK_PATH=/opt/wasi-sdk        # where wasi-sdk is unpacked
+cargo build --release --target wasm32-wasip2
 ```
 
-## Versioning
-
-The crate carries the version of the C library it wraps: `version` in
-`Cargo.toml` is the `project(bovnar VERSION x.y.z)` of the top-level
-`CMakeLists.txt`, and CI fails when the two differ. A release tag `vX.Y.Z`
-names that same version.
-
-## Publishing
-
-The crate is not on crates.io and `Cargo.toml` keeps `publish = false`: as
-it stands it cannot be packaged. `cargo publish` packs only `rust/`, while
-`build.rs` compiles `../src` and `../include` and runs the `../gen_*.py`
-generators with Python. Publishing would take:
-
-- the C sources, headers and generated tables inside the package (vendored
-  into `rust/` at package time, or the generated `.gen.h`/`.gen.c` files
-  committed so the build needs no Python);
-- `build.rs` reading them from inside the package;
-- a release step, under the same tag == version gate as the GitHub release,
-  with a crates.io token, and `publish = false` removed.
+The same applies to a crate that depends on this one and is built for
+`wasm32-wasip2`: set `WASI_SDK_PATH` for its build.
 
 ## Usage
 
@@ -171,34 +169,98 @@ match Unit::parse("furlong per fortnight") {
 }
 ```
 
-### Building for WebAssembly (wasm32-wasip2)
+## API overview
 
-The crate compiles its C sources itself, so a WebAssembly build needs a C
-compiler for WASI: [wasi-sdk](https://github.com/WebAssembly/wasi-sdk). Point
-`WASI_SDK_PATH` at it and build for `wasm32-wasip2`:
+- **Plain values:** `parse` (Python's `loads`), `parse_typed`
+  (`loads(typed=True)`, keeping types and units in `Quantity`), `to_string`
+  (`dumps`) and `write_array` over the dynamic `Value`.
+- **DOM:** `DomDoc::parse` / `parse_with_policy`, then `get`, `lookup`
+  (dotted paths), `entries` and `DomNode` accessors; `to_value` fails rather
+  than inventing a value for a node it cannot read.
+- **Streaming:** `Reader` (`read_mem`, `read_mem_want_unit`, `iter_mem`, a
+  `UnitPolicy`) and `Writer` (typed `write_*` calls, structs, arrays and raw
+  `emit`). The writer's arguments are typed: `Base` (the bases bovnar has an
+  alphabet for, 2..62, 64, 85; `Base::DECIMAL`, `Base::HEX`), `Signedness`
+  (`Signed`, `Unsigned`, `Auto` for Python's `signed=True/False/None`) and
+  `EmitSpec` (Python's `emit` keyword arguments, with a table in its docs).
+- **Units:** `Unit`, `UnitComponent` (a `BaseUnit`, an `Exponent` and a
+  `Prefix`), the `units` and `currency` modules.
+- **Enums:** `Event`, `TokenType`, `ValueTypeFamily`, `ErrorCode`,
+  `BaseUnit`, `PrefixSystem`, `SIPrefix`, `IECPrefix`, named like Python's
+  members in CamelCase, with `TryFrom<i32>` (an unknown value is an
+  `UnknownValue` error) and `From<_> for i32`. `BaseUnit` also covers the unit
+  profiles' opaque ids (`UcumIu` for `ucum:[IU]`), which Python's leaves out.
+  `Exponent` and `Base` are open ranges, so they are checked newtypes.
+- **Errors:** `Error` mirrors Python's exception classes: `Parse`, `Write`,
+  `Argument` and `OutOfMemory` (`MemoryError`). `kind()` is the library's
+  error name as an `ErrorKind` wherever it reported one (an unparsable unit
+  or a refused policy included), `name()` its C spelling, and `position()`
+  the line, column and offset where the input was refused. A `DomDoc::parse`
+  error has no position: the C DOM reports only the code, so read the
+  document with `Reader` to locate it.
+- **JSON:** `json::from_json`, `json::to_json` and `json::detect`, mirroring
+  the CLI's `bovnar convert`. JSON has one number type, so two values change
+  on the way back, as with the CLI: a float with an integral value becomes an
+  integer (`1e+6` is written `1000000` and reads back as `uint`), and `-0.0`
+  is written `-0`, which reads back as `0`. From the second trip on the JSON
+  is stable.
+- **Streams:** `stream` frames several documents, multiplexes octet
+  channels and embeds documents in documents.
+- **Threads:** `Reader`, `Writer` and `DomDoc` are `Send` but not `Sync`: as
+  `bovnar.h` (THREADING) allows, each can be moved to another thread, and
+  distinct ones can be used on distinct threads, but one object must not be
+  shared.
+
+## Tests
+
+- `cargo test` runs the Rust tests: 32 of Python's 38 test files are ported
+  one to one, one `tests/*.rs` file each with the Python test names; the ABI
+  check (`test_abi.py`) is a unit test in `src/ffi.rs`, because the mirrored
+  structs are private. Tests that could not be ported are listed at the top
+  of each port, with the reason.
+- `test_writers_agree` compares `to_string` with the C CLI's `pretty-print`,
+  so it is `#[ignore]`d unless the CLI is built at `<repo>/build/bovnar`:
+  `cmake -B build . && cmake --build build --target bovnar`, then
+  `cargo test --test test_writers_agree -- --ignored`.
+- The README's examples run as doctests (`cargo test --doc`).
+- The C library's own suite runs unchanged through CMake:
+  `cmake -B build . && cmake --build build && ctest --test-dir build`.
+
+## Fuzzing
+
+`fuzz/` holds [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) targets
+(nightly toolchain): `parse` (the streaming parsers and a write-back round
+trip), `dom` (parse and walk every node) and `json_roundtrip` (`from_json`
+and `to_json` until the JSON is stable). Instrument the C library too by
+building it with clang:
 
 ```sh
-rustup target add wasm32-wasip2
-export WASI_SDK_PATH=/opt/wasi-sdk        # where wasi-sdk is unpacked
-cargo build --release --target wasm32-wasip2
+cd fuzz
+CC=clang CFLAGS="-fsanitize=fuzzer-no-link,address" \
+    cargo +nightly fuzz run -O parse -- -max_total_time=600
 ```
 
-The same applies to a crate that depends on this one and is built for
-`wasm32-wasip2`: set `WASI_SDK_PATH` for its build.
+## CI and releases
 
-`python3` must be on `PATH` at build time: `build.rs` runs the upstream
-table generators.
+The Rust jobs run in `.github/workflows/build-and-package.yml`, next to the
+C library's: a version check (crate version = `CMakeLists.txt` version),
+fmt, clippy `-D warnings` and the tests on Linux x64 (with the CLI for
+`test_writers_agree`), Linux aarch64, macOS, Windows MSVC x64 and Windows
+MinGW64, a build and test on Rust 1.88, and a `wasm32-wasip2` build with
+wasi-sdk. The release job does not wait for them, so the C archives and the
+PyPI release never depend on the Rust jobs.
 
-Lower level: `Reader` (streaming events) and `Writer` (streaming output into
-memory). Errors carry the library's error code and its C name
-(`Error::name()`, e.g. `"unexpected_input_byte"`; `Error::kind()` as an
-`ErrorKind`). A `DomDoc::parse` error has no position (`Error::position()` is
-`None`): the C DOM reports only the code. Read the document with `Reader` to
-locate it.
+The crate is **not published to crates.io**, and `Cargo.toml` keeps
+`publish = false`: as it stands it cannot be packaged. `cargo publish` packs
+only `rust/`, while `build.rs` compiles `../src` and `../include` and runs the
+`../gen_*.py` generators with Python. Publishing would take:
 
-`Reader`, `Writer` and `DomDoc` are `Send` but not `Sync`: as `bovnar.h`
-(THREADING) allows, each can be moved to another thread, and distinct ones
-can be used on distinct threads, but one object must not be shared.
+- the C sources, headers and generated tables inside the package (vendored
+  into `rust/` at package time, or the generated files committed so the build
+  needs no Python);
+- `build.rs` reading them from inside the package;
+- a release step, under the same tag == version gate as the GitHub release,
+  with a crates.io token, and `publish = false` removed.
 
 ## Layout
 
@@ -220,16 +282,14 @@ can be used on distinct threads, but one object must not be shared.
 
 ## Not mirrored
 
-The pint and NumPy bridges (Python-only libraries), `BvnFloat`
-and the `Quantity` accessors built on it or on `Decimal`/`Fraction`
-(`decimal`, `fraction`, `fixed_point`, `stored_value`, `ieee_bits`), and the
+The pint and NumPy bridges (Python-only libraries, so `test_numpy_bridge`,
+`test_pint_bridge`, `test_pint_factor_parity` and
+`test_example_numpy_roundtrip` have no port), `BvnFloat` and the `Quantity`
+accessors built on it or on `Decimal`/`Fraction` (`decimal`, `fraction`,
+`fixed_point`, `stored_value`, `ieee_bits`; so `test_decimal_tie_rounding`,
+whose two tests read `stored_value`, has none either), and the
 file-descriptor entry points (`to_fd`, `read_fd`, ...): read the file with
 `std::fs` and use the in-memory functions.
-
-Python test files with nothing to port, for that reason:
-`test_decimal_tie_rounding.py` (both tests read the materialised decimal64
-through `Quantity.stored_value`, which is built on `BvnFloat`). Single tests
-that are not ported are listed at the top of each `tests/*.rs` port.
 
 ## License
 
