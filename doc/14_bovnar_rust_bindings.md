@@ -580,18 +580,23 @@ fn main() -> Result<(), bovnar::Error> {
     assert_eq!(unit_prefix_factor(&Unit::parse("in")?), 1.0); // NOT 0.0254 — the inch has no prefix
     assert_eq!(unit_prefix_factor(&Unit::parse("h")?), 1.0);  // NOT 3600.0
 
-    // unit_factor() is the FULL factor to coherent SI
+    // unit_factor() takes the unit as text and is the same prefix factor
     assert_eq!(unit_factor("M~Hz")?, 1_000_000.0);
-    assert_eq!(unit_factor("in")?, 0.0254);
-    assert_eq!(unit_factor("h")?, 3600.0);
+    assert_eq!(unit_factor("in")?, 1.0);
+    assert_eq!(unit_factor("h")?, 1.0);
+
+    // The FULL factor to coherent SI is Unit::factor
+    assert_eq!(Unit::parse("in")?.factor()?, 0.0254);
+    assert_eq!(Unit::parse("h")?.factor()?, 3600.0);
     Ok(())
 }
 ```
 
-**`unit_factor` is the full factor, not the prefix scale.** It is `Unit::factor`
-on the parsed unit, the full factor to coherent SI, and it fails for an affine
-unit (`°C`) or one with no SI factor. For the prefix alone call
-`unit_prefix_factor`.
+**`unit_factor` is the prefix scale, not the full factor.** It is
+`unit_prefix_factor` on a unit given as text, and reports only what the prefixes
+contribute: `1000000.0` for `M~Hz`, `1.0` for `in` and `h`. The full factor to
+coherent SI is `Unit::factor` on the parsed unit (or `unit_to_si_factor`); it
+fails for an affine unit (`°C`) or one with no SI factor.
 
 `Unit` is the one unit type; every function that takes a unit takes a `&Unit`.
 
@@ -1505,7 +1510,7 @@ and a dropped reader cannot be used again because the compiler has moved it.
 
 ### 10.2 `read_mem`
 
-```rust
+```rust,ignore
 read_mem(data: &[u8], options: &ReadOptions,
          on_verified: Option<&mut dyn FnMut(&EventData) -> bool>,
          on_unverified: Option<&mut dyn FnMut(&EventData) -> bool>) -> Result<()>
@@ -1816,7 +1821,7 @@ that drives them for you.
 
 ### 11.8 Low-level `emit`
 
-```rust
+```rust,ignore
 w.emit(event: Event, spec: EmitSpec<'_>) -> Result<()>
 ```
 
