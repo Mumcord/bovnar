@@ -9,7 +9,16 @@
 //! `_pydecimal.py`) for the three roundings the tests use.
 //!
 //! Skipped (NumPy is not mirrored, README "Not mirrored"):
-//! - TestNumpyScalarInputs (2 tests) and TestNumpyLossless (9 tests)
+//! - TestNumpyScalarInputs: test_from_number_numpy_float,
+//!   test_numpy_scalar_object_array_write
+//! - TestNumpyLossless: test_float_dec_array_to_decimal,
+//!   test_float128_array_to_decimal, test_float64_escape_is_lossy_numbers,
+//!   test_decimal_object_array_write_roundtrip,
+//!   test_float128_object_array_write, test_float_fix_object_array_write,
+//!   test_currency_decimal_roundtrip_with_unit,
+//!   test_ambiguous_object_array_rejected,
+//!   test_dom_path_default_raises_points_at_typed (each goes through
+//!   `to_numpy` / `from_numpy` / `array_to_bvnr` and NumPy arrays)
 
 use bovnar::bvnfloat::{
     decimal_stored_value, decimal_to_interchange_bits, fraction_to_binary_bits,
