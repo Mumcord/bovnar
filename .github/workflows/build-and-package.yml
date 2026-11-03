@@ -363,6 +363,8 @@ jobs:
       matrix:
         include:
           - { name: Linux x64, os: ubuntu-latest, toolchain: stable, cli: true }
+          # rust-version in Cargo.toml: the oldest toolchain that must build and pass.
+          - { name: Linux x64 MSRV, os: ubuntu-latest, toolchain: "1.88", msrv: true }
           - { name: Linux aarch64, os: ubuntu-24.04-arm, toolchain: stable }
           - { name: macOS, os: macos-15, toolchain: stable }
           - { name: MSVC x64, os: windows-latest, toolchain: stable-x86_64-pc-windows-msvc }
@@ -394,8 +396,11 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
+      # Lints are checked on current toolchains; the MSRV leg only builds and tests.
       - run: cargo fmt --check
+        if: ${{ !matrix.msrv }}
       - run: cargo clippy --all-targets -- -D warnings
+        if: ${{ !matrix.msrv }}
       - run: cargo test
 
       # test_writers_agree compares to_string with the C CLI's pretty-print and
