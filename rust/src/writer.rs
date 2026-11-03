@@ -144,11 +144,14 @@ pub enum Signedness {
     Auto,
 }
 
-/// A streaming BVNR writer into memory.
+/// A streaming BVNR writer into memory, or through memory into a
+/// [`std::io::Write`].
 pub struct Writer {
     handle: ffi::WriterHandle,
     struct_depth: u32,
     finished: bool,
+    /// Where [`Writer::finish`] sends the document, for [`Writer::to_writer`].
+    out: Option<Box<dyn std::io::Write + Send>>,
 }
 
 impl Writer {
@@ -172,6 +175,7 @@ impl Writer {
             handle,
             struct_depth: 0,
             finished: false,
+            out: None,
         };
         let mut flags = BvnrWriteFlags::zeroed();
         // The writer matches what the reader reads: the 255-level cap in both
@@ -183,6 +187,36 @@ impl Writer {
         if !w.handle.open_mem(cap, pretty, flags) {
             return Err(w.error());
         }
+        Ok(w)
+    }
+
+    /// A writer whose document goes to any [`std::io::Write`]: Python's
+    /// `Writer.to_fd` (and, given a [`std::fs::File`], its `to_file`).
+    ///
+    /// The C library writes to an fd or a fixed memory buffer only:
+    /// `bvnr_push_fn` exists, but `bovnar.h` has no constructor for a sink
+    /// that calls one (the sink layout is private to the library). So the
+    /// document is put together in a memory sink of [`DEFAULT_MEM_CAP`]
+    /// bytes, and [`Writer::finish`] writes it to `out` and flushes `out`.
+    /// Nothing reaches `out` before then. Writing past the cap fails with
+    /// `sink_buffer_exhausted`, as with [`Writer::to_mem`];
+    /// [`Writer::to_writer_with`] sets a larger one. A failing `out` is an
+    /// [`Error::Io`] with `writing_to_sink`, the code of a failing fd sink.
+    pub fn to_writer(out: impl std::io::Write + Send + 'static, pretty: bool) -> Result<Self> {
+        Self::to_writer_with(out, DEFAULT_MEM_CAP, pretty, 0, false)
+    }
+
+    /// [`Writer::to_writer`] with a sink of `cap` bytes and the remaining
+    /// keywords of Python's `to_fd`, as [`Writer::to_mem_with`] takes them.
+    pub fn to_writer_with(
+        out: impl std::io::Write + Send + 'static,
+        cap: usize,
+        pretty: bool,
+        unit_flags: u32,
+        emit_version: bool,
+    ) -> Result<Self> {
+        let mut w = Self::to_mem_with(cap, pretty, unit_flags, emit_version)?;
+        w.out = Some(Box::new(out));
         Ok(w)
     }
 
@@ -451,7 +485,9 @@ impl Writer {
         self.emit(Event::ArrayDimStart, EmitSpec::NONE)
     }
 
-    /// Completes the document. Fails while a struct is still open.
+    /// Completes the document. Fails while a struct is still open. A
+    /// [`Writer::to_writer`] writer then writes the document to its
+    /// [`std::io::Write`], once.
     pub fn finish(&mut self) -> Result<()> {
         if self.finished {
             return Ok(());
@@ -463,7 +499,13 @@ impl Writer {
             )));
         }
         self.finished = true;
-        self.check(ffi::WriterHandle::finish)
+        self.check(ffi::WriterHandle::finish)?;
+        if let Some(mut out) = self.out.take() {
+            out.write_all(self.get_output())
+                .and_then(|()| out.flush())
+                .map_err(|e| Error::io(crate::ErrorCode::WritingToSink, &e))?;
+        }
+        Ok(())
     }
 
     /// Bytes written so far.
