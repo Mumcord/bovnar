@@ -583,9 +583,14 @@ jobs:
     # They are skipped on a release-* push, which must not skip the rehearsal,
     # hence the explicit `if:`: every need succeeded, or was one of the two
     # that may be skipped.
-    needs: [msvc, mingw, linux, source, tests, build_wheels, build_sdist]
+    #
+    # The Rust jobs gate it too: the crate is published from this job.
+    needs: [msvc, mingw, linux, source, tests, build_wheels, build_sdist, rust_version, rust, rust_wasm]
     if: >-
       !cancelled() &&
+      needs.rust_version.result == 'success' &&
+      needs.rust.result == 'success' &&
+      needs.rust_wasm.result == 'success' &&
       needs.msvc.result == 'success' &&
       needs.mingw.result == 'success' &&
       needs.linux.result == 'success' &&
@@ -718,3 +723,29 @@ jobs:
             gh release upload "$tag" assets/* --clobber
             gh release edit "$tag" --draft=false
           fi
+
+      # crates.io: the Rust binding in rust/, under the same tag == version
+      # gate as the GitHub release above. DISABLED (`if: false`) until it is
+      # decided whether the crate is published from upstream or from a fork.
+      # Enabling it takes:
+      #   * this `if:` replaced by the tag gate of the step above;
+      #   * `publish = false` removed from rust/Cargo.toml (cargo refuses to
+      #     publish while it is set);
+      #   * the C sources packaged into the crate: `cargo publish` packs only
+      #     rust/, while build.rs compiles ../src and runs the ../gen_*.py
+      #     generators, so the packaged crate would not build as it stands;
+      #   * a CARGO_REGISTRY_TOKEN repository secret.
+      - name: Publish the Rust crate to crates.io
+        if: false
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          version=$(grep -oP 'project\(bovnar VERSION \K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt)
+          crate=$(grep -oP '^version = "\K[^"]+' rust/Cargo.toml)
+          if [ "$tag" != "v$version" ] || [ "$crate" != "$version" ]; then
+            echo "::error::tag ${tag}, project version ${version} and crate version ${crate} must agree (expected v${version})"
+            exit 1
+          fi
+          cargo publish --manifest-path rust/Cargo.toml --locked
