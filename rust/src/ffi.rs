@@ -2246,8 +2246,8 @@ pub fn demux_read(
 /// mirrors are private. The generator is compiled by the compiler the `cc`
 /// crate picks for the library itself, so an MSVC build compares MSVC's
 /// layout. Python's test_all_ctypes_structures_are_covered scans loaded
-/// modules for ctypes Structures; here the manifest-count assertion checks
-/// instead that every struct and field the manifest lists is mirrored.
+/// modules for ctypes Structures; here it checks instead that every struct
+/// and field the manifest lists is mirrored.
 #[cfg(all(test, not(target_family = "wasm")))]
 mod abi_tests {
     use super::*;
@@ -2314,8 +2314,16 @@ mod abi_tests {
         v
     }
 
-    #[test]
-    fn struct_layouts_match_c() {
+    type Manifest = HashMap<(String, String), (usize, usize)>;
+
+    /// The C compiler's layout of every struct: (struct, field or "") ->
+    /// (offset, size). Built once and shared by the three tests.
+    fn c_manifest() -> &'static Manifest {
+        static MANIFEST: std::sync::OnceLock<Manifest> = std::sync::OnceLock::new();
+        MANIFEST.get_or_init(build_c_manifest)
+    }
+
+    fn build_c_manifest() -> Manifest {
         let repo = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
         let out_dir = Path::new(env!("OUT_DIR"));
         let exe = out_dir.join(if cfg!(windows) {
@@ -2375,14 +2383,18 @@ mod abi_tests {
             }
         }
 
-        let rust = rust_layout();
-        for (s, f, off, size) in &rust {
+        c
+    }
+
+    #[test]
+    fn test_struct_size_matches_c() {
+        let c = c_manifest();
+        for (s, f, off, size) in rust_layout().iter().filter(|e| e.1.is_empty()) {
             let want = c.get(&(s.clone(), f.clone()));
-            assert_eq!(want, Some(&(*off, *size)), "{s}.{f}: Rust (offset, size)");
+            assert_eq!(want, Some(&(*off, *size)), "{s}: Rust size");
         }
-        // Every field the manifest lists is mirrored.
-        assert_eq!(c.len(), rust.len() + 2, "fields mirrored vs. C manifest");
-        // The opaque blobs may be larger than C's, never smaller.
+        // The opaque blobs may be larger than C's, never smaller: C would
+        // write past a smaller Rust allocation.
         for (s, rust_size) in [
             ("bvnr_source_t", size_of::<BvnrSource>()),
             ("bvnr_sink_t", size_of::<BvnrSink>()),
@@ -2392,5 +2404,25 @@ mod abi_tests {
                 "{s} too small"
             );
         }
+    }
+
+    #[test]
+    fn test_field_offsets_match_c() {
+        let c = c_manifest();
+        for (s, f, off, size) in rust_layout().iter().filter(|e| !e.1.is_empty()) {
+            let want = c.get(&(s.clone(), f.clone()));
+            assert_eq!(want, Some(&(*off, *size)), "{s}.{f}: Rust (offset, size)");
+        }
+    }
+
+    /// Every struct and field the manifest lists is mirrored (the two opaque
+    /// blobs are checked by size only).
+    #[test]
+    fn test_all_ctypes_structures_are_covered() {
+        assert_eq!(
+            c_manifest().len(),
+            rust_layout().len() + 2,
+            "fields mirrored vs. C manifest"
+        );
     }
 }
