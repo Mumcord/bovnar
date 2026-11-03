@@ -145,3 +145,5 @@ jobs:
         run: scripts/diff.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/cref" 20000
       - name: JSON conversion against the C CLI (20000 inputs)
         run: scripts/json-diff.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/cref" 20000
+      - name: Writer error codes against the C writer (20000 sequences)
+        run: scripts/writer-diff.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/cref" 20000
