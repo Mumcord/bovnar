@@ -43,6 +43,14 @@ pub struct ValueUnitPrefix {
     pub id: PrefixId,
 }
 
+impl ValueUnitPrefix {
+    /// The prefix id, whichever system it belongs to.
+    pub fn id_raw(&self) -> c_int {
+        // SAFETY: both union fields are a C int, so either reads the same int.
+        unsafe { self.id.si }
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct ValueUnitComponent {
@@ -59,7 +67,7 @@ pub struct ValueUnit {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ValueTypeSpec {
     pub family: c_int,
     pub width: u32,
@@ -650,6 +658,13 @@ impl<'a> EventView<'a> {
             conv_exact: d.and_then(Rational::of),
         }
     }
+}
+
+fn c_buf_to_string(buf: &[u8]) -> Option<String> {
+    CStr::from_bytes_until_nul(buf)
+        .ok()
+        .and_then(|c| c.to_str().ok())
+        .map(str::to_owned)
 }
 
 /// A Rust event handler; returning false stops the read.

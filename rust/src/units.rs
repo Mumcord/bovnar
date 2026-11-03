@@ -18,6 +18,10 @@ impl UnitFlags {
     pub const NUM_CANONICAL: u32 = 1 << 2;
 }
 
+/// The names of the seven SI base dimensions, in the order of
+/// [`unit_dimension_vector`].
+pub const SI_DIM_NAMES: [&str; 7] = ["m", "kg", "s", "A", "K", "mol", "cd"];
+
 /// The SI conversion of a unit: `si = value * factor + affine_offset`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SIConversion {
@@ -167,7 +171,7 @@ pub fn unit_convert_factor(from: &Unit, to: &Unit) -> Result<UnitConversion> {
     })
 }
 
-/// The exponents of the seven SI base dimensions (s, m, kg, A, K, mol, cd).
+/// The exponents of the seven SI base dimensions, in [`SI_DIM_NAMES`] order.
 pub fn unit_dimension_vector(unit: &Unit) -> Result<[i32; 7]> {
     unit_fns::dimension_vector(unit.0)
         .ok_or_else(|| Error::Argument(format!("{unit} has no SI dimension vector")))

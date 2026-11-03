@@ -21,12 +21,15 @@ pub mod units;
 pub mod writer;
 
 pub use dom::{DomDoc, DomNode, DomType};
-pub use enums::{ErrorCode, Event, TokenType, ValueTypeFamily};
+pub use enums::{
+    BaseUnit, ErrorCode, Event, Exponent, IECPrefix, PrefixSystem, SIPrefix, TokenType,
+    ValueTypeFamily,
+};
 pub use error::{Error, Result};
 pub use ffi::ValueTypeSpec;
 pub use quantity::Quantity;
 pub use reader::{EventData, EventPayload, ReadOptions, Reader, UnitPolicy, UnitRule};
-pub use unit::Unit;
+pub use unit::{MAX_UNIT_COMPONENTS, Unit, UnitComponent};
 pub use writer::Writer;
 
 use writer::needs_annotation;

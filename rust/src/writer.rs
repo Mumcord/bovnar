@@ -223,15 +223,22 @@ impl Writer {
                     .into(),
             ));
         }
+        if let Some(p) = policy {
+            p.check_counts()?;
+        }
         if self
             .handle
             .set_unit_policy(policy.map(UnitPolicy::spec).as_ref())
         {
             Ok(())
         } else {
-            Err(Error::Argument(
-                "bvnr_writer_set_unit_policy refused the policy".into(),
-            ))
+            // The write-side-only fields are refused above with their own
+            // message, so what reaches here is a unit or a rule path the
+            // parser will not take: what the reader's setter refuses too.
+            Err(Error::Argument(match policy {
+                Some(p) => crate::reader::describe_unit_policy_refusal(p),
+                None => "bvnr_writer_set_unit_policy failed".into(),
+            }))
         }
     }
 

@@ -68,7 +68,39 @@ pub struct UnitPolicy {
     pub require_dimension_of: Vec<String>,
 }
 
+/// `BVNR_MAX_UNIT_TARGETS`: the most targets, and required dimensions.
+pub const MAX_UNIT_TARGETS: usize = 8;
+/// `BVNR_MAX_UNIT_RULES`.
+pub const MAX_UNIT_RULES: usize = 8;
+/// `BVNR_MAX_UNIT_PATH`: the longest rule path in bytes.
+pub const MAX_UNIT_PATH: usize = 96;
+
+/// What a refused policy is reported as when no single entry is to blame.
+const UNIT_POLICY_REFUSED_GENERAL: &str = "unusable unit policy — check the units, bases and \
+     rule paths in targets / require_dimension_of / rules";
+
 impl UnitPolicy {
+    /// The counts the C side would refuse anyway, reported by name.
+    pub(crate) fn check_counts(&self) -> Result<()> {
+        let too_many = |what: &str, n: usize, max: usize| {
+            Err(Error::Argument(format!("at most {max} {what}, got {n}")))
+        };
+        if self.targets.len() > MAX_UNIT_TARGETS {
+            return too_many("unit targets", self.targets.len(), MAX_UNIT_TARGETS);
+        }
+        if self.require_dimension_of.len() > MAX_UNIT_TARGETS {
+            return too_many(
+                "required dimensions",
+                self.require_dimension_of.len(),
+                MAX_UNIT_TARGETS,
+            );
+        }
+        if self.rules.len() > MAX_UNIT_RULES {
+            return too_many("per-field rules", self.rules.len(), MAX_UNIT_RULES);
+        }
+        Ok(())
+    }
+
     pub(crate) fn spec(&self) -> ffi::PolicySpec {
         ffi::PolicySpec {
             rules: self
@@ -84,6 +116,95 @@ impl UnitPolicy {
             require_dimension_of: self.require_dimension_of.clone(),
         }
     }
+}
+
+/// Names the entry the C setter refused, by offering each one on its own
+/// (Python's `describe_unit_policy_refusal`). The setter answers one bool for
+/// a whole policy; the setter itself is the oracle, so this cannot drift from
+/// the library's own rules.
+pub(crate) fn describe_unit_policy_refusal(policy: &UnitPolicy) -> String {
+    let Some(mut probe) = ffi::ReaderHandle::new() else {
+        return UNIT_POLICY_REFUSED_GENERAL.into();
+    };
+    let mut refuses = |p: UnitPolicy| !probe.set_unit_policy(Some(&p.spec()));
+    let alone = |f: &dyn Fn(&mut UnitPolicy)| {
+        let mut p = UnitPolicy::default();
+        f(&mut p);
+        p
+    };
+
+    for (unit, tbase) in &policy.targets {
+        let t = (unit.clone(), *tbase);
+        if !refuses(alone(&|p| p.targets = vec![t.clone()])) {
+            continue;
+        }
+        if *tbase != 0 && !refuses(alone(&|p| p.targets = vec![(unit.clone(), 0)])) {
+            return format!(
+                "unusable unit policy: targets entry {unit:?} asks for base {tbase}, \
+                 which bovnar cannot write"
+            );
+        }
+        return format!(
+            "unusable unit policy: targets entry {unit:?} is not a unit bovnar can parse"
+        );
+    }
+
+    for u in &policy.require_dimension_of {
+        if refuses(alone(&|p| p.require_dimension_of = vec![u.clone()])) {
+            return format!(
+                "unusable unit policy: require_dimension_of entry {u:?} is not a unit bovnar can parse"
+            );
+        }
+    }
+
+    for r in &policy.rules {
+        if !refuses(alone(&|p| p.rules = vec![r.clone()])) {
+            continue;
+        }
+        // Which part? Hold the others at values that certainly parse and vary
+        // one at a time: the path first, since it is the only one left when a
+        // unit that parses and no base still will not go in.
+        let plain = UnitRule {
+            unit: "m".into(),
+            base: 0,
+            ..r.clone()
+        };
+        if refuses(alone(&|p| p.rules = vec![plain.clone()])) {
+            return format!(
+                "unusable unit policy: rule path {:?} is unusable — a path must start with '.', \
+                 be at most {MAX_UNIT_PATH} bytes, and cannot be just '.*'",
+                r.path
+            );
+        }
+        let unbased = UnitRule {
+            base: 0,
+            ..r.clone()
+        };
+        if refuses(alone(&|p| p.rules = vec![unbased.clone()])) {
+            return format!(
+                "unusable unit policy: rule {:?} names unit {:?}, which is not a unit bovnar can parse",
+                r.path, r.unit
+            );
+        }
+        return format!(
+            "unusable unit policy: rule {:?} asks for base {}, which bovnar cannot write",
+            r.path, r.base
+        );
+    }
+
+    // Nothing singled itself out: a whole-policy field or a combination.
+    if policy.base != 0
+        && !refuses(UnitPolicy {
+            base: 0,
+            ..policy.clone()
+        })
+    {
+        return format!(
+            "unusable unit policy: base {} is not a base bovnar can write",
+            policy.base
+        );
+    }
+    UNIT_POLICY_REFUSED_GENERAL.into()
 }
 
 /// One event as a handler sees it, borrowed for the duration of the call
@@ -272,21 +393,22 @@ impl Reader {
 
     /// Installs a unit policy for every following read; `None` clears it.
     pub fn set_unit_policy(&mut self, policy: Option<&UnitPolicy>) -> Result<()> {
+        if let Some(p) = policy {
+            p.check_counts()?;
+        }
         if self
             .handle
             .set_unit_policy(policy.map(UnitPolicy::spec).as_ref())
         {
             Ok(())
         } else {
-            Err(Error::Argument(
-                "bvnr_reader_set_unit_policy refused the policy (a unit it names does not parse, \
-                 or a count is over the limit)"
-                    .into(),
-            ))
+            Err(Error::Argument(match policy {
+                Some(p) => describe_unit_policy_refusal(p),
+                None => "bvnr_reader_set_unit_policy failed".into(),
+            }))
         }
     }
 
-    /// How many errors a `continue_on_error` read recovered from.
     pub fn recovery_count(&self) -> u64 {
         self.handle.recovery().0
     }

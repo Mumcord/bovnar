@@ -1,9 +1,76 @@
 //! A physical unit, mirroring `python/bovnar/unit.py`.
 
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
+use crate::enums::{Exponent, PrefixSystem, SIPrefix};
 use crate::error::{Error, Result};
-use crate::ffi::{self, ValueUnit, unit_fns};
+use crate::ffi::{self, PrefixId, ValueUnit, ValueUnitComponent, ValueUnitPrefix, unit_fns};
+
+pub use crate::ffi::MAX_UNIT_COMPONENTS;
+
+/// One factor of a unit (`value_unit_component_t`): a base unit with its
+/// prefix and exponent. Python's `ValueUnitComponent`; `prefix` is the SI or
+/// IEC prefix id, as `prefix_system` says. Components compare by value; an
+/// unprefixed component equals whatever its prefix system, as in Python.
+#[derive(Clone, Copy, Debug)]
+pub struct UnitComponent {
+    pub base: i32,
+    pub exponent: i32,
+    pub prefix_system: i32,
+    pub prefix: i32,
+}
+
+impl UnitComponent {
+    /// `base` with an SI prefix (`SIPrefix::NONE` for none).
+    pub fn si(base: i32, prefix: i32, exponent: i32) -> Self {
+        UnitComponent {
+            base,
+            exponent,
+            prefix_system: PrefixSystem::SI,
+            prefix,
+        }
+    }
+
+    /// `base` with an IEC prefix.
+    pub fn iec(base: i32, prefix: i32, exponent: i32) -> Self {
+        UnitComponent {
+            base,
+            exponent,
+            prefix_system: PrefixSystem::IEC,
+            prefix,
+        }
+    }
+
+    /// The prefix as compared: `(system, id)`, or `(0, 0)` without a prefix.
+    pub fn prefix_key(&self) -> (i32, i32) {
+        if self.prefix == 0 {
+            (0, 0)
+        } else {
+            (self.prefix_system, self.prefix)
+        }
+    }
+
+    fn key(&self) -> (i32, i32, (i32, i32)) {
+        (self.base, self.exponent, self.prefix_key())
+    }
+
+    fn raw(self) -> ValueUnitComponent {
+        let id = if self.prefix_system == PrefixSystem::IEC {
+            PrefixId { iec: self.prefix }
+        } else {
+            PrefixId { si: self.prefix }
+        };
+        ValueUnitComponent {
+            base: self.base,
+            exponent: self.exponent,
+            prefix: ValueUnitPrefix {
+                system: self.prefix_system,
+                id,
+            },
+        }
+    }
+}
 
 /// A physical unit: the parsed form, with the operations that belong to it.
 /// The default is the dimensionless unit (no unit at all).
@@ -21,6 +88,66 @@ impl Unit {
                 ffi::error_name(code)
             ))
         })
+    }
+
+    /// A unit of the given components (Python's `make_unit_compound`);
+    /// fails beyond [`MAX_UNIT_COMPONENTS`].
+    pub fn compound(components: &[UnitComponent]) -> Result<Self> {
+        if components.len() > MAX_UNIT_COMPONENTS {
+            return Err(Error::Argument(format!(
+                "Too many unit components: {} > {MAX_UNIT_COMPONENTS}",
+                components.len()
+            )));
+        }
+        let mut vu = ValueUnit::zeroed();
+        vu.num_components = components.len() as u32;
+        for (slot, c) in vu.components.iter_mut().zip(components) {
+            *slot = c.raw();
+        }
+        Ok(Unit(vu))
+    }
+
+    /// One SI-prefixed base unit (Python's `make_unit_si`).
+    pub fn si(base: i32, prefix: i32, exponent: i32) -> Self {
+        Self::one(UnitComponent::si(base, prefix, exponent))
+    }
+
+    /// One IEC-prefixed base unit (Python's `make_unit_iec`).
+    pub fn iec(base: i32, prefix: i32, exponent: i32) -> Self {
+        Self::one(UnitComponent::iec(base, prefix, exponent))
+    }
+
+    /// The explicit dimensionless unit: one `BaseUnit::NONE` component
+    /// (Python's `make_unit_dimensionless`). [`Unit::default`] is the empty
+    /// unit (`make_unit_none`).
+    pub fn dimensionless() -> Self {
+        Self::one(UnitComponent::si(0, SIPrefix::NONE, Exponent::LINEAR))
+    }
+
+    fn one(c: UnitComponent) -> Self {
+        let mut vu = ValueUnit::zeroed();
+        vu.num_components = 1;
+        vu.components[0] = c.raw();
+        Unit(vu)
+    }
+
+    /// The number of components as stored (`num_components`).
+    pub fn num_components(&self) -> usize {
+        self.0.num_components as usize
+    }
+
+    /// The active components (Python's `active_components()`).
+    pub fn components(&self) -> Vec<UnitComponent> {
+        let n = self.num_components().min(MAX_UNIT_COMPONENTS);
+        self.0.components[..n]
+            .iter()
+            .map(|c| UnitComponent {
+                base: c.base,
+                exponent: c.exponent,
+                prefix_system: c.prefix.system,
+                prefix: c.prefix.id_raw(),
+            })
+            .collect()
     }
 
     /// True when this carries no unit at all (the empty unit, or only
@@ -43,7 +170,13 @@ impl Unit {
         let conv = crate::units::unit_to_si_factor(self)?;
         if conv.is_affine {
             return Err(Error::Argument(format!(
-                "{self} is an affine unit: its SI value is value * factor + offset, not a factor"
+                "{} is an affine unit: its SI value is value * factor + offset, not a factor. \
+                 Use unit_to_si_factor() for both, or convert_value() to convert a value.",
+                if self.is_dimensionless() {
+                    "this".to_string()
+                } else {
+                    self.to_string()
+                }
             )));
         }
         Ok(conv.factor)
@@ -60,7 +193,8 @@ impl Unit {
         let conv = crate::units::unit_convert_factor(self, other)?;
         if conv.requires_affine && conv.factor == 0.0 {
             return Err(Error::Argument(format!(
-                "{self} -> {other} is an affine conversion and has no multiplicative factor"
+                "{self} -> {other} is an affine conversion and has no multiplicative factor; \
+                 use convert_value()"
             )));
         }
         Ok(conv.factor)
@@ -92,6 +226,46 @@ impl fmt::Display for Unit {
 impl fmt::Debug for Unit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Unit({:?})", self.to_string())
+    }
+}
+
+impl PartialEq for UnitComponent {
+    fn eq(&self, other: &Self) -> bool {
+        self.key() == other.key()
+    }
+}
+
+impl Eq for UnitComponent {}
+
+impl Hash for UnitComponent {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.key().hash(state);
+    }
+}
+
+/// Consistent with `==` (`bvn_unit_equal`), which ignores component order:
+/// the components' keys, sorted.
+impl Hash for Unit {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut keys: Vec<_> = self.components().iter().map(UnitComponent::key).collect();
+        keys.sort_unstable();
+        keys.dedup();
+        keys.hash(state);
+    }
+}
+
+impl Eq for Unit {}
+
+/// Compares with a unit string; one that does not parse is simply unequal.
+impl PartialEq<str> for Unit {
+    fn eq(&self, other: &str) -> bool {
+        Unit::parse(other).is_ok_and(|u| *self == u)
+    }
+}
+
+impl PartialEq<&str> for Unit {
+    fn eq(&self, other: &&str) -> bool {
+        *self == **other
     }
 }
 

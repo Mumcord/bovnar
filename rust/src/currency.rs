@@ -4,8 +4,7 @@
 use crate::error::{Error, Result};
 use crate::ffi;
 
-/// The first id of the currency block of the base-unit id space.
-pub const CURRENCY_FIRST: i32 = 900_000;
+pub use crate::enums::{CURRENCY_COUNT, CURRENCY_FIRST, CURRENCY_LAST};
 
 /// Metadata for one fiat or crypto currency.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -25,6 +24,13 @@ pub struct CurrencyInfo {
 impl CurrencyInfo {
     pub fn is_fiat(&self) -> bool {
         !self.is_crypto
+    }
+}
+
+/// The code, like Python's `str(info)`.
+impl std::fmt::Display for CurrencyInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.code)
     }
 }
 
