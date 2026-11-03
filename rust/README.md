@@ -119,7 +119,7 @@ fn main() -> Result<(), bovnar::Error> {
 
 ```rust
 fn main() -> Result<(), bovnar::Error> {
-    let bvnr = bovnar::json::from_json(r#"{"name": "mumcord", "ports": [64738, 443]}"#)?;
+    let bvnr = bovnar::json::from_json(r#"{"name": "example", "ports": [8080, 443]}"#)?;
     let json = bovnar::json::to_json(&bvnr)?;
     assert_eq!(bovnar::json::from_json(&json)?, bvnr);
     Ok(())
@@ -171,7 +171,7 @@ match Unit::parse("furlong per fortnight") {
 }
 ```
 
-### In a Mumcord plugin (wasm32-wasip2)
+### Building for WebAssembly (wasm32-wasip2)
 
 The crate compiles its C sources itself, so a WebAssembly build needs a C
 compiler for WASI: [wasi-sdk](https://github.com/WebAssembly/wasi-sdk). Point
@@ -183,13 +183,8 @@ export WASI_SDK_PATH=/opt/wasi-sdk        # where wasi-sdk is unpacked
 cargo build --release --target wasm32-wasip2
 ```
 
-In the plugin's `Cargo.toml`, depend on a fixed commit of this branch, as
-Mumcord does:
-
-```toml
-[dependencies]
-bovnar = { git = "https://github.com/Mumcord/bovnar", rev = "<commit>" }
-```
+The same applies to a crate that depends on this one and is built for
+`wasm32-wasip2`: set `WASI_SDK_PATH` for its build.
 
 `python3` must be on `PATH` at build time: `build.rs` runs the upstream
 table generators.
