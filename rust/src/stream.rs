@@ -9,7 +9,7 @@ use crate::enums::ErrorCode;
 use crate::error::{Error, Result};
 use crate::ffi::{self, BvnrReadFlags, DemuxError};
 use crate::reader::{EventData, wrap};
-use crate::writer::Writer;
+use crate::writer;
 use crate::{Value, to_string};
 
 /// `max_file_size` for no limit.
@@ -100,33 +100,12 @@ pub fn load_documents(
     Ok(results)
 }
 
-/// Writes `size` bytes' worth of output with `write`, doubling the buffer
-/// while it runs out, like Python's retry loop.
-fn grow_write(
-    size: usize,
-    pretty: bool,
-    mut write: impl FnMut(&mut Writer) -> Result<()>,
-) -> Result<Vec<u8>> {
-    let mut cap = size + size / 4000 + 8192;
-    let cap_max = (256 << 20).max(size * 2 + (1 << 20));
-    loop {
-        let mut w = Writer::to_mem(cap, pretty)?;
-        match write(&mut w).and_then(|_| w.finish()) {
-            Ok(()) => return Ok(w.get_output().to_vec()),
-            Err(e) if e.code() == Some(ErrorCode::SinkBufferExhausted) && cap < cap_max => {
-                cap = (cap * 2).min(cap_max);
-            }
-            Err(e) => return Err(e),
-        }
-    }
-}
-
 /// Multiplexes `(channel, payload)` messages into one document under `key`
 /// (Python's default is `"mux"`).
 pub fn mux_dump<P: AsRef<[u8]>>(messages: &[(u64, P)], key: &str) -> Result<Vec<u8>> {
     let msgs: Vec<(u64, &[u8])> = messages.iter().map(|(c, p)| (*c, p.as_ref())).collect();
     let total: usize = msgs.iter().map(|(_, p)| p.len()).sum();
-    grow_write(total + msgs.len() * 64 + key.len(), false, |w| {
+    writer::grow_write(total + msgs.len() * 64 + key.len(), false, |w| {
         w.check(|h| h.mux(key, &msgs))
     })
 }
@@ -150,7 +129,7 @@ pub fn mux_load(data: &[u8], max_message: u64, key: Option<&str>) -> Result<Vec<
 /// Embeds the document `inner` under `key` (Python's default `"payload"`)
 /// in a new document.
 pub fn embed_document(inner: &[u8], key: &str, pretty: bool) -> Result<Vec<u8>> {
-    grow_write(inner.len() + key.len(), pretty, |w| {
+    writer::grow_write(inner.len() + key.len(), pretty, |w| {
         w.check(|h| h.embed_document(key, inner))
     })
 }

@@ -14,8 +14,11 @@ use crate::error::{Error, Result};
 use crate::writer::{self, Writer};
 use crate::{DomDoc, DomNode, DomType, Unit, ffi};
 
-/// The CLI's `JSON_MAX_DEPTH`.
-const MAX_DEPTH: usize = 512;
+/// The deepest JSON nesting converted: the writer's and the reader's 255-level
+/// struct and array cap, so a document deeper than any reader takes is refused
+/// as JSON rather than by the writer half-way through. (The CLI's
+/// `JSON_MAX_DEPTH` is 512.)
+const MAX_DEPTH: usize = 255;
 
 /// What [`detect`] takes a buffer for.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -65,12 +68,9 @@ pub fn from_json(json: &str) -> Result<Vec<u8>> {
     let Json::Object(members) = root else {
         return Err(refuse("JSON root must be an object".into()));
     };
-    let mut w = Writer::to_mem(json.len() * 8 + 65536, true)?;
-    members
-        .iter()
-        .try_for_each(|(k, v)| write_value(&mut w, k, v))?;
-    w.finish()?;
-    let out = w.get_output().to_vec();
+    let out = writer::grow_write(json.len() * 2, true, |w| {
+        members.iter().try_for_each(|(k, v)| write_value(w, k, v))
+    })?;
     // Like the CLI, the library's own document checks decide what has no
     // bovnar form: duplicate keys, mixed or ragged arrays.
     if let Err(e) = DomDoc::parse(&out) {
@@ -128,8 +128,11 @@ impl Parser<'_> {
 
     fn value(&mut self, depth: usize) -> Result<Json> {
         self.skip_ws();
-        if depth > MAX_DEPTH {
-            return Err(self.err("JSON nesting exceeds limit (512)"));
+        // `depth` counts the containers around this value, the root object
+        // not among them (it is the document, not a struct): a container here
+        // nests `depth` deep, a scalar nests nothing.
+        if depth > MAX_DEPTH && matches!(self.peek(), Some(b'[' | b'{')) {
+            return Err(self.err(&format!("JSON nesting exceeds limit ({MAX_DEPTH})")));
         }
         match self.peek() {
             Some(b'"') => self.string().map(Json::Str),
@@ -640,5 +643,36 @@ mod tests {
         assert_eq!(detect(b" .a = 1;"), Format::Bovnar);
         assert_eq!(detect(b"hello"), Format::Unknown);
         assert_eq!(detect(b""), Format::Unknown);
+    }
+
+    /// `n` JSON objects nested under the root object.
+    fn nested(n: usize) -> String {
+        format!(
+            "{{{}1{}}}",
+            "{\"a\":".repeat(n + 1).replacen('{', "", 1),
+            "}".repeat(n)
+        )
+    }
+
+    #[test]
+    fn deep_output_outgrows_the_first_buffer() {
+        // Pretty-printed, each level indents every level below it: the output
+        // is many times the input and only fits after the sink has grown.
+        let json = nested(200);
+        let out = from_json(&json).unwrap();
+        assert!(out.len() > json.len() * 2 + 8192, "{} bytes", out.len());
+        assert_eq!(strip(&to_json(&out).unwrap()), strip(&json));
+    }
+
+    #[test]
+    fn nesting_stops_where_the_reader_does() {
+        let deepest = (1..400)
+            .take_while(|&n| from_json(&nested(n)).is_ok())
+            .last()
+            .unwrap();
+        assert_eq!(deepest, 255);
+        assert!(DomDoc::parse(&from_json(&nested(255)).unwrap()).is_ok());
+        let err = from_json(&nested(deepest + 1)).unwrap_err().to_string();
+        assert!(err.contains("JSON nesting exceeds limit (255)"), "{err}");
     }
 }

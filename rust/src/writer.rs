@@ -10,6 +10,32 @@ use crate::unit::Unit;
 /// Default size of the memory sink (Python's `DEFAULT_MEM_CAP`).
 pub const DEFAULT_MEM_CAP: usize = 4 * 1024 * 1024;
 
+/// Writes into a memory sink that grows: `write` runs on a fresh writer of
+/// about `size_hint` bytes and, while it fails with `sink_buffer_exhausted`,
+/// again on one twice the size, up to 256 MiB (or twice the hint). The C
+/// library has only fd and fixed memory sinks, so retrying is the growing
+/// sink; `write` must therefore be repeatable.
+/// Writes `size` bytes' worth of output with `write`, doubling the buffer
+/// while it runs out, like Python's retry loop.
+pub(crate) fn grow_write(
+    size: usize,
+    pretty: bool,
+    mut write: impl FnMut(&mut Writer) -> Result<()>,
+) -> Result<Vec<u8>> {
+    let mut cap = size + size / 4000 + 8192;
+    let cap_max = (256 << 20).max(size * 2 + (1 << 20));
+    loop {
+        let mut w = Writer::to_mem(cap, pretty)?;
+        match write(&mut w).and_then(|_| w.finish()) {
+            Ok(()) => return Ok(w.get_output().to_vec()),
+            Err(e) if e.code() == Some(crate::ErrorCode::SinkBufferExhausted) && cap < cap_max => {
+                cap = (cap * 2).min(cap_max);
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}
+
 /// Largest octet-stream chunk: the most one chunk header can count.
 const OCTET_CHUNK: usize = 65536;
 

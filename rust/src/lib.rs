@@ -121,24 +121,12 @@ pub fn to_string(value: &Value, pretty: bool) -> Result<Vec<u8>> {
             version = version.max(spec_version_needed(q));
         }
     });
-    let mut cap = writer::DEFAULT_MEM_CAP;
-    loop {
-        let mut w = Writer::to_mem(cap, pretty)?;
-        let written = match version {
-            Some(minor) => w.write_version(1, minor),
-            None => Ok(()),
-        };
-        match written
-            .and_then(|_| emit_entries(&mut w, entries))
-            .and_then(|_| w.finish())
-        {
-            Ok(()) => return Ok(w.get_output().to_vec()),
-            Err(e) if e.code() == Some(ErrorCode::SinkBufferExhausted) && cap < 256 << 20 => {
-                cap *= 2;
-            }
-            Err(e) => return Err(e),
+    writer::grow_write(writer::DEFAULT_MEM_CAP, pretty, |w| {
+        if let Some(minor) = version {
+            w.write_version(1, minor)?;
         }
-    }
+        emit_entries(w, entries)
+    })
 }
 
 fn emit_entries(w: &mut Writer, entries: &[(String, Value)]) -> Result<()> {
