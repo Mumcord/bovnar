@@ -10,5 +10,7 @@ extern crate alloc;
 extern crate std;
 
 mod error;
+mod limits;
 
 pub use error::{Error, ErrorKind};
+pub use limits::Limits;
