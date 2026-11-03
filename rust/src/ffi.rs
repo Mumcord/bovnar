@@ -979,6 +979,12 @@ impl ReaderHandle {
     }
 }
 
+// SAFETY: bovnar.h (THREADING): a reader holds its whole parse state and the
+// library writes no shared state after startup, so a reader may be used from
+// any one thread at a time. Moving it is that; `&mut self` on every read keeps
+// it to one thread at once. Not Sync: two threads must not share one reader.
+unsafe impl Send for ReaderHandle {}
+
 impl Drop for ReaderHandle {
     fn drop(&mut self) {
         // SAFETY: the reader is live and dropped exactly once.
@@ -1093,6 +1099,12 @@ impl DocHandle {
         unsafe { bvn_dom_doc_count(self.0.as_ptr()) as usize }
     }
 }
+
+// SAFETY: a document is a tree the C DOM allocated and owns alone; no other
+// object points into it and the library writes no shared state after startup
+// (bovnar.h, THREADING), so it may be moved to and dropped on another thread.
+// Not Sync: concurrent reads are not documented as safe.
+unsafe impl Send for DocHandle {}
 
 impl Drop for DocHandle {
     fn drop(&mut self) {
@@ -1490,6 +1502,12 @@ impl WriterHandle {
         &self.buf[..n.min(self.buf.len())]
     }
 }
+
+// SAFETY: bovnar.h (THREADING): a writer holds its whole serialise state and
+// the library writes no shared state after startup. The memory sink `buf` is
+// owned by this handle and moves with it (its heap address does not change).
+// Not Sync: two threads must not share one writer.
+unsafe impl Send for WriterHandle {}
 
 impl Drop for WriterHandle {
     fn drop(&mut self) {

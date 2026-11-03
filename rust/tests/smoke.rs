@@ -128,3 +128,24 @@ fn version_directive_is_written_when_needed_and_structs_in_arrays_stay_plain() {
     let v = parse(b".a = [{ .x = <uint:65> 18446744073709551616; }, 1];").unwrap();
     assert_eq!(parse(&to_string(&v, true).unwrap()).unwrap(), v);
 }
+
+/// bovnar.h (THREADING): distinct readers, writers and documents may live on
+/// distinct threads, so each can be moved to one.
+#[test]
+fn reader_writer_and_dom_move_between_threads() {
+    fn assert_send<T: Send>() {}
+    assert_send::<bovnar::Reader>();
+    assert_send::<bovnar::Writer>();
+    assert_send::<bovnar::DomDoc>();
+
+    let mut w = bovnar::Writer::to_mem(4096, false).unwrap();
+    let doc = bovnar::DomDoc::parse(b".a = 1;").unwrap();
+    let out = std::thread::spawn(move || {
+        w.write_string("s", "x").unwrap();
+        w.finish().unwrap();
+        (w.get_output().to_vec(), doc.len())
+    })
+    .join()
+    .unwrap();
+    assert_eq!(out, (b".s=\"x\";".to_vec(), 1));
+}

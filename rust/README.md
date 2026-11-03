@@ -52,6 +52,10 @@ memory). Errors carry the library's error code and its C name
 no position (line, column and offset are 0): the C DOM reports only the code.
 Read the document with `Reader` to locate it.
 
+`Reader`, `Writer` and `DomDoc` are `Send` but not `Sync`: as `bovnar.h`
+(THREADING) allows, each can be moved to another thread, and distinct ones
+can be used on distinct threads, but one object must not be shared.
+
 ## Layout
 
 | Rust            | Python          |
