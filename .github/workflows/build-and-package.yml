@@ -362,7 +362,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: Linux x64, os: ubuntu-latest, toolchain: stable }
+          - { name: Linux x64, os: ubuntu-latest, toolchain: stable, cli: true }
           - { name: Linux aarch64, os: ubuntu-24.04-arm, toolchain: stable }
           - { name: macOS, os: macos-15, toolchain: stable }
           - { name: MSVC x64, os: windows-latest, toolchain: stable-x86_64-pc-windows-msvc }
@@ -397,6 +397,18 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
+
+      # test_writers_agree compares to_string with the C CLI's pretty-print and
+      # is #[ignore]d without it; one leg builds the CLI and runs it.
+      - name: Build the CLI for test_writers_agree
+        if: matrix.cli
+        working-directory: .
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DBVNR_BUILD_TESTS=OFF .
+          cmake --build build --target bovnar --parallel
+      - name: cargo test (needs the CLI)
+        if: matrix.cli
+        run: cargo test --test test_writers_agree -- --ignored
 
   rust_wasm:
     name: Rust (wasm32-wasip2)

@@ -2,8 +2,14 @@
 //! `pretty-print`) and this crate's `to_string` write documents that read
 //! back alike, for every catalogue unit in every unit-carrying shape.
 //!
-//! Like the Python test, the sweep compares against the CLI built at
-//! `<repo>/build/bovnar` and is skipped when it is not there.
+//! The sweep compares against the CLI built at `<repo>/build/bovnar`, so it is
+//! `#[ignore]`d by default and fails, rather than passing silently, when run
+//! without it. CI builds the CLI and runs it on Linux:
+//!
+//! ```sh
+//! cmake -B build -DBVNR_BUILD_TESTS=OFF . && cmake --build build --target bovnar
+//! cd rust && cargo test --test test_writers_agree -- --ignored
+//! ```
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -83,16 +89,15 @@ fn comparable(doc: &Value) -> Vec<(String, Cmp)> {
 }
 
 #[test]
+#[ignore = "needs the CLI built at <repo>/build/bovnar; see the module docs"]
 fn test_the_two_writers_produce_documents_that_read_back_alike() {
     let cli = repo().join("build/bovnar");
-    if !cli.exists() {
-        eprintln!("skipped: no built CLI to compare against");
-        return;
-    }
-    let Ok(symbols) = catalogue() else {
-        eprintln!("skipped: src/gendata is not present");
-        return;
-    };
+    assert!(
+        cli.exists(),
+        "no CLI at {} to compare against; build it first",
+        cli.display()
+    );
+    let symbols = catalogue().expect("read the unit catalogue in src/gendata");
 
     let mut lines = Vec::new();
     for (i, unit) in symbols.iter().enumerate() {
