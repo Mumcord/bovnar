@@ -6,7 +6,7 @@ exclude = ["fuzz"]
 edition = "2021"
 rust-version = "1.81"
 license = "MIT"
-repository = "https://github.com/Mumcord/bovnar-rs"
+repository = "https://github.com/Mumcord/bovnar"
 
 [package]
 name = "bovnar-rs"

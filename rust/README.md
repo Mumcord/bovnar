@@ -25,14 +25,14 @@ Pin a commit with `rev`:
 
 ```toml
 [dependencies]
-bovnar-rs = { git = "https://github.com/Mumcord/bovnar-rs", rev = "<commit>" }
+bovnar-rs = { git = "https://github.com/Mumcord/bovnar", rev = "<commit>" }
 ```
 
 For `no_std` targets, or to pick unit profiles:
 
 ```toml
 [dependencies]
-bovnar-rs = { git = "https://github.com/Mumcord/bovnar-rs", rev = "<commit>", default-features = false, features = ["serde", "profile-unece"] }
+bovnar-rs = { git = "https://github.com/Mumcord/bovnar", rev = "<commit>", default-features = false, features = ["serde", "profile-unece"] }
 ```
 
 ## Quick start
@@ -237,8 +237,9 @@ Rust 1.81, as declared by `rust-version` in `Cargo.toml` and checked in CI.
 | `python3 -I scripts/gen-tables.py <upstream> [--check]` | regenerate or check the unit tables in `src/units/gen/` |
 | `scripts/fuzz.sh <upstream> [seconds] [jobs] [target...]` | run the fuzz targets (nightly, cargo-fuzz) |
 
-`<upstream>` is a checkout of <https://github.com/sothis/bovnar> at commit
-`1bcf03b`.
+`<upstream>` is the root of this repository (`..` from `rust/`): the C reference,
+its conformance corpus and the unit data live there. The fixtures were captured at
+upstream commit `1bcf03b`.
 
 ## Licence and attribution
 

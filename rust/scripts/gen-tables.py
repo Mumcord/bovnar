@@ -50,9 +50,11 @@ def rust_f64(x, c_double_literal):
 
 
 def upstream_commit(upstream):
+    # The last commit that touched the data, not HEAD: the tables live in the
+    # same repository, so stamping HEAD would make every commit look stale.
     try:
         return subprocess.run(
-            ["git", "-C", upstream, "rev-parse", "HEAD"],
+            ["git", "-C", upstream, "log", "-1", "--format=%H", "--", "src/gendata"],
             check=True, capture_output=True, text=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError) as e:
         raise SystemExit("cannot read the upstream commit: %s" % e)
