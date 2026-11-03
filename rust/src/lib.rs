@@ -4,7 +4,14 @@
 //! lives in the private `ffi` module; every other module is safe Rust on top
 //! of it.
 
+#![doc = include_str!("../README.md")]
 #![deny(unsafe_code)]
+
+/// The examples of `doc/14_bovnar_rust_bindings.md`, compiled and run as
+/// doctests so the reference cannot drift from the API.
+#[cfg(doctest)]
+#[doc = include_str!("../../doc/14_bovnar_rust_bindings.md")]
+mod rust_bindings_doc {}
 
 pub mod bvnfloat;
 pub mod currency;
