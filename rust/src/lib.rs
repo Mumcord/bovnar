@@ -6,7 +6,9 @@
 
 #![deny(unsafe_code)]
 
+pub mod bvnfloat;
 pub mod currency;
+pub mod decimal;
 pub mod enums;
 pub mod error;
 #[allow(unsafe_code)]
@@ -16,6 +18,8 @@ pub mod reader;
 pub mod unit;
 pub mod units;
 
+pub use bvnfloat::BvnFloat;
+pub use decimal::Decimal;
 pub use enums::{
     BaseUnit, ErrorCode, Event, Exponent, IECPrefix, Prefix, PrefixSystem, SIPrefix, TokenType,
     UnknownValue, ValueTypeFamily,

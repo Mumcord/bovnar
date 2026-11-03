@@ -9,6 +9,14 @@ license = "MIT"
 publish = false
 build = "build.rs"
 
+[dependencies]
+# Arbitrary-precision integers, fractions and decimals: the exact numbers behind `BvnFloat` and
+# the lossless `Quantity` accessors.
+num-bigint = "0.4.6"
+num-integer = "0.1.46"
+num-rational = "0.4.2"
+num-traits = "0.2.19"
+
 [build-dependencies]
 cc = "1"
 
