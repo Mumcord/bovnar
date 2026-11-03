@@ -374,19 +374,13 @@ only `rust/`, while `build.rs` compiles `../src` and `../include` and runs the
 
 ## Not mirrored
 
-The pint and NumPy bridges (Python-only libraries, so `test_numpy_bridge`,
-`test_pint_bridge`, `test_pint_factor_parity` and
-`test_example_numpy_roundtrip` have no port), and raw file descriptors: the
-fd entry points are `std::io::Read` / `std::io::Write` ones (see "Files and
-I/O streams" above), and the path ones (`read_file`, `parse_file`,
-`to_file`) are those over an opened `std::fs::File`.
+Raw file descriptors are not mirrored: the fd entry points are
+`std::io::Read` / `std::io::Write` ones (see "Files and I/O streams" above),
+and the path ones (`read_file`, `parse_file`, `to_file`) are those over an
+opened `std::fs::File`.
 
-Of Python's 1409 test functions, 1240 are ported; the 169 left out are:
+1240 of Python's tests are ported; the 49 left out are:
 
-- The NumPy and pint bridges (120): the four files above (105), and the
-  NumPy or pint tests inside other files (15): 11 in `test_lossless_floats`,
-  one each in `test_array_roundtrip_fidelity`, `test_bigint_digits`,
-  `test_unit_source` and `test_unit_factors_derived`.
 - The ctypes mirrors (24, `test_structs`): sizes, zero-initialised raw
   structs, the prefix-id union, `repr`, the opaque blobs and the
   `make_data_*` helpers, all of which are private here. Their layout is
@@ -408,4 +402,11 @@ the exact literal under a `uint` / `sint` annotation, read back exactly with
 
 ## License
 
-MIT, like the C library.
+MIT — see [LICENSE](https://github.com/sothis/bovnar/blob/main/LICENSE).
+
+The `libbvnr` this crate compiles from the repository's C sources embeds
+Bovnar's unit-profile tables, which carry identifier strings from UCUM, QUDT,
+OM 2, UDUNITS-2, the CF standard name table and UN/ECE Recommendations 20 and
+21. Those identifiers belong to their publishers and the MIT grant does not
+extend to them; the notices are at
+[`THIRD_PARTY_NOTICES.md`](https://github.com/sothis/bovnar/blob/main/THIRD_PARTY_NOTICES.md).
