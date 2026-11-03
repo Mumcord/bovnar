@@ -10,6 +10,7 @@ extern crate alloc;
 extern crate std;
 
 mod error;
+mod event;
 mod limits;
 pub(crate) mod num;
 mod types;
@@ -17,6 +18,7 @@ pub mod units;
 mod version;
 
 pub use error::{Error, ErrorKind};
+pub use event::{Event, TokenKind, TypeAnnotation};
 pub use limits::Limits;
 pub use types::{TypeFamily, TypeSpec};
 pub use version::SpecVersion;
