@@ -69,7 +69,7 @@ pub(crate) fn is_special_number(s: &[u8]) -> bool {
 /// Whether `s` is a non-empty digit string in `base`, with an optional
 /// leading `-` except in bases 64 and 85, where `+` and `-` are digits
 /// (`bvn_validate_digits_for_base`).
-fn validate_digits_for_base(s: &[u8], base: u32) -> bool {
+pub(crate) fn validate_digits_for_base(s: &[u8], base: u32) -> bool {
     let digits = match s {
         [b'-', rest @ ..] if base != 64 && base != 85 => rest,
         _ => s,

@@ -6,6 +6,7 @@
 //! validates everything it writes: a stream of events it accepts always
 //! produces a document the reader accepts with the same values.
 
+mod check;
 mod probe;
 mod sink;
 mod tree;
@@ -21,9 +22,8 @@ pub use tree::{to_string, to_string_compact, to_vec, to_vec_compact};
 use crate::event::{Event, TokenKind, TypeAnnotation};
 use crate::types::{TypeFamily, TypeSpec};
 use crate::{num, Error, ErrorKind, Limits, SpecVersion};
+use check::{EvUnit, MAX_ANNOTATION};
 
-/// Longest annotation body between `<` and `>` (`BVN_TYPE_BUF_CAP - 1`).
-const MAX_ANNOTATION: usize = 255;
 /// Largest octet-stream chunk (a 16-bit length, 0 meaning 65536).
 const MAX_CHUNK: usize = 65_536;
 
@@ -33,6 +33,8 @@ const MAX_CHUNK: usize = 65_536;
 struct Gov {
     text: Vec<u8>,
     spec: TypeSpec,
+    /// The unit values under it must carry, or none (`gov_unit`).
+    unit: EvUnit,
 }
 
 /// Per-array-depth state (the C writer's `arr_*` arrays). Entries persist
@@ -68,10 +70,14 @@ struct Level {
 /// # Ok::<(), bovnar::Error>(())
 /// ```
 ///
-/// Events out of place (a struct end with no struct open, a value where a
-/// key belongs) fail with [`ErrorKind::UnknownTokenType`]; a value that would
-/// not read back fails with the error the reader would report for it. The
-/// first error is sticky: every later call returns it again.
+/// Each event is checked as the C writer (`bvnr_write_event`) checks it, and
+/// fails with the error code it reports: events out of place (a struct end
+/// with no struct open, a value where a key belongs) with
+/// [`ErrorKind::UnknownTokenType`], an invalid key, annotation or value with
+/// the code of the check it fails. Beyond that, an event whose output no
+/// reader would take back is refused with the error the reader reports for
+/// it, where the C writer writes it anyway (see the README). The first
+/// error is sticky: every later call returns it again.
 pub struct Writer<S: Sink> {
     sink: S,
     pretty: bool,
@@ -108,7 +114,9 @@ impl<S: Sink> Writer<S> {
         Self::with_limits(sink, pretty, &Limits::default())
     }
 
-    /// A writer whose nesting and value limits are `limits`.
+    /// A writer whose nesting limits are `limits`. Like the C writer, it
+    /// holds keys and values to what any reader configuration can take, not
+    /// to the value limits in `limits`.
     pub fn with_limits(sink: S, pretty: bool, limits: &Limits) -> Self {
         Self {
             sink,
@@ -325,6 +333,7 @@ impl<S: Sink> Writer<S> {
         self.stream_begun = true;
         self.gov = None;
         self.datetime_carry = None;
+        check::key(key)?;
         probe::key(key, self.version, &self.limits)?;
         self.awaiting_value = true;
         if self.need_semi {
@@ -343,25 +352,133 @@ impl<S: Sink> Writer<S> {
         Ok(())
     }
 
+    /// A type annotation, checked as the C writer checks the start, family,
+    /// parameter and end events the C reader reports for it.
     fn annotation(&mut self, ann: &TypeAnnotation<'_>) -> Result<(), ErrorKind> {
         self.stream_begun = true;
-        let unit = ann.unit.filter(|u| !u.is_empty());
-        if unit.is_some() && !takes_unit(ann.family) {
-            return Err(ErrorKind::IllegalValueType);
+        let family = ann.family;
+        let unit_text = ann.unit.filter(|u| !u.is_empty());
+        let ann_unit = unit_text.map_or(EvUnit::None, EvUnit::of);
+        // The start event: the type as the reader parsed it.
+        if ann_unit.is_opaque() && !check::declares_1_2(self.version) {
+            return Err(ErrorKind::UnsupportedSpecVersion);
         }
-        let (text, spec) = annotation_text(ann);
-        if text.len().saturating_sub(2) > MAX_ANNOTATION {
+        let start = TypeSpec {
+            family,
+            width: ann.width.unwrap_or(0),
+            base: match (ann.epoch, ann.q, ann.base) {
+                (Some(epoch), _, _) => num::epoch_index_of(epoch.as_bytes()).unwrap_or(0),
+                (None, Some(q), _) => q,
+                (None, None, base) => base.unwrap_or(0),
+            },
+        };
+        check::type_spec(start, self.version)?;
+        // The parameter events: what they write is the type as written,
+        // effective values included (`<uint:0>` is written `<uint:64>`).
+        let mut text = Vec::from(&b"<"[..]);
+        text.extend_from_slice(family_name(family).as_bytes());
+        let mut written = TypeSpec {
+            family,
+            width: 0,
+            base: 0,
+        };
+        let mut first = true;
+        let mut param = |text: &mut Vec<u8>, body: &[u8]| {
+            text.push(if first { b':' } else { b',' });
+            first = false;
+            text.extend_from_slice(body);
+        };
+        if ann.width.is_some() {
+            written.width = check::effective_width(start.width);
+            param(&mut text, format!("{}", written.width).as_bytes());
+        }
+        if ann.base.is_some() {
+            let base = check::effective_base(start);
+            if matches!(
+                family,
+                TypeFamily::Uint | TypeFamily::Sint | TypeFamily::Float
+            ) {
+                written.base = base;
+            }
+            param(&mut text, format!("_{base}").as_bytes());
+        }
+        if ann.q.is_some() {
+            written.base = check::effective_q(start);
+            param(&mut text, format!("q{}", written.base).as_bytes());
+        }
+        let mut emitted_unit = false;
+        for (slot, is_epoch) in [(ann.epoch.map(str::as_bytes), true), (unit_text, false)] {
+            let Some(slot) = slot else { continue };
+            if emitted_unit || (ann_unit.is_real() && !takes_unit(family)) {
+                return Err(ErrorKind::IllegalValueType);
+            }
+            if family == TypeFamily::Datetime {
+                // A datetime's one parameter is its epoch, by name.
+                if num::epoch_name(start.base).map(str::as_bytes) != Some(slot) {
+                    return Err(ErrorKind::IllegalValueType);
+                }
+                written.base = start.base;
+            } else {
+                // An epoch on another family is checked as a unit naming
+                // the annotation's unit.
+                let expect = if is_epoch {
+                    ann_unit.clone()
+                } else {
+                    EvUnit::of(slot)
+                };
+                self.unit_slot(slot, &expect, Some(text.len() - 1))?;
+            }
+            param(&mut text, slot);
+            emitted_unit = true;
+        }
+        // The end event: the written type must hold, and fit the reader's
+        // annotation buffer.
+        check::type_spec(written, self.version)?;
+        if text.len() - 1 > MAX_ANNOTATION {
             return Err(ErrorKind::TypeTooLong);
         }
+        text.push(b'>');
         probe::annotation(&text, self.version, &self.limits)?;
         self.emit_pending_comma()?;
         self.push_kind(&text)?;
         self.space_kind()?;
         self.had_type_annotation = true;
-        self.emitted_unit = unit.is_some() || ann.epoch.is_some();
-        self.datetime_carry = (spec.family == TypeFamily::Datetime).then(|| text.clone());
-        self.gov = Some(Gov { text, spec });
+        self.emitted_unit = emitted_unit;
+        self.datetime_carry = (family == TypeFamily::Datetime).then(|| text.clone());
+        let unit = if emitted_unit || takes_unit(family) {
+            ann_unit
+        } else {
+            EvUnit::None
+        };
+        self.gov = Some(Gov {
+            text,
+            spec: written,
+            unit,
+        });
         Ok(())
+    }
+
+    /// A unit spelling headed for an annotation (`Some` bytes of whose body
+    /// are written) or an inline suffix (`None`), which must name `unit`
+    /// (`bvn_writer_check_unit_text`).
+    fn unit_slot(
+        &self,
+        text: &[u8],
+        unit: &EvUnit,
+        annotation_used: Option<usize>,
+    ) -> Result<(), ErrorKind> {
+        let inline = annotation_used.is_none();
+        check::unit_text(
+            text,
+            unit,
+            inline,
+            annotation_used.unwrap_or(0),
+            self.version,
+        )?;
+        if !inline && text == b"no_unit" {
+            return Ok(());
+        }
+        probe::unit(text, inline).ok_or(ErrorKind::UnitIllegal)
     }
 
     fn data(
@@ -374,22 +491,83 @@ impl<S: Sink> Writer<S> {
         self.stream_begun = true;
         self.awaiting_value = false;
         let gov = self.gov.clone();
-        if gov.is_some() && matches!(kind, TokenKind::Symbol | TokenKind::Reference) {
-            return Err(ErrorKind::TypeValueMismatch);
-        }
+        let number = matches!(kind, TokenKind::Number | TokenKind::ArrayNumber);
+        // The C writer's checks, in its order (`bvn_writer_validate_event`).
+        let vt = match &gov {
+            Some(g) => {
+                if matches!(kind, TokenKind::Symbol | TokenKind::Reference) {
+                    return Err(ErrorKind::TypeValueMismatch);
+                }
+                g.spec
+            }
+            None if number => check::bare_number_type(text),
+            None => TypeSpec::PLAIN,
+        };
+        check::type_value_compat(kind, vt)?;
         let carries = matches!(
             kind,
             TokenKind::Number | TokenKind::ArrayNumber | TokenKind::String | TokenKind::ArrayString
         );
-        let inline_unit = if carries && inline_unit != b"no_unit" {
+        let unit = if carries {
+            EvUnit::of(inline_unit)
+        } else {
+            EvUnit::None
+        };
+        if self.emitted_unit
+            && unit.is_real()
+            && gov
+                .as_ref()
+                .map_or(true, |g| !g.unit.is_real() || g.unit != unit)
+        {
+            return Err(ErrorKind::UnitMismatch);
+        }
+        // A unit the annotation did not carry goes inline.
+        let inline_unit = if unit.is_real() && !self.emitted_unit {
+            if self.in_array_directly() {
+                return Err(ErrorKind::UnitIllegal);
+            }
+            if unit.is_opaque() && !check::declares_1_2(self.version) {
+                return Err(ErrorKind::UnsupportedSpecVersion);
+            }
+            if (number && check::is_special_token(text)) || vt.family == TypeFamily::Datetime {
+                return Err(ErrorKind::UnitIllegal);
+            }
+            self.unit_slot(inline_unit, &unit, None)?;
             inline_unit
         } else {
             b""
         };
-        let number = matches!(kind, TokenKind::Number | TokenKind::ArrayNumber);
-        // An untyped value moves the reader's inferred type along: a plain
-        // integer after a datetime stays a datetime, an ISO literal starts
-        // one, any other number, string or bool ends it.
+        match kind {
+            TokenKind::Number | TokenKind::ArrayNumber => check::number(text, vt)?,
+            TokenKind::String | TokenKind::ArrayString => {
+                if text.len() > usize::from(u16::MAX) {
+                    return Err(ErrorKind::StringTooLong);
+                }
+                check::string_content(text)?;
+                if check::is_numeric(vt.family) {
+                    check::string_as_number(text, vt)?;
+                }
+            }
+            TokenKind::Bool => {
+                if !matches!(text, b"true" | b"false" | b"on" | b"off") {
+                    return Err(ErrorKind::TypeValueMismatch);
+                }
+            }
+            TokenKind::Symbol => {
+                if text.len() > usize::from(u16::MAX) {
+                    return Err(ErrorKind::SymbolTooLong);
+                }
+                check::symbol(text)?;
+            }
+            TokenKind::Reference => check::reference_value(text, self.version)?,
+            _ => {}
+        }
+        let literal = literal(kind, text, frac, vt)?;
+        // What the C writer lets through is still read back, so nothing
+        // unreadable is written. First the reader's type inference for an
+        // untyped value: a plain integer after a datetime stays a datetime,
+        // an ISO literal starts one, any other number, string or bool ends
+        // it.
         let carried = if gov.is_some() {
             None
         } else if number && num::str_is_plain_integer(text) {
@@ -413,26 +591,22 @@ impl<S: Sink> Writer<S> {
                 self.datetime_carry = None;
             }
         }
-        let spec = gov.as_ref().map_or(TypeSpec::PLAIN, |g| g.spec);
-        if !inline_unit.is_empty() && !self.emitted_unit {
-            let number = matches!(kind, TokenKind::Number | TokenKind::ArrayNumber);
-            if self.in_array_directly()
-                || (number && num::is_special_number(text))
-                || spec.family == TypeFamily::Datetime
-            {
-                return Err(ErrorKind::UnitIllegal);
-            }
-        }
-        if kind == TokenKind::Bool && !matches!(text, b"true" | b"false" | b"on" | b"off") {
-            return Err(ErrorKind::TypeValueMismatch);
-        }
-        let literal = literal(kind, text, frac, spec)?;
         let gov_text = gov
             .as_ref()
             .map(|g| g.text.as_slice())
             .or(carried.as_deref());
+        // Only a datetime written as an ISO literal keeps its fraction.
+        let frac = if number && literal.as_slice() != text {
+            frac
+        } else {
+            b""
+        };
         let plain = inline_unit.is_empty() && frac.is_empty();
+        // An empty number is written as nothing, which reads as a null; the
+        // C writer allows it.
+        let empty_number = number && text.is_empty();
         if kind != TokenKind::Null
+            && !empty_number
             && !(plain && probe::trivially_valid(kind, text, gov_text, &self.limits))
         {
             let probe_unit = if inline_unit.is_empty() {
@@ -440,7 +614,17 @@ impl<S: Sink> Writer<S> {
             } else {
                 Some(inline_unit)
             };
-            let expect = probe::Expect { kind, text, frac };
+            // An ISO literal reads back as its epoch seconds, in their
+            // canonical spelling (`-0` comes back as `0`).
+            let seconds = (!frac.is_empty())
+                .then(|| core::str::from_utf8(text).ok()?.parse::<i64>().ok())
+                .flatten()
+                .map(|s| format!("{s}").into_bytes());
+            let expect = probe::Expect {
+                kind,
+                text: seconds.as_deref().unwrap_or(text),
+                frac,
+            };
             probe::value(
                 gov_text,
                 &literal,
@@ -775,45 +959,6 @@ fn family_name(family: TypeFamily) -> &'static str {
         TypeFamily::Datetime => "datetime",
         TypeFamily::Plain => "plain",
     }
-}
-
-/// `<family:width,_base,qN,epoch,unit>` with the parameters the annotation
-/// reports, in that order, plus the type it describes.
-fn annotation_text(ann: &TypeAnnotation<'_>) -> (Vec<u8>, TypeSpec) {
-    let mut text = Vec::from(&b"<"[..]);
-    text.extend_from_slice(family_name(ann.family).as_bytes());
-    let mut spec = TypeSpec {
-        family: ann.family,
-        width: 0,
-        base: 0,
-    };
-    let mut first = true;
-    let mut param = |text: &mut Vec<u8>, body: &[u8]| {
-        text.push(if first { b':' } else { b',' });
-        first = false;
-        text.extend_from_slice(body);
-    };
-    if let Some(width) = ann.width {
-        param(&mut text, format!("{width}").as_bytes());
-        spec.width = width;
-    }
-    if let Some(base) = ann.base {
-        param(&mut text, format!("_{base}").as_bytes());
-        spec.base = base;
-    }
-    if let Some(q) = ann.q {
-        param(&mut text, format!("q{q}").as_bytes());
-        spec.base = q;
-    }
-    if let Some(epoch) = ann.epoch {
-        param(&mut text, epoch.as_bytes());
-        spec.base = num::epoch_index_of(epoch.as_bytes()).unwrap_or(0);
-    }
-    if let Some(unit) = ann.unit.filter(|u| !u.is_empty()) {
-        param(&mut text, unit);
-    }
-    text.push(b'>');
-    (text, spec)
 }
 
 /// The value as it goes into the document.

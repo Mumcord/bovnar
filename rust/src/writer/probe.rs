@@ -31,10 +31,54 @@ fn document(version: Option<SpecVersion>, parts: &[&[u8]]) -> Vec<u8> {
 }
 
 /// Reads `doc`, handing each event to `seen`.
+///
+/// Like the C writer, the probe holds a value to what any reader
+/// configuration can take: only the nesting limits are the writer's own.
 fn read(doc: &[u8], limits: &Limits, seen: impl FnMut(Event<'_>)) -> Result<(), ErrorKind> {
-    let mut limits = limits.clone();
-    limits.max_input_bytes = u64::MAX;
+    let limits = Limits {
+        max_identifier_length: u16::MAX,
+        max_string_length: u16::MAX,
+        max_number_length: u16::MAX,
+        max_symbol_length: u16::MAX,
+        max_reference_length: u16::MAX,
+        max_array_items: u64::MAX,
+        max_input_bytes: u64::MAX,
+        max_dom_nodes: u64::MAX,
+        ..limits.clone()
+    };
     read_all(doc, &limits, seen).map_err(|e| e.kind())
+}
+
+/// A unit spelling in an annotation's unit parameter or, `inline`, as a
+/// suffix: must read back as one value carrying exactly this spelling
+/// (`bvn_writer_probe_unit_source`). `None` when it does not, for the
+/// caller to report as `UnitIllegal`.
+pub(super) fn unit(text: &[u8], inline: bool) -> Option<()> {
+    let mut doc = Vec::from(&b"#!bovnar 1.2\n.k="[..]);
+    if inline {
+        doc.extend_from_slice(b"1 ");
+        doc.extend_from_slice(text);
+        doc.push(b';');
+    } else {
+        doc.extend_from_slice(b"<uint:");
+        doc.extend_from_slice(text);
+        doc.extend_from_slice(b">1;");
+    }
+    let limits = Limits {
+        max_array_nesting: 1,
+        ..Limits::default()
+    };
+    let (mut keys, mut values, mut same) = (0usize, 0usize, false);
+    read_all(&doc, &limits, |event| match event {
+        Event::AssignmentStart { .. } => keys += 1,
+        Event::Data { unit, .. } => {
+            values += 1;
+            same = unit == text;
+        }
+        _ => {}
+    })
+    .ok()?;
+    (keys == 1 && values == 1 && same).then_some(())
 }
 
 /// A struct key: must read back as exactly this one key.

@@ -5,8 +5,8 @@
 //! events of the current chunk are held, never the whole document, so a
 //! caller bounds memory by bounding its chunk size.
 
-mod annotation;
-mod lexer;
+pub(crate) mod annotation;
+pub(crate) mod lexer;
 mod options;
 mod queue;
 mod validator;
