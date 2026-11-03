@@ -1652,7 +1652,8 @@ pub fn currency_info(base: c_int) -> Option<(String, u16, u8, bool, String)> {
         let bytes: Vec<u8> = chars
             .iter()
             .take_while(|&&c| c != 0)
-            .map(|&c| c as u8)
+            // c_char is i8 on x86 and u8 on aarch64 Linux: take the byte as is.
+            .map(|&c| c.to_ne_bytes()[0])
             .collect();
         String::from_utf8_lossy(&bytes).into_owned()
     };
