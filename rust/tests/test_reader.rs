@@ -5,8 +5,6 @@
 //   is released when dropped.
 // - test_closed_read_raises: a dropped Rust reader cannot be used again (the
 //   compiler rejects it), so there is no closed-reader error.
-// - test_exception_in_callback_raises: Python exception propagation through
-//   the callback; a Rust handler signals failure by returning false.
 // - test_non_bytes_raises: a Python type error; `read_mem` takes `&[u8]`.
 // - test_library_loads_without_attribute_error: checks the ctypes loader of
 //   the Python binding; the Rust crate links the library at build time.
@@ -275,6 +273,23 @@ fn test_false_return_raises() {
         .unwrap_err();
     assert!(matches!(err, Error::Parse { .. }), "{err:?}");
     assert_eq!(err.code(), Some(ErrorCode::ScannerCallbackFailed));
+}
+
+/// Python's exception raised in the callback is a panic here: it must reach
+/// the caller of `read_mem`, not unwind into C.
+#[test]
+fn test_exception_in_callback_raises() {
+    let payload = std::panic::catch_unwind(|| {
+        let mut crashing = |_: &EventData<'_>| -> bool { panic!("boom") };
+        Reader::new().unwrap().read_mem(
+            b".x = 1;",
+            &ReadOptions::default(),
+            Some(&mut crashing),
+            None,
+        )
+    })
+    .unwrap_err();
+    assert_eq!(payload.downcast_ref::<&str>(), Some(&"boom"));
 }
 
 // TestReadFile
