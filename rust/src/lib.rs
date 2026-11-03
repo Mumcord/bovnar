@@ -18,6 +18,7 @@ mod io;
 pub mod json;
 pub mod quantity;
 pub mod reader;
+pub mod stream;
 pub mod unit;
 pub mod units;
 pub mod writer;
