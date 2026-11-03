@@ -4,11 +4,10 @@
 //! Skipped Python tests:
 //! - `TestWriterLifecycle::test_destroy_idempotent`: Rust has no `destroy`;
 //!   the handle is released exactly once when the writer is dropped.
-//! - `TestWriteBvni::test_wide_uint`: 2**128 - 1 does not fit the `i128`
-//!   value `write_bvni` takes.
-//! - `test_a_unit_that_cannot_be_serialised_is_refused_not_dropped`: a Rust
-//!   `Unit` can only be built by parsing a spelling, so the unspellable
-//!   compound unit the test needs cannot be constructed.
+//!
+//! `TestWriteBvni::test_wide_uint` writes 2**128 - 1, which does not fit the
+//! `i128` value `write_bvni` takes, so it writes the same `uint:128` scalar
+//! through `write_quantity` with the exact literal.
 //!
 //! Partly expressible: in `test_uint_out_of_range_raises_not_truncates` and
 //! `test_sint_out_of_range_raises_not_truncates` the out-of-range values
@@ -547,6 +546,20 @@ mod write_bvni {
         });
         assert!(has(&out, b"-128"));
         assert!(has(&out, b"sint"));
+    }
+
+    #[test]
+    fn test_wide_uint() {
+        let vt = ValueTypeSpec {
+            family: ValueTypeFamily::Uint as i32,
+            width: 128,
+            base: 0,
+        };
+        let val: num_bigint::BigInt = (num_bigint::BigInt::from(1) << 128u32) - 1;
+        let q = Quantity::new(&val.to_string(), vt, Unit::default());
+        let out = written(|w| w.write_quantity("u128max", &q).unwrap());
+        assert!(has(&out, b"340282366920938463463374607431768211455"));
+        assert!(has(&out, b"uint:128"));
     }
 
     #[test]
@@ -1291,6 +1304,40 @@ mod signed_high_base_refused_by_name {
             ));
         }
     }
+}
+
+/// A unit the writer cannot spell used to be skipped in the annotation,
+/// writing the value with its unit silently gone. It must be refused.
+#[test]
+fn test_a_unit_that_cannot_be_serialised_is_refused_not_dropped() {
+    use bovnar::{BaseUnit, Exponent, SIPrefix, UnitComponent};
+    let vt = ValueTypeSpec {
+        family: ValueTypeFamily::Float as i32,
+        width: 64,
+        base: 0,
+    };
+    // structurally valid, but a bu_none component past the bare "no_unit"
+    // shapes has no spelling
+    let u = Unit::compound(&[
+        UnitComponent::si(BaseUnit::Meter, SIPrefix::None, Exponent::LINEAR),
+        UnitComponent::si(BaseUnit::None, SIPrefix::Kilo, Exponent::LINEAR),
+    ])
+    .unwrap();
+    let mut w = Writer::to_mem(CAP, false).unwrap();
+    w.write_version(1, 1).unwrap();
+    let err = w
+        .write_quantity("d", &Quantity::new("1.5", vt, u))
+        .unwrap_err();
+    assert!(matches!(err, Error::Argument { .. }), "{err:?}");
+    assert!(err.to_string().contains("unit"), "{err}");
+
+    // an ordinary unit is unaffected
+    let mut w2 = Writer::to_mem(CAP, false).unwrap();
+    w2.write_version(1, 1).unwrap();
+    let q = Quantity::new("1.5", vt, Unit::parse("k~g·m/s²").unwrap());
+    w2.write_quantity("d", &q).unwrap();
+    w2.finish().unwrap();
+    assert!(String::from_utf8_lossy(w2.get_output()).contains("k~g·m/s²"));
 }
 
 #[test]
