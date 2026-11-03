@@ -132,6 +132,7 @@ extern crate std;
 
 #[doc(hidden)]
 pub mod conformance;
+mod detect;
 mod dom;
 mod error;
 mod event;
@@ -155,6 +156,7 @@ pub use reader::{read_all, read_all_with, ReadOptions, Reader};
 pub use types::{TypeFamily, TypeSpec};
 pub use version::SpecVersion;
 
+pub use detect::{detect, Format};
 pub use dom::{parse, parse_with, parse_with_options};
 pub use value::{Annotation, Array, Document, Kind, Number, Struct, Value};
 #[cfg(feature = "std")]
