@@ -143,3 +143,5 @@ jobs:
         run: scripts/conformance-c.sh "$RUNNER_TEMP/cref"
       - name: Differential test against the C reference (20000 inputs)
         run: scripts/diff.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/cref" 20000
+      - name: JSON conversion against the C CLI (20000 inputs)
+        run: scripts/json-diff.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/cref" 20000
