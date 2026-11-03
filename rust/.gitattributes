@@ -1,0 +1,4 @@
+# Keep LF everywhere: fixtures and expected writer output are compared byte for byte.
+* text=auto eol=lf
+# Fuzz regression inputs are raw bytes; never convert them.
+fuzz/regressions/** -text

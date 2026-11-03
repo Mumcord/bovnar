@@ -1,0 +1,60 @@
+[workspace]
+members = []
+exclude = ["fuzz"]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.81"
+license = "MIT"
+repository = "https://github.com/Mumcord/bovnar-rs"
+
+[package]
+name = "bovnar-rs"
+version = "0.1.0"
+description = "Pure-Rust reader, writer and serde support for the Bovnar data format (spec 1.2), built for untrusted input"
+keywords = ["bovnar", "parser", "units", "serialization", "no_std"]
+categories = ["parser-implementations", "encoding", "no-std"]
+readme = "README.md"
+publish = false
+# Ship only the library and its licence material; the conformance corpus,
+# writer fixtures, scripts and tooling crates stay in the repository.
+include = [
+    "/src/**",
+    "!/src/units/testdata/**",
+    "/vendor/upstream/**",
+    "/Cargo.toml",
+    "/LICENSE",
+    "/THIRD_PARTY_NOTICES.md",
+    "/README.md",
+    "/CHANGELOG.md",
+]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "bovnar"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["std", "profile-unece", "profile-qudt", "profile-qudt-qk", "profile-udunits", "profile-om"]
+# Adds std::io adapters; the core reader only needs `alloc`.
+std = []
+serde = ["dep:serde"]
+# Optional unit profiles (doc/11). UCUM and CF are deliberately not offered.
+profile-unece = []
+profile-qudt = []
+profile-qudt-qk = []
+profile-udunits = []
+profile-om = []
+
+[dependencies]
+serde = { version = "1", default-features = false, features = ["alloc", "derive"], optional = true }
+
+[dev-dependencies]
+base64 = "0.23"
+serde_json = "1"
