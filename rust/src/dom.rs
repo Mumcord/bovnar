@@ -178,6 +178,30 @@ impl<'a> DomNode<'a> {
         self.0.get_u64()
     }
 
+    pub fn as_i32(self) -> Option<i32> {
+        self.0.get_i32()
+    }
+
+    pub fn as_u32(self) -> Option<u32> {
+        self.0.get_u32()
+    }
+
+    pub fn as_i16(self) -> Option<i16> {
+        self.0.get_i16()
+    }
+
+    pub fn as_u16(self) -> Option<u16> {
+        self.0.get_u16()
+    }
+
+    pub fn as_i8(self) -> Option<i8> {
+        self.0.get_i8()
+    }
+
+    pub fn as_u8(self) -> Option<u8> {
+        self.0.get_u8()
+    }
+
     pub fn as_float(self) -> Option<f64> {
         self.0.get_float()
     }

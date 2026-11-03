@@ -1006,6 +1006,48 @@ impl<'a> Node<'a> {
         unsafe { bvn_dom_get_u64(self.ptr(), &mut v) }.then_some(v)
     }
 
+    /// `bvn_dom_get_i32`.
+    pub fn get_i32(self) -> Option<i32> {
+        let mut v = 0;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_i32(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// `bvn_dom_get_u32`.
+    pub fn get_u32(self) -> Option<u32> {
+        let mut v = 0;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_u32(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// `bvn_dom_get_i16`.
+    pub fn get_i16(self) -> Option<i16> {
+        let mut v = 0;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_i16(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// `bvn_dom_get_u16`.
+    pub fn get_u16(self) -> Option<u16> {
+        let mut v = 0;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_u16(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// `bvn_dom_get_i8`.
+    pub fn get_i8(self) -> Option<i8> {
+        let mut v = 0;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_i8(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// `bvn_dom_get_u8`.
+    pub fn get_u8(self) -> Option<u8> {
+        let mut v = 0;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_u8(self.ptr(), &mut v) }.then_some(v)
+    }
+
     /// `bvn_dom_get_float`.
     pub fn get_float(self) -> Option<f64> {
         let mut v = 0.0;
