@@ -35,6 +35,9 @@ concurrency:
 # filter corrupted a tracked example so that a fresh clone failed to validate it,
 # and four CTest gates could not fail at all, none of which anything noticed.
 #
+# The Rust binding (rust/) is linted, tested and built for wasm32-wasip2 in
+# the rust* jobs.
+#
 # It also builds the Python wheels + sdist (cibuildwheel matrix) and publishes
 # them to PyPI on a v* tag. Those heavier jobs are gated (see their `if:`) to
 # pull requests, main, and tags — not every release-* push.
@@ -327,6 +330,95 @@ jobs:
           ./build/bovnar validate smoke.bvnr
           ./build/bovnar pretty-print smoke.bvnr | grep -q '<uint:8>'
           printf '.x = "hi";\n' | ./build/bovnar events -
+
+  # The Rust binding in rust/: a thin wrapper that compiles the C sources above
+  # through build.rs (no system library). Tested on the toolchains the C
+  # library ships for -- MSVC and MinGW64 on Windows, and the Linux and macOS
+  # runners of the wheel matrix -- plus a wasm32-wasip2 build. The C suite the
+  # binding wraps runs, unchanged, in the `tests` job.
+  rust_version:
+    name: Rust crate version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Cargo.toml names the project version
+        # CMakeLists.txt is the source of truth and a release tag must name it;
+        # the crate published from that tag must carry the same version.
+        run: |
+          set -euo pipefail
+          want=$(grep -oP 'project\(bovnar VERSION \K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt)
+          have=$(grep -oP '^version = "\K[^"]+' rust/Cargo.toml)
+          if [ "$have" != "$want" ]; then
+            echo "::error file=rust/Cargo.toml::crate version ${have} is not the project version ${want} of CMakeLists.txt"
+            exit 1
+          fi
+          echo "OK: crate and project are both ${want}"
+
+  rust:
+    name: Rust (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Linux x64, os: ubuntu-latest, toolchain: stable }
+          - { name: Linux aarch64, os: ubuntu-24.04-arm, toolchain: stable }
+          - { name: macOS, os: macos-15, toolchain: stable }
+          - { name: MSVC x64, os: windows-latest, toolchain: stable-x86_64-pc-windows-msvc }
+          - { name: MinGW64, os: windows-latest, toolchain: stable-x86_64-pc-windows-gnu, mingw: true }
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v5
+
+      # The GNU toolchain links with its own MinGW runtime but build.rs needs a
+      # MinGW C compiler for the library itself: the same MINGW64 gcc the
+      # `mingw` job builds with, put on PATH for cargo.
+      - uses: msys2/setup-msys2@v2
+        if: matrix.mingw
+        id: msys2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc
+
+      - name: Put MINGW64 gcc on PATH
+        if: matrix.mingw
+        shell: pwsh
+        run: Add-Content $env:GITHUB_PATH "${{ steps.msys2.outputs.msys2-location }}\mingw64\bin"
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  rust_wasm:
+    name: Rust (wasm32-wasip2)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust
+    env:
+      WASI_SDK_VERSION: "34"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip2
+
+      - name: Install wasi-sdk
+        run: |
+          curl -sSL "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION}/wasi-sdk-${WASI_SDK_VERSION}.0-x86_64-linux.tar.gz" | tar xz -C "$RUNNER_TEMP"
+          echo "WASI_SDK_PATH=$RUNNER_TEMP/wasi-sdk-${WASI_SDK_VERSION}.0-x86_64-linux" >> "$GITHUB_ENV"
+
+      - run: cargo build --target wasm32-wasip2
 
   source:
     name: Source tarball
