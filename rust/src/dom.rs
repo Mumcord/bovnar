@@ -2,7 +2,7 @@
 //! type-preserving tree with full document-tier validation.
 
 use crate::Value;
-use crate::enums::ValueTypeFamily;
+use crate::enums::{ErrorCode, ValueTypeFamily};
 use crate::error::{Error, Result};
 use crate::ffi::{self, ValueTypeSpec};
 
@@ -60,8 +60,17 @@ impl DomDoc {
     /// same error [`crate::Reader::set_unit_policy`] gives, before anything is
     /// parsed.
     pub fn parse_with_policy(data: &[u8], policy: &crate::reader::UnitPolicy) -> Result<Self> {
-        crate::Reader::new()?.set_unit_policy(Some(policy))?;
-        Self::checked(ffi::DocHandle::parse_policy(data, &policy.spec()))
+        policy.check_counts()?;
+        // bovnar_dom.h: a policy the library refuses is error_invalid_argument,
+        // which no fault in the document produces. Only then is the reason
+        // worked out, by the same probe Reader::set_unit_policy uses.
+        Self::checked(ffi::DocHandle::parse_policy(data, &policy.spec())).map_err(|e| {
+            if e.code() == Some(ErrorCode::InvalidArgument) {
+                Error::Argument(crate::reader::describe_unit_policy_refusal(policy))
+            } else {
+                e
+            }
+        })
     }
 
     fn checked(handle: Option<ffi::DocHandle>) -> Result<Self> {
