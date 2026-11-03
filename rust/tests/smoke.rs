@@ -171,3 +171,115 @@ fn errors_carry_their_kind_and_position() {
     let caller = bovnar::to_string(&bovnar::Value::Int(1), false).unwrap_err();
     assert_eq!(caller.kind(), None);
 }
+
+/// Hands its bytes over one at a time, as a slow pipe would.
+struct Trickle<'a>(&'a [u8]);
+
+impl std::io::Read for Trickle<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match (self.0.split_first(), buf.first_mut()) {
+            (Some((b, rest)), Some(slot)) => {
+                *slot = *b;
+                self.0 = rest;
+                Ok(1)
+            }
+            _ => Ok(0),
+        }
+    }
+}
+
+#[test]
+fn read_reader_honours_max_file_size_like_read_mem() {
+    use bovnar::{Error, EventData, ReadOptions, Reader};
+    let doc = b".a = 1;\n.b = 2;\n.c = 3;\n";
+    let run = |from_reader: bool, max_file_size: u64| {
+        let mut raws = Vec::new();
+        let mut cb = |d: &EventData<'_>| {
+            raws.push(d.raw.to_vec());
+            true
+        };
+        let options = ReadOptions {
+            max_file_size,
+            ..ReadOptions::default()
+        };
+        let mut r = Reader::new().unwrap();
+        let result: Result<(), Error> = if from_reader {
+            r.read_reader(Trickle(doc), &options, Some(&mut cb), None)
+        } else {
+            r.read_mem(doc, &options, Some(&mut cb), None)
+        };
+        (result, raws)
+    };
+    for cap in [0, 10, doc.len() as u64, doc.len() as u64 - 1] {
+        let (mem, mem_raws) = run(false, cap);
+        let (io, io_raws) = run(true, cap);
+        assert_eq!(io, mem, "cap {cap}");
+        assert_eq!(io_raws, mem_raws, "cap {cap}");
+    }
+    let (err, _) = run(true, 10);
+    assert_eq!(err.unwrap_err().code(), Some(ErrorCode::FileTooLong));
+}
+
+/// A sink that refuses every byte.
+struct Full;
+
+impl std::io::Write for Full {
+    fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::StorageFull,
+            "no space left",
+        ))
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[test]
+fn to_writer_reports_a_failing_writer_on_finish() {
+    use bovnar::{Base, Error, Writer};
+    let mut w = Writer::to_writer(Full, false).unwrap();
+    w.write_uint("a", 1, 64, Base::DECIMAL).unwrap();
+    let err = w.finish().unwrap_err();
+    assert_eq!(err.code(), Some(ErrorCode::WritingToSink));
+    assert!(matches!(
+        err,
+        Error::Io {
+            io_kind: std::io::ErrorKind::StorageFull,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn to_writer_delivers_the_document_on_finish() {
+    use bovnar::{Base, Writer};
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Clone, Default)]
+    struct Shared(Arc<Mutex<Vec<u8>>>);
+    impl std::io::Write for Shared {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().unwrap().extend_from_slice(buf);
+            Ok(buf.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let out = Shared::default();
+    let mut w = Writer::to_writer(out.clone(), false).unwrap();
+    w.write_uint("a", 1, 64, Base::DECIMAL).unwrap();
+    assert!(out.0.lock().unwrap().is_empty());
+    w.finish().unwrap();
+    assert_eq!(*out.0.lock().unwrap(), b".a=<uint:64>1;");
+}
+
+#[test]
+fn dom_parse_reader_reads_a_pipe_of_trickled_bytes() {
+    let doc = DomDoc::parse_reader(Trickle(b".x = 1;\n.y = 2;\n")).unwrap();
+    assert_eq!(doc.len(), 2);
+    let err = DomDoc::parse_reader(Trickle(b".x = @;")).err();
+    assert!(matches!(err, Some(bovnar::Error::Parse { .. })), "{err:?}");
+}
