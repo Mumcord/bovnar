@@ -133,6 +133,16 @@ fn main() -> Result<(), bovnar::Error> {
     std::fs::remove_file(&path).unwrap();
 
     Reader::new()?.read_reader(Cursor::new(b".a = 1;"), &ReadOptions::default(), None, None)?;
+
+    let value = bovnar::parse_reader(Cursor::new(b".a = 1;"))?;
+    let mut out = Vec::new();
+    bovnar::write_to(&value, false, &mut out)?;
+    assert_eq!(bovnar::parse(&out)?, value);
+
+    let mut framed = Vec::new();
+    bovnar::stream::dump_documents_to(&[value.clone(), value.clone()], false, &mut framed)?;
+    let docs = bovnar::stream::load_documents_reader(Cursor::new(framed), false, false, 0)?;
+    assert_eq!(docs, vec![Some(value.clone()), Some(value)]);
     Ok(())
 }
 ```
@@ -239,18 +249,24 @@ match Unit::parse("furlong per fortnight") {
   a table in its docs).
 - **Files and I/O streams:** `Reader::read_reader` and
   `read_reader_want_unit`, `DomDoc::parse_reader` and
-  `parse_reader_with_policy`, `Writer::to_writer` and `to_writer_with` take
+  `parse_reader_with_policy`, `Writer::to_writer` and `to_writer_with`,
+  `parse_reader`, `parse_typed_reader` and `write_to` (the twins of `parse`,
+  `parse_typed` and `to_string`), and in `stream` `frame_documents_to`,
+  `dump_documents_to`, `load_documents_reader`, `mux_dump_to`,
+  `mux_load_reader`, `embed_document_to` and `parse_embedded_reader` take
   any `std::io::Read` / `std::io::Write`; a path is read or written through
   an opened `std::fs::File`. The C library takes no callback source or
   sink, so they go through memory: the input is read in full (to one byte
   past `max_file_size` when it is set, and at most 256 MiB for the DOM, the
-  cap of `bvn_dom_parse_fd`), and the writer's document is written out by
-  `finish`, from a memory sink of `DEFAULT_MEM_CAP` bytes unless
-  `to_writer_with` sets another. A failing reader or writer is an
+  cap of `bvn_dom_parse_fd`; `parse_reader` and the `stream` readers read
+  with no `max_file_size`, and the stream readers then apply
+  `max_document_size` and `max_message` as their in-memory twins do), and
+  the writer's document is written out by `finish`, from a memory sink of
+  `DEFAULT_MEM_CAP` bytes unless `to_writer_with` sets another; the other
+  writer twins build their output in memory and then write it out. A failing reader or writer is an
   `Error::Io` with the code the C fd source or sink gives
   (`reading_from_source_fd`, `writing_to_sink`). No file descriptor is
-  involved, so they work the same on Windows. `parse`, `to_string` and
-  `stream` work on memory only.
+  involved, so they work the same on Windows.
 - **Exact numbers:** the `Quantity` accessors `decimal`, `fraction`,
   `fixed_point`, `stored_value` and `ieee_bits`; `Decimal` and
   `BigRational`, also as the `Value` variants `Decimal` and `Fraction`,
