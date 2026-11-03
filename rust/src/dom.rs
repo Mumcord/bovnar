@@ -107,15 +107,12 @@ impl DomDoc {
 
     /// The top-level value assigned to `key`.
     pub fn get(&self, key: &str) -> Option<DomNode<'_>> {
-        self.entries()
-            .into_iter()
-            .find(|(k, _)| k == key)
-            .map(|(_, n)| n)
+        self.handle.get(key).map(DomNode)
     }
 
     /// The number of top-level assignments.
     pub fn len(&self) -> usize {
-        self.handle.entries().len()
+        self.handle.count()
     }
 
     /// Whether the document assigns nothing.

@@ -995,24 +995,35 @@ pub struct Node<'a>(
 /// SAFETY: `entries` must be NULL or point at `count` entries owned by a
 /// document that outlives `'a`.
 unsafe fn entries<'a>(entries: *const BvnDomEntry, count: u32) -> Vec<(&'a [u8], Node<'a>)> {
-    if entries.is_null() {
-        return Vec::new();
-    }
     // SAFETY: guaranteed by the caller.
-    let list = unsafe { std::slice::from_raw_parts(entries, count as usize) };
-    list.iter()
-        .filter_map(|e| {
-            let node = std::ptr::NonNull::new(e.value)?;
-            let key = if e.key.is_null() {
-                &[][..]
-            } else {
-                // SAFETY: a non-NULL key is a NUL-terminated string the
-                // document owns.
-                unsafe { std::ffi::CStr::from_ptr(e.key) }.to_bytes()
-            };
-            Some((key, Node(node, std::marker::PhantomData)))
-        })
-        .collect()
+    unsafe { entry_iter(entries, count) }.collect()
+}
+
+/// The pairs of [`entries`] one at a time, without collecting them.
+///
+/// # Safety
+/// As for [`entries`].
+unsafe fn entry_iter<'a>(
+    entries: *const BvnDomEntry,
+    count: u32,
+) -> impl Iterator<Item = (&'a [u8], Node<'a>)> {
+    let list: &'a [BvnDomEntry] = if entries.is_null() {
+        &[]
+    } else {
+        // SAFETY: guaranteed by the caller.
+        unsafe { std::slice::from_raw_parts(entries, count as usize) }
+    };
+    list.iter().filter_map(|e| {
+        let node = std::ptr::NonNull::new(e.value)?;
+        let key = if e.key.is_null() {
+            &[][..]
+        } else {
+            // SAFETY: a non-NULL key is a NUL-terminated string the
+            // document owns.
+            unsafe { std::ffi::CStr::from_ptr(e.key) }.to_bytes()
+        };
+        Some((key, Node(node, std::marker::PhantomData)))
+    })
 }
 
 impl DocHandle {
@@ -1058,6 +1069,22 @@ impl DocHandle {
         let doc = self.0.as_ptr();
         // SAFETY: the document is live and owns the entry array.
         unsafe { entries(bvn_dom_doc_entries(doc), bvn_dom_doc_count(doc)) }
+    }
+
+    /// The top-level node under `key`, found in the entry array in place
+    /// (the C DOM keeps no index; `bvn_dom_lookup` scans the same way).
+    pub fn get(&self, key: &str) -> Option<Node<'_>> {
+        let doc = self.0.as_ptr();
+        // SAFETY: the document is live and owns the entry array.
+        unsafe { entry_iter(bvn_dom_doc_entries(doc), bvn_dom_doc_count(doc)) }
+            .find(|(k, _)| *k == key.as_bytes())
+            .map(|(_, n)| n)
+    }
+
+    /// `bvn_dom_doc_count`: the number of top-level entries.
+    pub fn count(&self) -> usize {
+        // SAFETY: the document is live.
+        unsafe { bvn_dom_doc_count(self.0.as_ptr()) as usize }
     }
 }
 
