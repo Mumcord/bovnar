@@ -1336,7 +1336,9 @@ hand. Each is a factor error, not a syntax error, so nothing would catch it down
 `m~val/L` is 0.5 mmol/L. UCUM's `eq` is the generic equivalent, defined as one mole. Mapping
 `eq` → `val` would be **wrong by exactly a factor of two** on every clinical electrolyte value.
 The table maps `eq` → `mol` and `meq/L` → `m~mol/L`, and leaves `val` alone as the water-analysis
-unit it is.
+unit it is. Outside the profile `eq` keeps its native meaning, an alias of `val`, so `meq/L` and
+`ucum:meq/L` differ by exactly two; the prefix is what decides
+(see [`05_bovnar_unit_system.md`](05_bovnar_unit_system.md), water analysis).
 
 **`osm` sits on exactly that footing, and used to be refused instead.** UCUM defines the osmole and
 the equivalent identically — `<value Unit="mol" value="1"/>` for each — so the two rows have to

@@ -2552,7 +2552,9 @@ hand. Each is a factor error, not a syntax error, so nothing would catch it down
 <code>m~val/L</code> is 0.5 mmol/L. UCUM's <code>eq</code> is the generic equivalent, defined as one mole. Mapping
 <code>eq</code> → <code>val</code> would be <strong>wrong by exactly a factor of two</strong> on every clinical electrolyte value.
 The table maps <code>eq</code> → <code>mol</code> and <code>meq/L</code> → <code>m~mol/L</code>, and leaves <code>val</code> alone as the water-analysis
-unit it is.</p>
+unit it is. Outside the profile <code>eq</code> keeps its native meaning, an alias of <code>val</code>, so <code>meq/L</code> and
+<code>ucum:meq/L</code> differ by exactly two; the prefix is what decides
+(see <a href="https://www.bovnar.io/docs/units/"><code>05_bovnar_unit_system.md</code></a>, water analysis).</p>
 <p><strong><code>osm</code> sits on exactly that footing, and used to be refused instead.</strong> UCUM defines the osmole and
 the equivalent identically — <code>&lt;value Unit="mol" value="1"/&gt;</code> for each — so the two rows have to
 agree, and they did not: <code>osm</code> was refused as a "species-dependent relation to the mole". That is

@@ -764,7 +764,7 @@ None of them takes a prefix. **Millimoles per litre needs no unit of its own** �
 | `°rH` | `russian_hardness` | Russian degree | `bu_russian_hardness` | 1 mg Ca / L | 0.024951 |
 | `°aH` | `american_hardness` | American degree | `bu_american_hardness` | 1 mg CaCO₃ / L | 0.009991 |
 | `gpg` | `grains_per_gallon` | grains per US gallon | `bu_grains_per_gallon` | 1 grain CaCO₃ / US gallon | 0.171034 |
-| `val` | `vals` | equivalent (water analysis) | `bu_val` | ½ mol — see below | 0.5 (as `mol`, not a concentration) |
+| `val` | `vals`, `eq` | equivalent (water analysis) | `bu_val` | ½ mol — see below | 0.5 (as `mol`, not a concentration) |
 
 Reading across, with 1 mmol·L⁻¹ as the reference:
 
@@ -783,6 +783,11 @@ Reading across, with 1 mmol·L⁻¹ as the reference:
 > `val` (below) and means the same divalent equivalent — it is **not** UCUM's generic equivalent of
 > one mole: native `meq/L` is half of `ucum:meq/L`. A clinical `meq/L` of a monovalent ion (Na⁺,
 > K⁺, Cl⁻) is one millimole per litre, so write it as `m~mol/L` or as `ucum:meq/L`.
+>
+> This is settled, not provisional: `eq` stays a spelling of `val` and will not be redefined as a
+> mole, because that would silently halve every `meq/L` written in the water-analysis sense.
+> Inside a `ucum:` unit, `eq` is UCUM's and means one mole (see
+> [`11_bovnar_unit_profiles.md`](11_bovnar_unit_profiles.md)).
 
 > **Exactness.** Every degree is derived from a molar mass (IUPAC 2021: Ca 40.078, C 12.011,
 > O 15.999 g·mol⁻¹), so the factors are measurement-derived rather than exact rationals. They carry

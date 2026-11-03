@@ -2298,7 +2298,7 @@ carries mol·m⁻³ (which is exactly mmol·L⁻¹), converts into every other, 
 </tr>
 <tr>
 <td><code>val</code></td>
-<td><code>vals</code></td>
+<td><code>vals</code>, <code>eq</code></td>
 <td>equivalent (water analysis)</td>
 <td><code>bu_val</code></td>
 <td>½ mol — see below</td>
@@ -2344,6 +2344,10 @@ unit, so for that case write the amount directly (<code>m~mol/L</code>). <code>e
 <code>val</code> (below) and means the same divalent equivalent — it is <strong>not</strong> UCUM's generic equivalent of
 one mole: native <code>meq/L</code> is half of <code>ucum:meq/L</code>. A clinical <code>meq/L</code> of a monovalent ion (Na⁺,
 K⁺, Cl⁻) is one millimole per litre, so write it as <code>m~mol/L</code> or as <code>ucum:meq/L</code>.</p>
+<p>This is settled, not provisional: <code>eq</code> stays a spelling of <code>val</code> and will not be redefined as a
+mole, because that would silently halve every <code>meq/L</code> written in the water-analysis sense.
+Inside a <code>ucum:</code> unit, <code>eq</code> is UCUM's and means one mole (see
+<a href="https://www.bovnar.io/docs/profiles/"><code>11_bovnar_unit_profiles.md</code></a>).</p>
 <p><strong>Exactness.</strong> Every degree is derived from a molar mass (IUPAC 2021: Ca 40.078, C 12.011,
 O 15.999 g·mol⁻¹), so the factors are measurement-derived rather than exact rationals. They carry
 <code>.exact = false</code>, which means a <strong>read-time lossless conversion</strong> (<code>want_unit</code>, §1.10 of the

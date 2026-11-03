@@ -1890,7 +1890,7 @@ a mismatch is `error_unit_mismatch`.
 - **8 ratio / proportion units** — **percent** (`%`), **per mille** (`‰`), **per myriad** (`‱`), **per cent mille** (`pcm`), **ppm**, **ppb**, **parts per trillion** (`pptr`, 10⁻¹²) and **parts per quadrillion** (`ppq`, 10⁻¹⁵) — dimensionless scaling factors that take no prefix. The last two are spelled `pptr`/`ppq` rather than `ppt`/`ppq` because `ppt` resolved as `p~pt`, the picopint, and because `ppt` means parts per *thousand* in some industries; UCUM makes the same split, spelling them `[ppth]` and `[pptr]`. The compact token `ppt` is now **refused outright** rather than read as either — the two ratios it might mean are 10⁹ apart, and only the author can say which. Write `pptr`, `‰`, or `p~pt`.
 - **1 acidity scale** — **pH** (`pH`), a logarithm of hydrogen-ion activity; its own quantity kind, so it never converts to a percentage or a plain number.
 - **2 named speed units** — **mile per hour** (`mph`), **kilometre per hour** (`kph`, also `kmh`). Neither takes a prefix; `mi/h` and `k~m/h` remain valid as compounds.
-- **7 water-analysis units** — the five hardness degrees **German** (`°dH`), **English/Clark** (`°e`), **French** (`°fH`), **Russian** (`°rH`), **American** (`°aH`), plus **grains per US gallon** (`gpg`) and the **equivalent** (`val`, ½ mol as water analysis uses it). The six degrees are amount concentrations and all inter-convert.
+- **7 water-analysis units** — the five hardness degrees **German** (`°dH`), **English/Clark** (`°e`), **French** (`°fH`), **Russian** (`°rH`), **American** (`°aH`), plus **grains per US gallon** (`gpg`) and the **equivalent** (`val`, also spelled `eq`, ½ mol as water analysis uses it — so native `meq/L` is half of `ucum:meq/L`). The six degrees are amount concentrations and all inter-convert.
 - **5 turbidity scales** — **NTU**, **FNU**, **FTU**, **FAU**, **JTU**: one quantity kind each, because each names a *measurement method* and no factor relates any pair of them.
 - **1 salinity scale** — **PSU** (practical salinity, PSS-78): a conductivity ratio, so not a mass fraction and not convertible to `‰`.
 - **1 conductivity scale** — **CF** (hydroponic conductivity factor, 1 CF = 0.1 mS/cm exactly), which *does* convert, being a rescaled conductivity.
@@ -8261,7 +8261,7 @@ None of them takes a prefix. **Millimoles per litre needs no unit of its own** �
 | `°rH` | `russian_hardness` | Russian degree | `bu_russian_hardness` | 1 mg Ca / L | 0.024951 |
 | `°aH` | `american_hardness` | American degree | `bu_american_hardness` | 1 mg CaCO₃ / L | 0.009991 |
 | `gpg` | `grains_per_gallon` | grains per US gallon | `bu_grains_per_gallon` | 1 grain CaCO₃ / US gallon | 0.171034 |
-| `val` | `vals` | equivalent (water analysis) | `bu_val` | ½ mol — see below | 0.5 (as `mol`, not a concentration) |
+| `val` | `vals`, `eq` | equivalent (water analysis) | `bu_val` | ½ mol — see below | 0.5 (as `mol`, not a concentration) |
 
 Reading across, with 1 mmol·L⁻¹ as the reference:
 
@@ -8280,6 +8280,11 @@ Reading across, with 1 mmol·L⁻¹ as the reference:
 > `val` (below) and means the same divalent equivalent — it is **not** UCUM's generic equivalent of
 > one mole: native `meq/L` is half of `ucum:meq/L`. A clinical `meq/L` of a monovalent ion (Na⁺,
 > K⁺, Cl⁻) is one millimole per litre, so write it as `m~mol/L` or as `ucum:meq/L`.
+>
+> This is settled, not provisional: `eq` stays a spelling of `val` and will not be redefined as a
+> mole, because that would silently halve every `meq/L` written in the water-analysis sense.
+> Inside a `ucum:` unit, `eq` is UCUM's and means one mole (see
+> [`11_bovnar_unit_profiles.md`](11_bovnar_unit_profiles.md)).
 
 > **Exactness.** Every degree is derived from a molar mass (IUPAC 2021: Ca 40.078, C 12.011,
 > O 15.999 g·mol⁻¹), so the factors are measurement-derived rather than exact rationals. They carry
@@ -11381,6 +11386,7 @@ The traps, in order of how easily they bite:
 | `dH` instead of `°dH` | `dH` is the decihenry — an accepted unit, so nothing errors | keep the `°`, or write `german_hardness` |
 | "ppm" for hardness | Bovnar's `ppm` is the dimensionless 10⁻⁶ | write `°aH` |
 | `mval/L` for a monovalent species | `val` here is the *water-analysis* equivalent: 1 val = ½ mol | write `m~mol/L` for the amount directly |
+| a clinical `meq/L` (Na⁺, K⁺, Cl⁻) written natively | native `eq` is `val`, so `meq/L` is ½ mmol/L — half of `ucum:meq/L` | write `ucum:meq/L` or `m~mol/L` |
 | Expecting an exact conversion | the degrees are derived from molar masses, so they carry `.exact = false` | ordinary conversion works; a lossless one reports `error_unit_inexact` |
 | `mmol/l` as a "unit" | it is the compound `m~mol/L`, not a base unit | write `mmol/L`, `m~mol/L` or `mmol/l` — all the same |
 | `gr/gal` for `gpg` | `gr/gal` is a *mass* concentration, `gpg` an *amount* concentration; they do not convert | write `gpg` for the hardness scale |
@@ -17530,7 +17536,9 @@ hand. Each is a factor error, not a syntax error, so nothing would catch it down
 `m~val/L` is 0.5 mmol/L. UCUM's `eq` is the generic equivalent, defined as one mole. Mapping
 `eq` → `val` would be **wrong by exactly a factor of two** on every clinical electrolyte value.
 The table maps `eq` → `mol` and `meq/L` → `m~mol/L`, and leaves `val` alone as the water-analysis
-unit it is.
+unit it is. Outside the profile `eq` keeps its native meaning, an alias of `val`, so `meq/L` and
+`ucum:meq/L` differ by exactly two; the prefix is what decides
+(see [`05_bovnar_unit_system.md`](05_bovnar_unit_system.md), water analysis).
 
 **`osm` sits on exactly that footing, and used to be refused instead.** UCUM defines the osmole and
 the equivalent identically — `<value Unit="mol" value="1"/>` for each — so the two rows have to

@@ -492,6 +492,7 @@ The traps, in order of how easily they bite:
 | `dH` instead of `°dH` | `dH` is the decihenry — an accepted unit, so nothing errors | keep the `°`, or write `german_hardness` |
 | "ppm" for hardness | Bovnar's `ppm` is the dimensionless 10⁻⁶ | write `°aH` |
 | `mval/L` for a monovalent species | `val` here is the *water-analysis* equivalent: 1 val = ½ mol | write `m~mol/L` for the amount directly |
+| a clinical `meq/L` (Na⁺, K⁺, Cl⁻) written natively | native `eq` is `val`, so `meq/L` is ½ mmol/L — half of `ucum:meq/L` | write `ucum:meq/L` or `m~mol/L` |
 | Expecting an exact conversion | the degrees are derived from molar masses, so they carry `.exact = false` | ordinary conversion works; a lossless one reports `error_unit_inexact` |
 | `mmol/l` as a "unit" | it is the compound `m~mol/L`, not a base unit | write `mmol/L`, `m~mol/L` or `mmol/l` — all the same |
 | `gr/gal` for `gpg` | `gr/gal` is a *mass* concentration, `gpg` an *amount* concentration; they do not convert | write `gpg` for the hardness scale |

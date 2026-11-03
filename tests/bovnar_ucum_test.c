@@ -322,6 +322,13 @@ static void test_collisions(void)
 	ASSERT_FALSE(bvn_unit_equal(U("ucum:eq"), U("val")),
 	             "ucum:eq is NOT the native val");
 	chk_factor("ucum:meq/L", 1.0);   /* mmol/L; m~val/L would be 0.5 */
+
+	/* The native eq stays an alias of val, by decision (doc/05, water
+	 * analysis): native meq/L is half of ucum:meq/L. */
+	ASSERT_TRUE(bvn_unit_equal(U("eq"), U("val")), "native eq is val");
+	ASSERT_FALSE(bvn_unit_equal(U("eq"), U("ucum:eq")),
+	             "native eq is NOT ucum:eq");
+	chk_factor("meq/L", 0.5);        /* the divalent equivalent */
 }
 
 /* ── arbitrary units ────────────────────────────────────────────────────── */

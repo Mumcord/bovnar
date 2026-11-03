@@ -1336,6 +1336,11 @@ their <em>mass</em>-per-litre definitions are not comparable and the amount conc
 <td>write <code>m~mol/L</code> for the amount directly</td>
 </tr>
 <tr>
+<td>a clinical <code>meq/L</code> (Na⁺, K⁺, Cl⁻) written natively</td>
+<td>native <code>eq</code> is <code>val</code>, so <code>meq/L</code> is ½ mmol/L — half of <code>ucum:meq/L</code></td>
+<td>write <code>ucum:meq/L</code> or <code>m~mol/L</code></td>
+</tr>
+<tr>
 <td>Expecting an exact conversion</td>
 <td>the degrees are derived from molar masses, so they carry <code>.exact = false</code></td>
 <td>ordinary conversion works; a lossless one reports <code>error_unit_inexact</code></td>
