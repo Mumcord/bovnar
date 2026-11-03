@@ -40,7 +40,7 @@ fn test_converted_rational_of_a_wide_result() {
     let mut seen = Vec::new();
     let mut want = |_: &EventData<'_>| {
         Some((
-            Unit::si(BaseUnit::METER, SIPrefix::NONE, Exponent::LINEAR),
+            Unit::si(BaseUnit::Meter, SIPrefix::None, Exponent::LINEAR),
             10,
         ))
     };

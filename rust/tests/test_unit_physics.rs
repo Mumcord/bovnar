@@ -40,31 +40,31 @@ fn compat(a: &str, b: &str) -> bool {
 }
 
 fn meter() -> Unit {
-    Unit::si(BaseUnit::METER, SIPrefix::NONE, Exponent::LINEAR)
+    Unit::si(BaseUnit::Meter, SIPrefix::None, Exponent::LINEAR)
 }
 
 fn km() -> Unit {
-    Unit::si(BaseUnit::METER, SIPrefix::KILO, Exponent::LINEAR)
+    Unit::si(BaseUnit::Meter, SIPrefix::Kilo, Exponent::LINEAR)
 }
 
 fn ms() -> Unit {
-    Unit::si(BaseUnit::SECOND, SIPrefix::MILLI, Exponent::LINEAR)
+    Unit::si(BaseUnit::Second, SIPrefix::Milli, Exponent::LINEAR)
 }
 
 fn kelvin() -> Unit {
-    Unit::si(BaseUnit::KELVIN, SIPrefix::NONE, Exponent::LINEAR)
+    Unit::si(BaseUnit::Kelvin, SIPrefix::None, Exponent::LINEAR)
 }
 
 fn celsius() -> Unit {
-    Unit::si(BaseUnit::CELSIUS, SIPrefix::NONE, Exponent::LINEAR)
+    Unit::si(BaseUnit::Celsius, SIPrefix::None, Exponent::LINEAR)
 }
 
 fn gram() -> Unit {
-    Unit::si(BaseUnit::GRAM, SIPrefix::NONE, Exponent::LINEAR)
+    Unit::si(BaseUnit::Gram, SIPrefix::None, Exponent::LINEAR)
 }
 
 fn kg() -> Unit {
-    Unit::si(BaseUnit::GRAM, SIPrefix::KILO, Exponent::LINEAR)
+    Unit::si(BaseUnit::Gram, SIPrefix::Kilo, Exponent::LINEAR)
 }
 
 fn m_per_s() -> Unit {
@@ -939,199 +939,199 @@ mod new_units_parsing_roundtrip {
     #[test]
     fn parse_gn() {
         let vu = p("gn");
-        assert_eq!(vu.components()[0].base, BaseUnit::STANDARD_GRAVITY);
+        assert_eq!(vu.components()[0].base, BaseUnit::StandardGravity);
     }
 
     #[test]
     fn parse_standard_gravity() {
         let vu = p("standard_gravity");
-        assert_eq!(vu.components()[0].base, BaseUnit::STANDARD_GRAVITY);
+        assert_eq!(vu.components()[0].base, BaseUnit::StandardGravity);
     }
 
     #[test]
     fn parse_ps() {
         let vu = p("PS");
-        assert_eq!(vu.components()[0].base, BaseUnit::METRIC_HORSEPOWER);
+        assert_eq!(vu.components()[0].base, BaseUnit::MetricHorsepower);
     }
 
     #[test]
     fn parse_cv() {
         let vu = p("CV");
-        assert_eq!(vu.components()[0].base, BaseUnit::METRIC_HORSEPOWER);
+        assert_eq!(vu.components()[0].base, BaseUnit::MetricHorsepower);
     }
 
     #[test]
     fn parse_metric_horsepower() {
         let vu = p("metric_horsepower");
-        assert_eq!(vu.components()[0].base, BaseUnit::METRIC_HORSEPOWER);
+        assert_eq!(vu.components()[0].base, BaseUnit::MetricHorsepower);
     }
 
     #[test]
     fn parse_rev() {
         let vu = p("rev");
-        assert_eq!(vu.components()[0].base, BaseUnit::REVOLUTION);
+        assert_eq!(vu.components()[0].base, BaseUnit::Revolution);
     }
 
     #[test]
     fn parse_turn() {
         let vu = p("turn");
-        assert_eq!(vu.components()[0].base, BaseUnit::REVOLUTION);
+        assert_eq!(vu.components()[0].base, BaseUnit::Revolution);
     }
 
     #[test]
     fn parse_revolution() {
         let vu = p("revolution");
-        assert_eq!(vu.components()[0].base, BaseUnit::REVOLUTION);
+        assert_eq!(vu.components()[0].base, BaseUnit::Revolution);
     }
 
     #[test]
     fn parse_revolutions() {
         let vu = p("revolutions");
-        assert_eq!(vu.components()[0].base, BaseUnit::REVOLUTION);
+        assert_eq!(vu.components()[0].base, BaseUnit::Revolution);
     }
 
     #[test]
     fn parse_turns() {
         let vu = p("turns");
-        assert_eq!(vu.components()[0].base, BaseUnit::REVOLUTION);
+        assert_eq!(vu.components()[0].base, BaseUnit::Revolution);
     }
 
     #[test]
     fn parse_mo() {
         let vu = p("mo");
-        assert_eq!(vu.components()[0].base, BaseUnit::MONTH);
+        assert_eq!(vu.components()[0].base, BaseUnit::Month);
     }
 
     #[test]
     fn parse_month() {
         let vu = p("month");
-        assert_eq!(vu.components()[0].base, BaseUnit::MONTH);
+        assert_eq!(vu.components()[0].base, BaseUnit::Month);
     }
 
     #[test]
     fn parse_months() {
         let vu = p("months");
-        assert_eq!(vu.components()[0].base, BaseUnit::MONTH);
+        assert_eq!(vu.components()[0].base, BaseUnit::Month);
     }
 
     #[test]
     fn parse_fn() {
         let vu = p("fn");
-        assert_eq!(vu.components()[0].base, BaseUnit::FORTNIGHT);
+        assert_eq!(vu.components()[0].base, BaseUnit::Fortnight);
     }
 
     #[test]
     fn parse_fortnight() {
         let vu = p("fortnight");
-        assert_eq!(vu.components()[0].base, BaseUnit::FORTNIGHT);
+        assert_eq!(vu.components()[0].base, BaseUnit::Fortnight);
     }
 
     #[test]
     fn parse_fortnights() {
         let vu = p("fortnights");
-        assert_eq!(vu.components()[0].base, BaseUnit::FORTNIGHT);
+        assert_eq!(vu.components()[0].base, BaseUnit::Fortnight);
     }
 
     #[test]
     fn parse_at() {
         let vu = p("at");
-        assert_eq!(vu.components()[0].base, BaseUnit::ATMOSPHERE_TECHNICAL);
+        assert_eq!(vu.components()[0].base, BaseUnit::AtmosphereTechnical);
     }
 
     #[test]
     fn parse_atmosphere_technical() {
         let vu = p("atmosphere_technical");
-        assert_eq!(vu.components()[0].base, BaseUnit::ATMOSPHERE_TECHNICAL);
+        assert_eq!(vu.components()[0].base, BaseUnit::AtmosphereTechnical);
     }
 
     #[test]
     fn parse_tex() {
         let vu = p("tex");
-        assert_eq!(vu.components()[0].base, BaseUnit::TEX);
+        assert_eq!(vu.components()[0].base, BaseUnit::Tex);
     }
 
     #[test]
     fn parse_den() {
         let vu = p("den");
-        assert_eq!(vu.components()[0].base, BaseUnit::DENIER);
+        assert_eq!(vu.components()[0].base, BaseUnit::Denier);
     }
 
     #[test]
     fn parse_denier() {
         let vu = p("denier");
-        assert_eq!(vu.components()[0].base, BaseUnit::DENIER);
+        assert_eq!(vu.components()[0].base, BaseUnit::Denier);
     }
 
     #[test]
     fn parse_deniers() {
         let vu = p("deniers");
-        assert_eq!(vu.components()[0].base, BaseUnit::DENIER);
+        assert_eq!(vu.components()[0].base, BaseUnit::Denier);
     }
 
     #[test]
     fn parse_fl_dr() {
         let vu = p("fl_dr");
-        assert_eq!(vu.components()[0].base, BaseUnit::FLUID_DRAM);
+        assert_eq!(vu.components()[0].base, BaseUnit::FluidDram);
     }
 
     #[test]
     fn parse_fluid_dram() {
         let vu = p("fluid_dram");
-        assert_eq!(vu.components()[0].base, BaseUnit::FLUID_DRAM);
+        assert_eq!(vu.components()[0].base, BaseUnit::FluidDram);
     }
 
     #[test]
     fn parse_fluid_drams() {
         let vu = p("fluid_drams");
-        assert_eq!(vu.components()[0].base, BaseUnit::FLUID_DRAM);
+        assert_eq!(vu.components()[0].base, BaseUnit::FluidDram);
     }
 
     #[test]
     fn parse_minim() {
         let vu = p("minim");
-        assert_eq!(vu.components()[0].base, BaseUnit::MINIM);
+        assert_eq!(vu.components()[0].base, BaseUnit::Minim);
     }
 
     #[test]
     fn parse_minims() {
         let vu = p("minims");
-        assert_eq!(vu.components()[0].base, BaseUnit::MINIM);
+        assert_eq!(vu.components()[0].base, BaseUnit::Minim);
     }
 
     #[test]
     fn parse_pk() {
         let vu = p("pk");
-        assert_eq!(vu.components()[0].base, BaseUnit::PECK);
+        assert_eq!(vu.components()[0].base, BaseUnit::Peck);
     }
 
     #[test]
     fn parse_peck() {
         let vu = p("peck");
-        assert_eq!(vu.components()[0].base, BaseUnit::PECK);
+        assert_eq!(vu.components()[0].base, BaseUnit::Peck);
     }
 
     #[test]
     fn parse_pecks() {
         let vu = p("pecks");
-        assert_eq!(vu.components()[0].base, BaseUnit::PECK);
+        assert_eq!(vu.components()[0].base, BaseUnit::Peck);
     }
 
     #[test]
     fn parse_bsh() {
         let vu = p("bsh");
-        assert_eq!(vu.components()[0].base, BaseUnit::BUSHEL);
+        assert_eq!(vu.components()[0].base, BaseUnit::Bushel);
     }
 
     #[test]
     fn parse_bushel() {
         let vu = p("bushel");
-        assert_eq!(vu.components()[0].base, BaseUnit::BUSHEL);
+        assert_eq!(vu.components()[0].base, BaseUnit::Bushel);
     }
 
     #[test]
     fn parse_bushels() {
         let vu = p("bushels");
-        assert_eq!(vu.components()[0].base, BaseUnit::BUSHEL);
+        assert_eq!(vu.components()[0].base, BaseUnit::Bushel);
     }
 
     #[test]

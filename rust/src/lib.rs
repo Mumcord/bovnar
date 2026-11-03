@@ -22,8 +22,8 @@ pub mod writer;
 
 pub use dom::{DomDoc, DomNode, DomType};
 pub use enums::{
-    BaseUnit, ErrorCode, Event, Exponent, IECPrefix, PrefixSystem, SIPrefix, TokenType,
-    ValueTypeFamily,
+    BaseUnit, ErrorCode, Event, Exponent, IECPrefix, Prefix, PrefixSystem, SIPrefix, TokenType,
+    UnknownValue, ValueTypeFamily,
 };
 pub use error::{Error, Result};
 pub use ffi::ValueTypeSpec;

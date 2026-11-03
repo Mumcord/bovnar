@@ -8,7 +8,6 @@
 
 use std::collections::BTreeSet;
 
-use bovnar::BaseUnit;
 use bovnar::currency::{
     all_crypto, all_currencies, all_fiat, currency_info, from_code, is_crypto, is_currency,
     is_fiat, minor_unit,
@@ -17,19 +16,20 @@ use bovnar::enums::{
     CURRENCY_COUNT, CURRENCY_FIRST, CURRENCY_LAST, UNIT_BLOCK_SIZE, UNIT_NATIVE_FIRST,
     UNIT_NATIVE_LAST,
 };
+use bovnar::{BaseUnit, Exponent, PrefixSystem, SIPrefix};
 
-fn all_currency_bases() -> Vec<i32> {
+fn all_currency_bases() -> Vec<BaseUnit> {
     BaseUnit::MEMBERS
         .iter()
         .map(|m| m.1)
-        .filter(|b| (CURRENCY_FIRST..=CURRENCY_LAST).contains(b))
+        .filter(|b| (CURRENCY_FIRST..=CURRENCY_LAST).contains(&(*b as i32)))
         .collect()
 }
 
 fn physical_names() -> BTreeSet<&'static str> {
     BaseUnit::MEMBERS
         .iter()
-        .filter(|m| m.1 <= UNIT_NATIVE_LAST)
+        .filter(|m| m.1 as i32 <= UNIT_NATIVE_LAST)
         .map(|m| m.0)
         .collect()
 }
@@ -45,7 +45,10 @@ fn test_block_start() {
 fn test_run_is_contiguous() {
     let mut bases = all_currency_bases();
     bases.sort();
-    assert_eq!(bases, (CURRENCY_FIRST..=CURRENCY_LAST).collect::<Vec<_>>());
+    assert_eq!(
+        bases.iter().map(|b| *b as i32).collect::<Vec<_>>(),
+        (CURRENCY_FIRST..=CURRENCY_LAST).collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -69,7 +72,7 @@ fn test_units_and_currencies_do_not_overlap() {
 fn test_currencies_added_after_release_are_ordinary_rows() {
     for code in ["ZWG", "XCG"] {
         let base = BaseUnit::from_name(code).unwrap();
-        assert!((CURRENCY_FIRST..=CURRENCY_LAST).contains(&base));
+        assert!((CURRENCY_FIRST..=CURRENCY_LAST).contains(&(base as i32)));
         assert!(is_fiat(base) && !is_crypto(base));
     }
 }
@@ -122,27 +125,27 @@ fn test_fiat_metadata() {
 
 #[test]
 fn test_aed_enum_value() {
-    assert_eq!(BaseUnit::AED, 900000);
+    assert_eq!(BaseUnit::Aed as i32, 900000);
 }
 
 #[test]
 fn test_zwl_enum_value() {
-    assert_eq!(BaseUnit::ZWL, 900165);
+    assert_eq!(BaseUnit::Zwl as i32, 900165);
 }
 
 #[test]
 fn test_usd_enum_value() {
-    assert_eq!(BaseUnit::USD, 900143);
+    assert_eq!(BaseUnit::Usd as i32, 900143);
 }
 
 #[test]
 fn test_eur_enum_value() {
-    assert_eq!(BaseUnit::EUR, 900043);
+    assert_eq!(BaseUnit::Eur as i32, 900043);
 }
 
 #[test]
 fn test_jpy_enum_value() {
-    assert_eq!(BaseUnit::JPY, 900067);
+    assert_eq!(BaseUnit::Jpy as i32, 900067);
 }
 
 // ── TestCryptoMetadata ────────────────────────────────────────────────────
@@ -189,47 +192,47 @@ fn test_crypto_metadata() {
 
 #[test]
 fn test_btc_enum_value() {
-    assert_eq!(BaseUnit::BTC, 900166);
+    assert_eq!(BaseUnit::Btc as i32, 900166);
 }
 
 #[test]
 fn test_eth_enum_value() {
-    assert_eq!(BaseUnit::ETH, 900167);
+    assert_eq!(BaseUnit::Eth as i32, 900167);
 }
 
 #[test]
 fn test_atom_enum_value() {
-    assert_eq!(BaseUnit::ATOM, 900199);
+    assert_eq!(BaseUnit::Atom as i32, 900199);
 }
 
 #[test]
 fn test_doge_is_4_char() {
-    assert_eq!(BaseUnit::name(BaseUnit::DOGE).unwrap().len(), 4);
+    assert_eq!(BaseUnit::Doge.name().len(), 4);
 }
 
 #[test]
 fn test_link_is_4_char() {
-    assert_eq!(BaseUnit::name(BaseUnit::LINK).unwrap().len(), 4);
+    assert_eq!(BaseUnit::Link.name().len(), 4);
 }
 
 #[test]
 fn test_usdt_is_4_char() {
-    assert_eq!(BaseUnit::name(BaseUnit::USDT).unwrap().len(), 4);
+    assert_eq!(BaseUnit::Usdt.name().len(), 4);
 }
 
 #[test]
 fn test_usdc_is_4_char() {
-    assert_eq!(BaseUnit::name(BaseUnit::USDC).unwrap().len(), 4);
+    assert_eq!(BaseUnit::Usdc.name().len(), 4);
 }
 
 #[test]
 fn test_avax_is_4_char() {
-    assert_eq!(BaseUnit::name(BaseUnit::AVAX).unwrap().len(), 4);
+    assert_eq!(BaseUnit::Avax.name().len(), 4);
 }
 
 #[test]
 fn test_atom_is_4_char() {
-    assert_eq!(BaseUnit::name(BaseUnit::ATOM).unwrap().len(), 4);
+    assert_eq!(BaseUnit::Atom.name().len(), 4);
 }
 
 // ── TestPredicates ────────────────────────────────────────────────────────
@@ -237,14 +240,14 @@ fn test_atom_is_4_char() {
 #[test]
 fn test_is_currency_true() {
     for base in [
-        BaseUnit::USD,
-        BaseUnit::EUR,
-        BaseUnit::JPY,
-        BaseUnit::XAU,
-        BaseUnit::BTC,
-        BaseUnit::ETH,
-        BaseUnit::DOGE,
-        BaseUnit::USDT,
+        BaseUnit::Usd,
+        BaseUnit::Eur,
+        BaseUnit::Jpy,
+        BaseUnit::Xau,
+        BaseUnit::Btc,
+        BaseUnit::Eth,
+        BaseUnit::Doge,
+        BaseUnit::Usdt,
     ] {
         assert!(is_currency(base), "{base}");
     }
@@ -253,14 +256,14 @@ fn test_is_currency_true() {
 #[test]
 fn test_is_currency_false_physical() {
     for base in [
-        BaseUnit::NONE,
-        BaseUnit::METER,
-        BaseUnit::GRAM,
-        BaseUnit::SECOND,
-        BaseUnit::HERTZ,
-        BaseUnit::PASCAL,
-        BaseUnit::BUSHEL,
-        BaseUnit::DENIER,
+        BaseUnit::None,
+        BaseUnit::Meter,
+        BaseUnit::Gram,
+        BaseUnit::Second,
+        BaseUnit::Hertz,
+        BaseUnit::Pascal,
+        BaseUnit::Bushel,
+        BaseUnit::Denier,
     ] {
         assert!(!is_currency(base), "{base}");
     }
@@ -269,11 +272,11 @@ fn test_is_currency_false_physical() {
 #[test]
 fn test_is_fiat_true() {
     for base in [
-        BaseUnit::USD,
-        BaseUnit::EUR,
-        BaseUnit::GBP,
-        BaseUnit::XAU,
-        BaseUnit::XDR,
+        BaseUnit::Usd,
+        BaseUnit::Eur,
+        BaseUnit::Gbp,
+        BaseUnit::Xau,
+        BaseUnit::Xdr,
     ] {
         assert!(is_fiat(base), "{base}");
     }
@@ -281,7 +284,7 @@ fn test_is_fiat_true() {
 
 #[test]
 fn test_is_fiat_false_for_crypto() {
-    for base in [BaseUnit::BTC, BaseUnit::ETH, BaseUnit::SOL, BaseUnit::DOGE] {
+    for base in [BaseUnit::Btc, BaseUnit::Eth, BaseUnit::Sol, BaseUnit::Doge] {
         assert!(!is_fiat(base), "{base}");
     }
 }
@@ -289,11 +292,11 @@ fn test_is_fiat_false_for_crypto() {
 #[test]
 fn test_is_crypto_true() {
     for base in [
-        BaseUnit::BTC,
-        BaseUnit::ETH,
-        BaseUnit::SOL,
-        BaseUnit::DOGE,
-        BaseUnit::USDT,
+        BaseUnit::Btc,
+        BaseUnit::Eth,
+        BaseUnit::Sol,
+        BaseUnit::Doge,
+        BaseUnit::Usdt,
     ] {
         assert!(is_crypto(base), "{base}");
     }
@@ -301,7 +304,7 @@ fn test_is_crypto_true() {
 
 #[test]
 fn test_is_crypto_false() {
-    for base in [BaseUnit::USD, BaseUnit::EUR, BaseUnit::XAU, BaseUnit::METER] {
+    for base in [BaseUnit::Usd, BaseUnit::Eur, BaseUnit::Xau, BaseUnit::Meter] {
         assert!(!is_crypto(base), "{base}");
     }
 }
@@ -311,15 +314,15 @@ fn test_is_crypto_false() {
 #[test]
 fn test_from_code_exact() {
     for (code, expected) in [
-        ("USD", BaseUnit::USD),
-        ("EUR", BaseUnit::EUR),
-        ("JPY", BaseUnit::JPY),
-        ("BTC", BaseUnit::BTC),
-        ("ETH", BaseUnit::ETH),
-        ("DOGE", BaseUnit::DOGE),
-        ("USDT", BaseUnit::USDT),
-        ("AVAX", BaseUnit::AVAX),
-        ("XAU", BaseUnit::XAU),
+        ("USD", BaseUnit::Usd),
+        ("EUR", BaseUnit::Eur),
+        ("JPY", BaseUnit::Jpy),
+        ("BTC", BaseUnit::Btc),
+        ("ETH", BaseUnit::Eth),
+        ("DOGE", BaseUnit::Doge),
+        ("USDT", BaseUnit::Usdt),
+        ("AVAX", BaseUnit::Avax),
+        ("XAU", BaseUnit::Xau),
     ] {
         assert_eq!(from_code(code).unwrap(), expected, "{code}");
     }
@@ -398,73 +401,73 @@ fn test_zero_decimal_currencies() {
 
 #[test]
 fn test_clf_is_4_decimals() {
-    assert_eq!(minor_unit(BaseUnit::CLF).unwrap(), 4);
+    assert_eq!(minor_unit(BaseUnit::Clf).unwrap(), 4);
 }
 
 // ── TestCryptoMinorUnits ──────────────────────────────────────────────────
 
 #[test]
 fn test_btc_satoshi() {
-    assert_eq!(minor_unit(BaseUnit::BTC).unwrap(), 8);
+    assert_eq!(minor_unit(BaseUnit::Btc).unwrap(), 8);
 }
 
 #[test]
 fn test_eth_wei() {
-    assert_eq!(minor_unit(BaseUnit::ETH).unwrap(), 18);
+    assert_eq!(minor_unit(BaseUnit::Eth).unwrap(), 18);
 }
 
 #[test]
 fn test_sol_lamport() {
-    assert_eq!(minor_unit(BaseUnit::SOL).unwrap(), 9);
+    assert_eq!(minor_unit(BaseUnit::Sol).unwrap(), 9);
 }
 
 #[test]
 fn test_xrp_drop() {
-    assert_eq!(minor_unit(BaseUnit::XRP).unwrap(), 6);
+    assert_eq!(minor_unit(BaseUnit::Xrp).unwrap(), 6);
 }
 
 #[test]
 fn test_xlm_stroop() {
-    assert_eq!(minor_unit(BaseUnit::XLM).unwrap(), 7);
+    assert_eq!(minor_unit(BaseUnit::Xlm).unwrap(), 7);
 }
 
 #[test]
 fn test_dot_planck() {
-    assert_eq!(minor_unit(BaseUnit::DOT).unwrap(), 10);
+    assert_eq!(minor_unit(BaseUnit::Dot).unwrap(), 10);
 }
 
 #[test]
 fn test_xmr_piconero() {
-    assert_eq!(minor_unit(BaseUnit::XMR).unwrap(), 12);
+    assert_eq!(minor_unit(BaseUnit::Xmr).unwrap(), 12);
 }
 
 #[test]
 fn test_eos_four_decimals() {
-    assert_eq!(minor_unit(BaseUnit::EOS).unwrap(), 4);
+    assert_eq!(minor_unit(BaseUnit::Eos).unwrap(), 4);
 }
 
 #[test]
 fn test_neo_is_indivisible() {
     // NEO cannot be held or transferred fractionally; the 8 decimals belong
     // to its companion gas token.
-    assert_eq!(minor_unit(BaseUnit::NEO).unwrap(), 0);
+    assert_eq!(minor_unit(BaseUnit::Neo).unwrap(), 0);
 }
 
 #[test]
 fn test_usdt_six_decimals() {
-    assert_eq!(minor_unit(BaseUnit::USDT).unwrap(), 6);
+    assert_eq!(minor_unit(BaseUnit::Usdt).unwrap(), 6);
 }
 
 #[test]
 fn test_usdc_six_decimals() {
-    assert_eq!(minor_unit(BaseUnit::USDC).unwrap(), 6);
+    assert_eq!(minor_unit(BaseUnit::Usdc).unwrap(), 6);
 }
 
 // ── TestCurrencyInfoImmutable ─────────────────────────────────────────────
 
 #[test]
 fn test_str_returns_code() {
-    assert_eq!(currency_info(BaseUnit::EUR).unwrap().to_string(), "EUR");
+    assert_eq!(currency_info(BaseUnit::Eur).unwrap().to_string(), "EUR");
 }
 
 // ── TestFromCodeCaseFolding ───────────────────────────────────────────────
@@ -472,21 +475,21 @@ fn test_str_returns_code() {
 #[test]
 fn test_case_insensitive() {
     for variant in ["usd", "USD", "Usd", " USD ", "uSD"] {
-        assert_eq!(from_code(variant).unwrap(), BaseUnit::USD, "{variant:?}");
+        assert_eq!(from_code(variant).unwrap(), BaseUnit::Usd, "{variant:?}");
     }
 }
 
 #[test]
 fn test_crypto_case_insensitive() {
     for variant in ["btc", "BTC", "Btc"] {
-        assert_eq!(from_code(variant).unwrap(), BaseUnit::BTC, "{variant:?}");
+        assert_eq!(from_code(variant).unwrap(), BaseUnit::Btc, "{variant:?}");
     }
 }
 
 #[test]
 fn test_four_char_case_insensitive() {
     for variant in ["doge", "DOGE", "Doge"] {
-        assert_eq!(from_code(variant).unwrap(), BaseUnit::DOGE, "{variant:?}");
+        assert_eq!(from_code(variant).unwrap(), BaseUnit::Doge, "{variant:?}");
     }
 }
 
@@ -566,7 +569,7 @@ fn test_physical_unit_enum_names_do_not_appear_as_currency_member_names() {
     let physical = physical_names();
     let currency_member_names: BTreeSet<&str> = BaseUnit::MEMBERS
         .iter()
-        .filter(|m| (CURRENCY_FIRST..=CURRENCY_LAST).contains(&m.1))
+        .filter(|m| (CURRENCY_FIRST..=CURRENCY_LAST).contains(&(m.1 as i32)))
         .map(|m| m.0)
         .collect();
     let clash: Vec<_> = physical.intersection(&currency_member_names).collect();
@@ -577,7 +580,7 @@ fn test_physical_unit_enum_names_do_not_appear_as_currency_member_names() {
 
 #[test]
 fn test_every_currency_base_has_table_entry() {
-    let missing: Vec<i32> = all_currency_bases()
+    let missing: Vec<BaseUnit> = all_currency_bases()
         .into_iter()
         .filter(|&b| currency_info(b).is_err())
         .collect();
@@ -599,37 +602,37 @@ const KNOWN_DISAMBIGUATIONS: [(&str, &str); 1] = [("CUP", "CUP_")];
 
 #[test]
 fn test_cup_physical_unit_is_still_present() {
-    assert_eq!(BaseUnit::CUP, 100080);
+    assert_eq!(BaseUnit::Cup as i32, 100080);
 }
 
 #[test]
 fn test_cup_cuban_peso_is_cup_underscore() {
-    assert_eq!(BaseUnit::CUP_, 900033);
+    assert_eq!(BaseUnit::Cup_ as i32, 900033);
 }
 
 #[test]
 fn test_cup_wire_code_is_still_cup() {
-    assert_eq!(currency_info(BaseUnit::CUP_).unwrap().code, "CUP");
+    assert_eq!(currency_info(BaseUnit::Cup_).unwrap().code, "CUP");
 }
 
 #[test]
 fn test_cup_from_code_returns_cuban_peso() {
-    assert_eq!(from_code("CUP").unwrap(), BaseUnit::CUP_);
+    assert_eq!(from_code("CUP").unwrap(), BaseUnit::Cup_);
 }
 
 #[test]
 fn test_cup_from_code_does_not_return_physical_cup() {
-    assert_ne!(from_code("CUP").unwrap(), BaseUnit::CUP);
+    assert_ne!(from_code("CUP").unwrap(), BaseUnit::Cup);
 }
 
 #[test]
 fn test_physical_cup_is_not_a_currency() {
-    assert!(!is_currency(BaseUnit::CUP));
+    assert!(!is_currency(BaseUnit::Cup));
 }
 
 #[test]
 fn test_cuban_peso_is_a_fiat_currency() {
-    assert!(is_fiat(BaseUnit::CUP_));
+    assert!(is_fiat(BaseUnit::Cup_));
 }
 
 #[test]
@@ -649,7 +652,7 @@ fn test_disambiguated_names_not_in_physical_range() {
     for (_, enum_name) in KNOWN_DISAMBIGUATIONS {
         let member = BaseUnit::from_name(enum_name).unwrap();
         assert!(
-            member >= CURRENCY_FIRST,
+            member as i32 >= CURRENCY_FIRST,
             "{enum_name} is in the physical range"
         );
     }
@@ -666,7 +669,7 @@ fn test_no_sentinel() {
 fn test_native_units_are_one_contiguous_run() {
     let mut native: Vec<i32> = BaseUnit::MEMBERS
         .iter()
-        .map(|m| m.1)
+        .map(|m| m.1 as i32)
         .filter(|b| (UNIT_NATIVE_FIRST..=UNIT_NATIVE_LAST).contains(b))
         .collect();
     native.sort();
@@ -678,11 +681,15 @@ fn test_native_units_are_one_contiguous_run() {
 
 #[test]
 fn test_every_member_is_none_a_unit_or_a_currency() {
+    // Rust's BaseUnit also covers the profiles' opaque ids (Python's does
+    // not): each is a unit only a profile notation can spell.
+    let profile_only = |b| bovnar::Unit::si(b, SIPrefix::None, Exponent::LINEAR).is_profile_only();
     for &(name, b) in BaseUnit::MEMBERS {
         assert!(
-            b == 0
-                || (UNIT_NATIVE_FIRST..=UNIT_NATIVE_LAST).contains(&b)
-                || (CURRENCY_FIRST..=CURRENCY_LAST).contains(&b),
+            b == BaseUnit::None
+                || (UNIT_NATIVE_FIRST..=UNIT_NATIVE_LAST).contains(&(b as i32))
+                || (CURRENCY_FIRST..=CURRENCY_LAST).contains(&(b as i32))
+                || profile_only(b),
             "{name}"
         );
     }
@@ -692,11 +699,11 @@ fn test_every_member_is_none_a_unit_or_a_currency() {
 // The contract of bvn_currency_prefix_valid(base, prefix_system), checked
 // without calling C code.
 
-const SI: i32 = 0;
-const IEC: i32 = 1;
+const SI: PrefixSystem = PrefixSystem::Si;
+const IEC: PrefixSystem = PrefixSystem::Iec;
 
-fn prefix_valid(base: i32, prefix_system: i32) -> bool {
-    if (CURRENCY_FIRST..=CURRENCY_LAST).contains(&base) {
+fn prefix_valid(base: BaseUnit, prefix_system: PrefixSystem) -> bool {
+    if (CURRENCY_FIRST..=CURRENCY_LAST).contains(&(base as i32)) {
         return prefix_system != IEC;
     }
     true
@@ -718,7 +725,7 @@ fn test_si_prefix_valid_on_currency() {
 
 #[test]
 fn test_iec_prefix_valid_on_physical_units_not_blocked() {
-    for base in [BaseUnit::METER, BaseUnit::GRAM, BaseUnit::SECOND] {
+    for base in [BaseUnit::Meter, BaseUnit::Gram, BaseUnit::Second] {
         assert!(prefix_valid(base, IEC), "{base}");
     }
 }

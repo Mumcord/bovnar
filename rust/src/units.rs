@@ -1,6 +1,7 @@
 //! Unit parsing, formatting and conversion helpers, mirroring
 //! `python/bovnar/units.py` and the unit functions of `bovnar/__init__.py`.
 
+use crate::enums::{BaseUnit, Exponent, Prefix};
 use crate::error::{Error, Result};
 use crate::ffi::{self, PrefixId, ValueUnitPrefix, unit_fns};
 use crate::unit::Unit;
@@ -115,14 +116,14 @@ pub fn unit_prefix_exponent(unit: &Unit) -> i32 {
     unit_fns::prefix_exponent(unit.0)
 }
 
-/// True when prefix `prefix` of `system` (Python's `PrefixSystem`) may
-/// stand before base unit `base`.
-pub fn prefix_unit_valid(system: i32, prefix: i32, base: i32) -> bool {
+/// True when `prefix` (Python's `system` and `prefix`) may stand before base
+/// unit `base`.
+pub fn prefix_unit_valid(prefix: Prefix, base: BaseUnit) -> bool {
     let p = ValueUnitPrefix {
-        system,
-        id: PrefixId { si: prefix },
+        system: prefix.system() as i32,
+        id: PrefixId { si: prefix.id() },
     };
-    unit_fns::prefix_unit_valid(p, base)
+    unit_fns::prefix_unit_valid(p, base as i32)
 }
 
 /// The SI conversion of `unit`; fails for a unit with none (a currency).
@@ -187,14 +188,15 @@ pub fn unit_reduce(unit: &Unit) -> Result<ReducedUnit> {
     })
 }
 
-/// The integer power of a C `unit_exponent_t` code.
-pub fn exponent_to_int(exp: i32) -> i32 {
-    unit_fns::exponent_to_int(exp)
+/// The integer power of an exponent (`bvn_exponent_to_int`).
+pub fn exponent_to_int(exp: Exponent) -> i32 {
+    unit_fns::exponent_to_int(exp.get())
 }
 
-/// The C `unit_exponent_t` code of power `n` (-9..9).
-pub fn int_to_exponent(n: i32) -> i32 {
-    unit_fns::int_to_exponent(n)
+/// The exponent of power `n` (`bvn_int_to_exponent`); [`Exponent::INVALID`]
+/// for a power the library has no exponent for.
+pub fn int_to_exponent(n: i32) -> Exponent {
+    Exponent::from_raw(unit_fns::int_to_exponent(n)).unwrap_or(Exponent::INVALID)
 }
 
 /// `value` in `from` converted to `to`, affine conversions included.

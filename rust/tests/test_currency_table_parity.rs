@@ -5,8 +5,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use bovnar::Value;
 use bovnar::currency::{self as cur, CurrencyInfo};
+use bovnar::{BaseUnit, Value};
 
 /// One record of `currencies.bvnr`.
 struct SrcRow {
@@ -39,7 +39,7 @@ fn text(v: &Value) -> String {
     }
 }
 
-fn tables() -> (BTreeMap<i32, SrcRow>, BTreeMap<i32, CurrencyInfo>) {
+fn tables() -> (BTreeMap<BaseUnit, SrcRow>, BTreeMap<BaseUnit, CurrencyInfo>) {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../src/gendata/currencies.bvnr"
@@ -61,7 +61,7 @@ fn tables() -> (BTreeMap<i32, SrcRow>, BTreeMap<i32, CurrencyInfo>) {
             other => panic!("expected a bool, got {other:?}"),
         };
         src.insert(
-            int(field(r, "id")) as i32,
+            BaseUnit::from_raw(int(field(r, "id")) as i32).expect("a BaseUnit for every row"),
             SrcRow {
                 code: text(field(r, "code")),
                 numeric_code: int(field(r, "numeric_code")),
@@ -168,7 +168,12 @@ fn test_the_range_predicates_agree_with_the_source() {
 
 #[test]
 fn test_non_currency_bases_are_rejected() {
-    for base in [0, 1, 133, 348, 377, 380, 396, 397, 100000] {
+    // Ids that name no BaseUnit cannot be passed at all now; the rest must
+    // not be currencies.
+    for base in [0, 1, 133, 348, 377, 380, 396, 397, 100000]
+        .into_iter()
+        .filter_map(BaseUnit::from_raw)
+    {
         assert!(
             !cur::is_currency(base),
             "base {base} is a physical unit or out of range, not a currency"

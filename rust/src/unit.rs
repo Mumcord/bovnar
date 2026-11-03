@@ -3,71 +3,92 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use crate::enums::{Exponent, PrefixSystem, SIPrefix};
+use crate::enums::{BaseUnit, Exponent, IECPrefix, Prefix, PrefixSystem, SIPrefix};
 use crate::error::{Error, Result};
 use crate::ffi::{self, PrefixId, ValueUnit, ValueUnitComponent, ValueUnitPrefix, unit_fns};
 
 pub use crate::ffi::MAX_UNIT_COMPONENTS;
 
 /// One factor of a unit (`value_unit_component_t`): a base unit with its
-/// prefix and exponent. Python's `ValueUnitComponent`; `prefix` is the SI or
-/// IEC prefix id, as `prefix_system` says. Components compare by value; an
+/// prefix and exponent. Python's `ValueUnitComponent`, whose `prefix_system`
+/// and `prefix` are one [`Prefix`] here. Components compare by value; an
 /// unprefixed component equals whatever its prefix system, as in Python.
 #[derive(Clone, Copy, Debug)]
 pub struct UnitComponent {
-    pub base: i32,
-    pub exponent: i32,
-    pub prefix_system: i32,
-    pub prefix: i32,
+    pub base: BaseUnit,
+    pub exponent: Exponent,
+    pub prefix: Prefix,
 }
 
 impl UnitComponent {
-    /// `base` with an SI prefix (`SIPrefix::NONE` for none).
-    pub fn si(base: i32, prefix: i32, exponent: i32) -> Self {
+    /// `base` with an SI prefix (`SIPrefix::None` for none).
+    pub fn si(base: BaseUnit, prefix: SIPrefix, exponent: Exponent) -> Self {
         UnitComponent {
             base,
             exponent,
-            prefix_system: PrefixSystem::SI,
-            prefix,
+            prefix: Prefix::Si(prefix),
         }
     }
 
     /// `base` with an IEC prefix.
-    pub fn iec(base: i32, prefix: i32, exponent: i32) -> Self {
+    pub fn iec(base: BaseUnit, prefix: IECPrefix, exponent: Exponent) -> Self {
         UnitComponent {
             base,
             exponent,
-            prefix_system: PrefixSystem::IEC,
-            prefix,
+            prefix: Prefix::Iec(prefix),
         }
     }
 
-    /// The prefix as compared: `(system, id)`, or `(0, 0)` without a prefix.
-    pub fn prefix_key(&self) -> (i32, i32) {
-        if self.prefix == 0 {
-            (0, 0)
+    /// The prefix system (Python's `prefix_system`).
+    pub fn prefix_system(&self) -> PrefixSystem {
+        self.prefix.system()
+    }
+
+    /// The prefix as compared: `(system, id)`, or `(Si, 0)` without a prefix.
+    pub fn prefix_key(&self) -> (PrefixSystem, i32) {
+        if self.prefix.is_none() {
+            (PrefixSystem::Si, 0)
         } else {
-            (self.prefix_system, self.prefix)
+            (self.prefix.system(), self.prefix.id())
         }
     }
 
-    fn key(&self) -> (i32, i32, (i32, i32)) {
+    fn key(&self) -> (BaseUnit, Exponent, (PrefixSystem, i32)) {
         (self.base, self.exponent, self.prefix_key())
     }
 
     fn raw(self) -> ValueUnitComponent {
-        let id = if self.prefix_system == PrefixSystem::IEC {
-            PrefixId { iec: self.prefix }
-        } else {
-            PrefixId { si: self.prefix }
+        let id = match self.prefix {
+            Prefix::Iec(p) => PrefixId { iec: p as i32 },
+            Prefix::Si(p) => PrefixId { si: p as i32 },
         };
         ValueUnitComponent {
-            base: self.base,
-            exponent: self.exponent,
+            base: self.base as i32,
+            exponent: self.exponent.get(),
             prefix: ValueUnitPrefix {
-                system: self.prefix_system,
+                system: self.prefix.system() as i32,
                 id,
             },
+        }
+    }
+
+    /// The component of a C `value_unit_component_t`. The library is built
+    /// from the same tables as [`BaseUnit`], and validates prefixes and
+    /// exponents, so every component it hands out has a Rust form; a value
+    /// that had none would be a build fault, not input, hence the panic.
+    fn from_c(c: &ValueUnitComponent) -> Self {
+        UnitComponent {
+            base: BaseUnit::from_raw(c.base)
+                .unwrap_or_else(|| panic!("C base unit {} is not in BaseUnit", c.base)),
+            exponent: Exponent::from_raw(c.exponent)
+                .unwrap_or_else(|| panic!("C exponent {} is out of range", c.exponent)),
+            prefix: Prefix::from_raw(c.prefix.system, c.prefix.id_raw()).unwrap_or_else(|| {
+                panic!(
+                    "C prefix ({}, {}) is not a known prefix",
+                    c.prefix.system,
+                    c.prefix.id_raw()
+                )
+            }),
         }
     }
 }
@@ -108,20 +129,24 @@ impl Unit {
     }
 
     /// One SI-prefixed base unit (Python's `make_unit_si`).
-    pub fn si(base: i32, prefix: i32, exponent: i32) -> Self {
+    pub fn si(base: BaseUnit, prefix: SIPrefix, exponent: Exponent) -> Self {
         Self::one(UnitComponent::si(base, prefix, exponent))
     }
 
     /// One IEC-prefixed base unit (Python's `make_unit_iec`).
-    pub fn iec(base: i32, prefix: i32, exponent: i32) -> Self {
+    pub fn iec(base: BaseUnit, prefix: IECPrefix, exponent: Exponent) -> Self {
         Self::one(UnitComponent::iec(base, prefix, exponent))
     }
 
-    /// The explicit dimensionless unit: one `BaseUnit::NONE` component
+    /// The explicit dimensionless unit: one `BaseUnit::None` component
     /// (Python's `make_unit_dimensionless`). [`Unit::default`] is the empty
     /// unit (`make_unit_none`).
     pub fn dimensionless() -> Self {
-        Self::one(UnitComponent::si(0, SIPrefix::NONE, Exponent::LINEAR))
+        Self::one(UnitComponent::si(
+            BaseUnit::None,
+            SIPrefix::None,
+            Exponent::LINEAR,
+        ))
     }
 
     fn one(c: UnitComponent) -> Self {
@@ -141,12 +166,7 @@ impl Unit {
         let n = self.num_components().min(MAX_UNIT_COMPONENTS);
         self.0.components[..n]
             .iter()
-            .map(|c| UnitComponent {
-                base: c.base,
-                exponent: c.exponent,
-                prefix_system: c.prefix.system,
-                prefix: c.prefix.id_raw(),
-            })
+            .map(UnitComponent::from_c)
             .collect()
     }
 

@@ -17,7 +17,7 @@ use bovnar::units::{
     unit_to_str, unit_to_str_ex, unit_valid, units_compatible,
 };
 use bovnar::{
-    BaseUnit, Error, ErrorCode, Event, EventData, Exponent, IECPrefix, MAX_UNIT_COMPONENTS,
+    BaseUnit, Error, ErrorCode, Event, EventData, Exponent, IECPrefix, MAX_UNIT_COMPONENTS, Prefix,
     PrefixSystem, Quantity, ReadOptions, Reader, Result, SIPrefix, TokenType, Unit, UnitComponent,
     Value, ValueTypeSpec, Writer,
 };
@@ -52,15 +52,15 @@ fn close(a: f64, b: f64) -> bool {
     (a - b).abs() <= 1e-9 * a.abs().max(b.abs())
 }
 
-fn si(base: i32) -> Unit {
-    Unit::si(base, SIPrefix::NONE, Exponent::LINEAR)
+fn si(base: BaseUnit) -> Unit {
+    Unit::si(base, SIPrefix::None, Exponent::LINEAR)
 }
 
-fn si_p(base: i32, prefix: i32) -> Unit {
+fn si_p(base: BaseUnit, prefix: SIPrefix) -> Unit {
     Unit::si(base, prefix, Exponent::LINEAR)
 }
 
-fn iec_p(base: i32, prefix: i32) -> Unit {
+fn iec_p(base: BaseUnit, prefix: IECPrefix) -> Unit {
     Unit::iec(base, prefix, Exponent::LINEAR)
 }
 
@@ -71,36 +71,36 @@ mod unit_helpers_pure {
     fn test_dimensionless_is_none_base() {
         let vu = Unit::dimensionless();
         assert_eq!(vu.num_components(), 1);
-        assert_eq!(vu.components()[0].base, BaseUnit::NONE);
+        assert_eq!(vu.components()[0].base, BaseUnit::None);
     }
 
     #[test]
     fn test_si_meter_no_prefix() {
-        let c = si(BaseUnit::METER).components()[0];
-        assert_eq!(c.base, BaseUnit::METER);
-        assert_eq!(c.prefix_system, PrefixSystem::SI);
-        assert_eq!(c.prefix, SIPrefix::NONE);
+        let c = si(BaseUnit::Meter).components()[0];
+        assert_eq!(c.base, BaseUnit::Meter);
+        assert_eq!(c.prefix_system(), PrefixSystem::Si);
+        assert_eq!(c.prefix, SIPrefix::None);
         assert_eq!(c.exponent, Exponent::LINEAR);
     }
 
     #[test]
     fn test_si_kilogram() {
-        let c = si_p(BaseUnit::GRAM, SIPrefix::KILO).components()[0];
-        assert_eq!(c.prefix, SIPrefix::KILO);
+        let c = si_p(BaseUnit::Gram, SIPrefix::Kilo).components()[0];
+        assert_eq!(c.prefix, SIPrefix::Kilo);
     }
 
     #[test]
     fn test_si_meter_squared() {
-        let vu = Unit::si(BaseUnit::METER, SIPrefix::NONE, Exponent::SQUARE);
+        let vu = Unit::si(BaseUnit::Meter, SIPrefix::None, Exponent::SQUARE);
         assert_eq!(vu.components()[0].exponent, Exponent::SQUARE);
     }
 
     #[test]
     fn test_iec_gibibyte() {
-        let c = iec_p(BaseUnit::BYTE, IECPrefix::GIBI).components()[0];
-        assert_eq!(c.prefix_system, PrefixSystem::IEC);
-        assert_eq!(c.prefix, IECPrefix::GIBI);
-        assert_eq!(c.base, BaseUnit::BYTE);
+        let c = iec_p(BaseUnit::Byte, IECPrefix::Gibi).components()[0];
+        assert_eq!(c.prefix_system(), PrefixSystem::Iec);
+        assert_eq!(c.prefix, IECPrefix::Gibi);
+        assert_eq!(c.base, BaseUnit::Byte);
     }
 
     #[test]
@@ -112,7 +112,7 @@ mod unit_helpers_pure {
 
     #[test]
     fn test_active_components_length() {
-        assert_eq!(si(BaseUnit::SECOND).components().len(), 1);
+        assert_eq!(si(BaseUnit::Second).components().len(), 1);
     }
 }
 
@@ -215,7 +215,7 @@ mod exponent_to_int_tests {
 
     #[test]
     fn test_raw_int_accepted() {
-        assert_eq!(exponent_to_int(1), 1);
+        assert_eq!(exponent_to_int(Exponent::try_from(1).unwrap()), 1);
     }
 }
 
@@ -277,22 +277,22 @@ mod unit_parsing {
     fn test_simple_meter() {
         let vu = p("m");
         assert_eq!(vu.num_components(), 1);
-        assert_eq!(vu.components()[0].base, BaseUnit::METER);
+        assert_eq!(vu.components()[0].base, BaseUnit::Meter);
     }
 
     #[test]
     fn test_kilometer() {
         let c = c0("k~m");
-        assert_eq!(c.base, BaseUnit::METER);
-        assert_eq!(c.prefix, SIPrefix::KILO);
+        assert_eq!(c.base, BaseUnit::Meter);
+        assert_eq!(c.prefix, SIPrefix::Kilo);
     }
 
     #[test]
     fn test_gibibytes() {
         let c = c0("Gi~B");
-        assert_eq!(c.base, BaseUnit::BYTE);
-        assert_eq!(c.prefix_system, PrefixSystem::IEC);
-        assert_eq!(c.prefix, IECPrefix::GIBI);
+        assert_eq!(c.base, BaseUnit::Byte);
+        assert_eq!(c.prefix_system(), PrefixSystem::Iec);
+        assert_eq!(c.prefix, IECPrefix::Gibi);
     }
 
     #[test]
@@ -300,8 +300,8 @@ mod unit_parsing {
         let vu = p("m/s");
         assert_eq!(vu.num_components(), 2);
         let c = vu.components();
-        assert_eq!(c[0].base, BaseUnit::METER);
-        assert_eq!(c[1].base, BaseUnit::SECOND);
+        assert_eq!(c[0].base, BaseUnit::Meter);
+        assert_eq!(c[1].base, BaseUnit::Second);
         assert_eq!(c[1].exponent, Exponent::NEG_LINEAR);
     }
 
@@ -327,7 +327,7 @@ mod unit_parsing {
         for tok in ["Da", "dalton", "amu", "u"] {
             let vu = p(tok);
             assert_eq!(vu.num_components(), 1, "{tok}");
-            assert_eq!(vu.components()[0].base, BaseUnit::DALTON, "{tok}");
+            assert_eq!(vu.components()[0].base, BaseUnit::Dalton, "{tok}");
             assert_eq!(unit_to_str(&vu).unwrap(), "Da", "{tok}");
         }
     }
@@ -335,9 +335,9 @@ mod unit_parsing {
     #[test]
     fn test_single_char_u_does_not_shadow_longer_units() {
         // Adding the 1-char "u" alias must not preempt longest-suffix matching.
-        assert_eq!(c0("au").base, BaseUnit::ASTRONOMICAL_UNIT);
-        assert_eq!(c0("mol").base, BaseUnit::MOL);
-        assert_eq!(c0("µ~u").base, BaseUnit::DALTON); // micro-dalton
+        assert_eq!(c0("au").base, BaseUnit::AstronomicalUnit);
+        assert_eq!(c0("mol").base, BaseUnit::Mol);
+        assert_eq!(c0("µ~u").base, BaseUnit::Dalton); // micro-dalton
     }
 
     #[test]
@@ -346,7 +346,7 @@ mod unit_parsing {
         // output always normalises back to "µ".
         for (ascii_form, canonical) in [("u~m", "µ~m"), ("u~s", "µ~s"), ("u~Pa", "µ~Pa")] {
             let vu = p(ascii_form);
-            assert_eq!(vu.components()[0].prefix, SIPrefix::MICRO);
+            assert_eq!(vu.components()[0].prefix, SIPrefix::Micro);
             assert_eq!(unit_to_str(&vu).unwrap(), canonical);
         }
     }
@@ -354,8 +354,8 @@ mod unit_parsing {
     #[test]
     fn test_u_micro_prefix_and_dalton_base_coexist() {
         let vu = p("u~u");
-        assert_eq!(vu.components()[0].prefix, SIPrefix::MICRO);
-        assert_eq!(vu.components()[0].base, BaseUnit::DALTON);
+        assert_eq!(vu.components()[0].prefix, SIPrefix::Micro);
+        assert_eq!(vu.components()[0].base, BaseUnit::Dalton);
         assert_eq!(unit_to_str(&vu).unwrap(), "µ~Da");
     }
 
@@ -364,10 +364,10 @@ mod unit_parsing {
         let vu = p("k~g\u{b7}m/s\u{b2}");
         assert_eq!(vu.num_components(), 3);
         let c = vu.components();
-        assert_eq!(c[0].base, BaseUnit::GRAM);
-        assert_eq!(c[0].prefix, SIPrefix::KILO);
-        assert_eq!(c[1].base, BaseUnit::METER);
-        assert_eq!(c[2].base, BaseUnit::SECOND);
+        assert_eq!(c[0].base, BaseUnit::Gram);
+        assert_eq!(c[0].prefix, SIPrefix::Kilo);
+        assert_eq!(c[1].base, BaseUnit::Meter);
+        assert_eq!(c[2].base, BaseUnit::Second);
         assert_eq!(c[2].exponent, Exponent::NEG_SQUARE);
     }
 
@@ -378,30 +378,30 @@ mod unit_parsing {
 
     #[test]
     fn test_kelvin() {
-        assert_eq!(c0("K").base, BaseUnit::KELVIN);
+        assert_eq!(c0("K").base, BaseUnit::Kelvin);
     }
 
     #[test]
     fn test_megahertz() {
         let c = c0("M~Hz");
-        assert_eq!(c.base, BaseUnit::HERTZ);
-        assert_eq!(c.prefix, SIPrefix::MEGA);
+        assert_eq!(c.base, BaseUnit::Hertz);
+        assert_eq!(c.prefix, SIPrefix::Mega);
     }
 
     #[test]
     fn test_tebibyte() {
         let c = c0("Ti~B");
-        assert_eq!(c.base, BaseUnit::BYTE);
-        assert_eq!(c.prefix_system, PrefixSystem::IEC);
-        assert_eq!(c.prefix, IECPrefix::TEBI);
+        assert_eq!(c.base, BaseUnit::Byte);
+        assert_eq!(c.prefix_system(), PrefixSystem::Iec);
+        assert_eq!(c.prefix, IECPrefix::Tebi);
     }
 
     #[test]
     fn test_product_asterisk() {
         let vu = p("m*s");
         assert_eq!(vu.num_components(), 2);
-        assert_eq!(vu.components()[0].base, BaseUnit::METER);
-        assert_eq!(vu.components()[1].base, BaseUnit::SECOND);
+        assert_eq!(vu.components()[0].base, BaseUnit::Meter);
+        assert_eq!(vu.components()[1].base, BaseUnit::Second);
     }
 
     #[test]
@@ -433,7 +433,7 @@ mod unit_parsing {
 
     #[test]
     fn test_celsius() {
-        assert_eq!(c0("\u{b0}C").base, BaseUnit::CELSIUS);
+        assert_eq!(c0("\u{b0}C").base, BaseUnit::Celsius);
     }
 }
 
@@ -442,17 +442,17 @@ mod unit_valid_tests {
 
     #[test]
     fn test_meter_valid() {
-        assert!(unit_valid(&si(BaseUnit::METER)));
+        assert!(unit_valid(&si(BaseUnit::Meter)));
     }
 
     #[test]
     fn test_kilogram_valid() {
-        assert!(unit_valid(&si_p(BaseUnit::GRAM, SIPrefix::KILO)));
+        assert!(unit_valid(&si_p(BaseUnit::Gram, SIPrefix::Kilo)));
     }
 
     #[test]
     fn test_gibibyte_valid() {
-        assert!(unit_valid(&iec_p(BaseUnit::BYTE, IECPrefix::GIBI)));
+        assert!(unit_valid(&iec_p(BaseUnit::Byte, IECPrefix::Gibi)));
     }
 
     #[test]
@@ -467,7 +467,7 @@ mod unit_valid_tests {
 
     #[test]
     fn test_celsius_valid() {
-        assert!(unit_valid(&si(BaseUnit::CELSIUS)));
+        assert!(unit_valid(&si(BaseUnit::Celsius)));
     }
 
     #[test]
@@ -481,13 +481,13 @@ mod unit_prefix_factor_tests {
 
     #[test]
     fn test_no_prefix_is_one() {
-        assert!(close(unit_prefix_factor(&si(BaseUnit::METER)), 1.0));
+        assert!(close(unit_prefix_factor(&si(BaseUnit::Meter)), 1.0));
     }
 
     #[test]
     fn test_kilo_is_1000() {
         assert!(close(
-            unit_prefix_factor(&si_p(BaseUnit::METER, SIPrefix::KILO)),
+            unit_prefix_factor(&si_p(BaseUnit::Meter, SIPrefix::Kilo)),
             1000.0
         ));
     }
@@ -495,7 +495,7 @@ mod unit_prefix_factor_tests {
     #[test]
     fn test_milli_is_1e_neg3() {
         assert!(close(
-            unit_prefix_factor(&si_p(BaseUnit::SECOND, SIPrefix::MILLI)),
+            unit_prefix_factor(&si_p(BaseUnit::Second, SIPrefix::Milli)),
             1e-3
         ));
     }
@@ -503,7 +503,7 @@ mod unit_prefix_factor_tests {
     #[test]
     fn test_mega_is_1e6() {
         assert!(close(
-            unit_prefix_factor(&si_p(BaseUnit::HERTZ, SIPrefix::MEGA)),
+            unit_prefix_factor(&si_p(BaseUnit::Hertz, SIPrefix::Mega)),
             1e6
         ));
     }
@@ -511,7 +511,7 @@ mod unit_prefix_factor_tests {
     #[test]
     fn test_gibi_is_2_pow_30() {
         assert!(close(
-            unit_prefix_factor(&iec_p(BaseUnit::BYTE, IECPrefix::GIBI)),
+            unit_prefix_factor(&iec_p(BaseUnit::Byte, IECPrefix::Gibi)),
             (1u64 << 30) as f64
         ));
     }
@@ -519,7 +519,7 @@ mod unit_prefix_factor_tests {
     #[test]
     fn test_kibi_is_2_pow_10() {
         assert!(close(
-            unit_prefix_factor(&iec_p(BaseUnit::BYTE, IECPrefix::KIBI)),
+            unit_prefix_factor(&iec_p(BaseUnit::Byte, IECPrefix::Kibi)),
             1024.0
         ));
     }
@@ -545,13 +545,13 @@ mod unit_prefix_exponent_tests {
 
     #[test]
     fn test_no_prefix_is_zero() {
-        assert_eq!(unit_prefix_exponent(&si(BaseUnit::METER)), 0);
+        assert_eq!(unit_prefix_exponent(&si(BaseUnit::Meter)), 0);
     }
 
     #[test]
     fn test_kilo_is_3() {
         assert_eq!(
-            unit_prefix_exponent(&si_p(BaseUnit::METER, SIPrefix::KILO)),
+            unit_prefix_exponent(&si_p(BaseUnit::Meter, SIPrefix::Kilo)),
             3
         );
     }
@@ -559,7 +559,7 @@ mod unit_prefix_exponent_tests {
     #[test]
     fn test_mega_is_6() {
         assert_eq!(
-            unit_prefix_exponent(&si_p(BaseUnit::HERTZ, SIPrefix::MEGA)),
+            unit_prefix_exponent(&si_p(BaseUnit::Hertz, SIPrefix::Mega)),
             6
         );
     }
@@ -567,7 +567,7 @@ mod unit_prefix_exponent_tests {
     #[test]
     fn test_milli_is_neg3() {
         assert_eq!(
-            unit_prefix_exponent(&si_p(BaseUnit::SECOND, SIPrefix::MILLI)),
+            unit_prefix_exponent(&si_p(BaseUnit::Second, SIPrefix::Milli)),
             -3
         );
     }
@@ -575,7 +575,7 @@ mod unit_prefix_exponent_tests {
     #[test]
     fn test_gibi_is_30() {
         assert_eq!(
-            unit_prefix_exponent(&iec_p(BaseUnit::BYTE, IECPrefix::GIBI)),
+            unit_prefix_exponent(&iec_p(BaseUnit::Byte, IECPrefix::Gibi)),
             30
         );
     }
@@ -583,7 +583,7 @@ mod unit_prefix_exponent_tests {
     #[test]
     fn test_kibi_is_10() {
         assert_eq!(
-            unit_prefix_exponent(&iec_p(BaseUnit::BYTE, IECPrefix::KIBI)),
+            unit_prefix_exponent(&iec_p(BaseUnit::Byte, IECPrefix::Kibi)),
             10
         );
     }
@@ -600,79 +600,71 @@ mod prefix_unit_valid_tests {
     #[test]
     fn test_si_none_on_meter_valid() {
         assert!(prefix_unit_valid(
-            PrefixSystem::SI,
-            SIPrefix::NONE,
-            BaseUnit::METER
+            Prefix::from(SIPrefix::None),
+            BaseUnit::Meter
         ));
     }
 
     #[test]
     fn test_si_kilo_on_meter_valid() {
         assert!(prefix_unit_valid(
-            PrefixSystem::SI,
-            SIPrefix::KILO,
-            BaseUnit::METER
+            Prefix::from(SIPrefix::Kilo),
+            BaseUnit::Meter
         ));
     }
 
     #[test]
     fn test_si_milli_on_second_valid() {
         assert!(prefix_unit_valid(
-            PrefixSystem::SI,
-            SIPrefix::MILLI,
-            BaseUnit::SECOND
+            Prefix::from(SIPrefix::Milli),
+            BaseUnit::Second
         ));
     }
 
     #[test]
     fn test_iec_gibi_on_byte_valid() {
         assert!(prefix_unit_valid(
-            PrefixSystem::IEC,
-            IECPrefix::GIBI,
-            BaseUnit::BYTE
+            Prefix::from(IECPrefix::Gibi),
+            BaseUnit::Byte
         ));
     }
 
     #[test]
     fn test_iec_kibi_on_bit_valid() {
         assert!(prefix_unit_valid(
-            PrefixSystem::IEC,
-            IECPrefix::KIBI,
-            BaseUnit::BIT
+            Prefix::from(IECPrefix::Kibi),
+            BaseUnit::Bit
         ));
     }
 
     #[test]
     fn test_iec_gibi_on_meter_invalid() {
         assert!(!prefix_unit_valid(
-            PrefixSystem::IEC,
-            IECPrefix::GIBI,
-            BaseUnit::METER
+            Prefix::from(IECPrefix::Gibi),
+            BaseUnit::Meter
         ));
     }
 
     #[test]
     fn test_iec_kibi_on_second_invalid() {
         assert!(!prefix_unit_valid(
-            PrefixSystem::IEC,
-            IECPrefix::KIBI,
-            BaseUnit::SECOND
+            Prefix::from(IECPrefix::Kibi),
+            BaseUnit::Second
         ));
     }
 
     #[test]
     fn test_iec_mebi_on_gram_invalid() {
         assert!(!prefix_unit_valid(
-            PrefixSystem::IEC,
-            IECPrefix::MEBI,
-            BaseUnit::GRAM
+            Prefix::from(IECPrefix::Mebi),
+            BaseUnit::Gram
         ));
     }
 
     #[test]
     fn test_prefix_from_parsed_unit_component() {
         let c = c0("Gi~B");
-        assert!(prefix_unit_valid(c.prefix_system, c.prefix, c.base));
+        assert!(prefix_unit_valid(c.prefix, c.base));
     }
 }
 
@@ -681,13 +673,13 @@ mod unit_serialisation {
 
     #[test]
     fn test_meter() {
-        assert_eq!(unit_to_str(&si(BaseUnit::METER)).unwrap(), "m");
+        assert_eq!(unit_to_str(&si(BaseUnit::Meter)).unwrap(), "m");
     }
 
     #[test]
     fn test_kilometer() {
         assert_eq!(
-            unit_to_str(&si_p(BaseUnit::GRAM, SIPrefix::KILO)).unwrap(),
+            unit_to_str(&si_p(BaseUnit::Gram, SIPrefix::Kilo)).unwrap(),
             "k~g"
         );
     }
@@ -695,7 +687,7 @@ mod unit_serialisation {
     #[test]
     fn test_gibibyte() {
         assert_eq!(
-            unit_to_str(&iec_p(BaseUnit::BYTE, IECPrefix::GIBI)).unwrap(),
+            unit_to_str(&iec_p(BaseUnit::Byte, IECPrefix::Gibi)).unwrap(),
             "Gi~B"
         );
     }
@@ -848,9 +840,9 @@ mod unit_in_event_stream {
     fn test_float_velocity_unit() {
         let vu = unit_from_param(SIMPLE_SCALAR_FLOAT).expect("a unit");
         assert_eq!(vu.num_components(), 2);
-        let bases: Vec<i32> = vu.components().iter().map(|c| c.base).collect();
-        assert!(bases.contains(&BaseUnit::METER));
-        assert!(bases.contains(&BaseUnit::SECOND));
+        let bases: Vec<BaseUnit> = vu.components().iter().map(|c| c.base).collect();
+        assert!(bases.contains(&BaseUnit::Meter));
+        assert!(bases.contains(&BaseUnit::Second));
     }
 
     #[test]
@@ -858,9 +850,9 @@ mod unit_in_event_stream {
         let c = unit_from_param(IEC_UNIT_PAYLOAD)
             .expect("a unit")
             .components()[0];
-        assert_eq!(c.prefix_system, PrefixSystem::IEC);
-        assert_eq!(c.prefix, IECPrefix::GIBI);
-        assert_eq!(c.base, BaseUnit::BYTE);
+        assert_eq!(c.prefix_system(), PrefixSystem::Iec);
+        assert_eq!(c.prefix, IECPrefix::Gibi);
+        assert_eq!(c.base, BaseUnit::Byte);
     }
 
     #[test]
@@ -911,7 +903,7 @@ mod writer_unit_annotation {
         let q = Quantity::new(
             "8",
             vt(ValueTypeFamily::Uint, 64),
-            iec_p(BaseUnit::BYTE, IECPrefix::GIBI),
+            iec_p(BaseUnit::Byte, IECPrefix::Gibi),
         );
         let out = written("ram", &q);
         assert!(out.windows(3).any(|w| w == b"ram"));
@@ -920,16 +912,16 @@ mod writer_unit_annotation {
 
 fn velocity_components() -> [UnitComponent; 2] {
     [
-        UnitComponent::si(BaseUnit::METER, SIPrefix::NONE, Exponent::LINEAR),
-        UnitComponent::si(BaseUnit::SECOND, SIPrefix::NONE, Exponent::NEG_LINEAR),
+        UnitComponent::si(BaseUnit::Meter, SIPrefix::None, Exponent::LINEAR),
+        UnitComponent::si(BaseUnit::Second, SIPrefix::None, Exponent::NEG_LINEAR),
     ]
 }
 
 fn force_components() -> [UnitComponent; 3] {
     [
-        UnitComponent::si(BaseUnit::GRAM, SIPrefix::KILO, Exponent::LINEAR),
-        UnitComponent::si(BaseUnit::METER, SIPrefix::NONE, Exponent::LINEAR),
-        UnitComponent::si(BaseUnit::SECOND, SIPrefix::NONE, Exponent::NEG_SQUARE),
+        UnitComponent::si(BaseUnit::Gram, SIPrefix::Kilo, Exponent::LINEAR),
+        UnitComponent::si(BaseUnit::Meter, SIPrefix::None, Exponent::LINEAR),
+        UnitComponent::si(BaseUnit::Second, SIPrefix::None, Exponent::NEG_SQUARE),
     ]
 }
 
@@ -970,8 +962,8 @@ mod make_unit_compound_roundtrip {
     #[test]
     fn test_gibibyte_roundtrip() {
         let vu = Unit::compound(&[UnitComponent::iec(
-            BaseUnit::BYTE,
-            IECPrefix::GIBI,
+            BaseUnit::Byte,
+            IECPrefix::Gibi,
             Exponent::LINEAR,
         )])
         .unwrap();
@@ -998,143 +990,143 @@ mod make_unit_compound_compatibility {
 mod new_unit_parsing {
     use super::*;
 
-    fn base(s: &str) -> i32 {
+    fn base(s: &str) -> BaseUnit {
         c0(s).base
     }
 
     #[test]
     fn test_kgf_symbol() {
-        assert_eq!(base("kgf"), BaseUnit::KILOGRAM_FORCE);
+        assert_eq!(base("kgf"), BaseUnit::KilogramForce);
     }
 
     #[test]
     fn test_kgf_long() {
-        assert_eq!(base("kilogram_force"), BaseUnit::KILOGRAM_FORCE);
+        assert_eq!(base("kilogram_force"), BaseUnit::KilogramForce);
     }
 
     #[test]
     fn test_inhg_symbol() {
-        assert_eq!(base("inHg"), BaseUnit::INCH_HG);
+        assert_eq!(base("inHg"), BaseUnit::InchHg);
     }
 
     #[test]
     fn test_inhg_long() {
-        assert_eq!(base("inch_hg"), BaseUnit::INCH_HG);
+        assert_eq!(base("inch_hg"), BaseUnit::InchHg);
     }
 
     #[test]
     fn test_inch_mercury_long() {
-        assert_eq!(base("inch_mercury"), BaseUnit::INCH_HG);
+        assert_eq!(base("inch_mercury"), BaseUnit::InchHg);
     }
 
     #[test]
     fn test_rpm_symbol() {
-        assert_eq!(base("rpm"), BaseUnit::RPM);
+        assert_eq!(base("rpm"), BaseUnit::Rpm);
     }
 
     #[test]
     fn test_ft_lb_symbol() {
-        assert_eq!(base("ft_lb"), BaseUnit::FOOT_POUND);
+        assert_eq!(base("ft_lb"), BaseUnit::FootPound);
     }
 
     #[test]
     fn test_foot_pound_long() {
-        assert_eq!(base("foot_pound"), BaseUnit::FOOT_POUND);
+        assert_eq!(base("foot_pound"), BaseUnit::FootPound);
     }
 
     #[test]
     fn test_foot_pounds_plural() {
-        assert_eq!(base("foot_pounds"), BaseUnit::FOOT_POUND);
+        assert_eq!(base("foot_pounds"), BaseUnit::FootPound);
     }
 
     #[test]
     fn test_dr_symbol() {
-        assert_eq!(base("dr"), BaseUnit::DRAM);
+        assert_eq!(base("dr"), BaseUnit::Dram);
     }
 
     #[test]
     fn test_dram_long() {
-        assert_eq!(base("dram"), BaseUnit::DRAM);
+        assert_eq!(base("dram"), BaseUnit::Dram);
     }
 
     #[test]
     fn test_drams_plural() {
-        assert_eq!(base("drams"), BaseUnit::DRAM);
+        assert_eq!(base("drams"), BaseUnit::Dram);
     }
 
     #[test]
     fn test_dwt_symbol() {
-        assert_eq!(base("dwt"), BaseUnit::PENNYWEIGHT);
+        assert_eq!(base("dwt"), BaseUnit::Pennyweight);
     }
 
     #[test]
     fn test_pennyweight_long() {
-        assert_eq!(base("pennyweight"), BaseUnit::PENNYWEIGHT);
+        assert_eq!(base("pennyweight"), BaseUnit::Pennyweight);
     }
 
     #[test]
     fn test_pennyweights_plural() {
-        assert_eq!(base("pennyweights"), BaseUnit::PENNYWEIGHT);
+        assert_eq!(base("pennyweights"), BaseUnit::Pennyweight);
     }
 
     #[test]
     fn test_ch_symbol() {
-        assert_eq!(base("ch"), BaseUnit::CHAIN);
+        assert_eq!(base("ch"), BaseUnit::Chain);
     }
 
     #[test]
     fn test_chain_long() {
-        assert_eq!(base("chain"), BaseUnit::CHAIN);
+        assert_eq!(base("chain"), BaseUnit::Chain);
     }
 
     #[test]
     fn test_chains_plural() {
-        assert_eq!(base("chains"), BaseUnit::CHAIN);
+        assert_eq!(base("chains"), BaseUnit::Chain);
     }
 
     #[test]
     fn test_rd_symbol() {
-        assert_eq!(base("rd"), BaseUnit::ROD);
+        assert_eq!(base("rd"), BaseUnit::Rod);
     }
 
     #[test]
     fn test_rod_long() {
-        assert_eq!(base("rod"), BaseUnit::ROD);
+        assert_eq!(base("rod"), BaseUnit::Rod);
     }
 
     #[test]
     fn test_rods_plural() {
-        assert_eq!(base("rods"), BaseUnit::ROD);
+        assert_eq!(base("rods"), BaseUnit::Rod);
     }
 
     #[test]
     fn test_gi_symbol() {
-        assert_eq!(base("gi"), BaseUnit::GILL);
+        assert_eq!(base("gi"), BaseUnit::Gill);
     }
 
     #[test]
     fn test_gill_long() {
-        assert_eq!(base("gill"), BaseUnit::GILL);
+        assert_eq!(base("gill"), BaseUnit::Gill);
     }
 
     #[test]
     fn test_gills_plural() {
-        assert_eq!(base("gills"), BaseUnit::GILL);
+        assert_eq!(base("gills"), BaseUnit::Gill);
     }
 
     #[test]
     fn test_gi_uk_symbol() {
-        assert_eq!(base("gi_uk"), BaseUnit::GILL_UK);
+        assert_eq!(base("gi_uk"), BaseUnit::GillUk);
     }
 
     #[test]
     fn test_gill_uk_long() {
-        assert_eq!(base("gill_uk"), BaseUnit::GILL_UK);
+        assert_eq!(base("gill_uk"), BaseUnit::GillUk);
     }
 
     #[test]
     fn test_gills_uk_plural() {
-        assert_eq!(base("gills_uk"), BaseUnit::GILL_UK);
+        assert_eq!(base("gills_uk"), BaseUnit::GillUk);
     }
 }
 
@@ -1171,7 +1163,7 @@ mod compact_prefix_form {
             assert_eq!(a.num_components(), b.num_components(), "{compact}");
             for (ca, cb) in a.components().iter().zip(b.components()) {
                 assert_eq!(ca.base, cb.base, "{compact}");
-                assert_eq!(ca.prefix_system, cb.prefix_system, "{compact}");
+                assert_eq!(ca.prefix_system(), cb.prefix_system(), "{compact}");
                 assert_eq!(ca.prefix, cb.prefix, "{compact}");
                 assert_eq!(ca.exponent, cb.exponent, "{compact}");
             }
@@ -1188,16 +1180,16 @@ mod compact_prefix_form {
     #[test]
     fn test_bare_alias_wins() {
         for (tok, base) in [
-            ("min", BaseUnit::MINUTE),              // not milli-inch
-            ("cd", BaseUnit::CANDELA),              // not centi-day
-            ("ft", BaseUnit::FOOT),                 // not femto-tonne
-            ("at", BaseUnit::ATMOSPHERE_TECHNICAL), // not atto-tonne
-            ("au", BaseUnit::ASTRONOMICAL_UNIT),    // not atto-dalton
-            ("PS", BaseUnit::METRIC_HORSEPOWER),    // not peta-siemens
+            ("min", BaseUnit::Minute),             // not milli-inch
+            ("cd", BaseUnit::Candela),             // not centi-day
+            ("ft", BaseUnit::Foot),                // not femto-tonne
+            ("at", BaseUnit::AtmosphereTechnical), // not atto-tonne
+            ("au", BaseUnit::AstronomicalUnit),    // not atto-dalton
+            ("PS", BaseUnit::MetricHorsepower),    // not peta-siemens
         ] {
             let c = c0(tok);
             assert_eq!(c.base, base, "{tok}");
-            assert_eq!(c.prefix, SIPrefix::NONE, "{tok}");
+            assert_eq!(c.prefix, SIPrefix::None, "{tok}");
         }
     }
 
@@ -1219,11 +1211,11 @@ mod compact_prefix_form {
     #[test]
     fn test_refusal_is_per_spelling() {
         for (tok, base, prefix) in [
-            ("p~H", BaseUnit::HENRY, SIPrefix::PICO),
-            ("m~ph", BaseUnit::PHOT, SIPrefix::MILLI),
-            ("nH", BaseUnit::HENRY, SIPrefix::NANO),
-            ("u~sb", BaseUnit::STILB, SIPrefix::MICRO),
-            ("k~t", BaseUnit::TONNE, SIPrefix::KILO),
+            ("p~H", BaseUnit::Henry, SIPrefix::Pico),
+            ("m~ph", BaseUnit::Phot, SIPrefix::Milli),
+            ("nH", BaseUnit::Henry, SIPrefix::Nano),
+            ("u~sb", BaseUnit::Stilb, SIPrefix::Micro),
+            ("k~t", BaseUnit::Tonne, SIPrefix::Kilo),
         ] {
             let c = c0(tok);
             assert_eq!(c.base, base, "{tok}");
@@ -1236,16 +1228,16 @@ mod compact_prefix_form {
         // Refused compact spellings until the units they name were added;
         // as bare aliases now, the bare-alias-wins rule keeps them unprefixed.
         for (tok, base) in [
-            ("pH", BaseUnit::PH_SCALE),       // acidity, not picohenry
-            ("mph", BaseUnit::MILE_PER_HOUR), // speed, not milliphot
-            ("kph", BaseUnit::KILOMETER_PER_HOUR),
-            ("kmh", BaseUnit::KILOMETER_PER_HOUR),
-            ("ph", BaseUnit::PHOT), // still the phot: case matters
-            ("kn", BaseUnit::KNOT),
+            ("pH", BaseUnit::PhScale),      // acidity, not picohenry
+            ("mph", BaseUnit::MilePerHour), // speed, not milliphot
+            ("kph", BaseUnit::KilometerPerHour),
+            ("kmh", BaseUnit::KilometerPerHour),
+            ("ph", BaseUnit::Phot), // still the phot: case matters
+            ("kn", BaseUnit::Knot),
         ] {
             let c = c0(tok);
             assert_eq!(c.base, base, "{tok}");
-            assert_eq!(c.prefix, SIPrefix::NONE, "{tok}");
+            assert_eq!(c.prefix, SIPrefix::None, "{tok}");
         }
     }
 
@@ -1288,8 +1280,8 @@ mod water_analysis_units {
     fn test_conductivity_is_a_compound_not_a_unit() {
         let ec = p("µS/cm");
         assert_eq!(ec.num_components(), 2);
-        assert_eq!(ec.components()[0].base, BaseUnit::SIEMENS);
-        assert_eq!(ec.components()[1].base, BaseUnit::METER);
+        assert_eq!(ec.components()[0].base, BaseUnit::Siemens);
+        assert_eq!(ec.components()[1].base, BaseUnit::Meter);
         assert!(units_compatible(&ec, &p("S/m")));
     }
 
@@ -1360,9 +1352,9 @@ mod water_analysis_units {
     #[test]
     fn test_lowercase_neighbours_keep_their_meaning() {
         for (tok, base, prefix) in [
-            ("cF", BaseUnit::FARAD, SIPrefix::CENTI), // not CF
-            ("fau", BaseUnit::ASTRONOMICAL_UNIT, SIPrefix::FEMTO), // not FAU
-            ("dH", BaseUnit::HENRY, SIPrefix::DECI),  // not °dH
+            ("cF", BaseUnit::Farad, SIPrefix::Centi), // not CF
+            ("fau", BaseUnit::AstronomicalUnit, SIPrefix::Femto), // not FAU
+            ("dH", BaseUnit::Henry, SIPrefix::Deci),  // not °dH
         ] {
             let c = c0(tok);
             assert!(c.base == base && c.prefix == prefix, "{tok}");
@@ -1421,7 +1413,7 @@ mod compact_prefix_form_against_the_table {
                     Err(_) => broken.push(format!("{alias} ({name}) no longer parses")),
                     Ok(vu) => {
                         let c = vu.components()[0];
-                        if c.prefix != SIPrefix::NONE || c.prefix_system != PrefixSystem::SI {
+                        if c.prefix != SIPrefix::None || c.prefix_system() != PrefixSystem::Si {
                             broken.push(format!("{alias} ({name}) parsed as a PREFIXED unit"));
                         }
                     }
@@ -1840,26 +1832,26 @@ mod reader_want_unit {
 
     #[test]
     fn test_multiplicative_conversion() {
-        let seen = converted_strs(b".d = 5 k~m;", si(BaseUnit::METER), None);
+        let seen = converted_strs(b".d = 5 k~m;", si(BaseUnit::Meter), None);
         assert_eq!(seen, ["5000"]); // exact
     }
 
     #[test]
     fn test_affine_conversion() {
-        let seen = converted_strs(".t = 25 °C;".as_bytes(), si(BaseUnit::KELVIN), None);
+        let seen = converted_strs(".t = 25 °C;".as_bytes(), si(BaseUnit::Kelvin), None);
         assert_eq!(seen, ["298.15"]); // exact
     }
 
     #[test]
     fn test_incompatible_is_unit_mismatch() {
-        let code = error_code(b".d = 5 k~m;", si(BaseUnit::SECOND), 0, false);
+        let code = error_code(b".d = 5 k~m;", si(BaseUnit::Second), 0, false);
         assert_eq!(code, Some(ErrorCode::UnitMismatch));
     }
 
     #[test]
     fn test_irrational_is_unit_inexact() {
         // degree -> radian is pi-based
-        let code = error_code(".a = 90 °;".as_bytes(), si(BaseUnit::RADIAN), 0, false);
+        let code = error_code(".a = 90 °;".as_bytes(), si(BaseUnit::Radian), 0, false);
         assert_eq!(code, Some(ErrorCode::UnitInexact));
     }
 
@@ -1888,7 +1880,7 @@ mod reader_want_unit {
         // numeric family, so it must convert.
         let seen = converted_strs(
             b".x = <uint:32,_16> \"FF\" k~m;",
-            si(BaseUnit::METER),
+            si(BaseUnit::Meter),
             Some(10),
         );
         assert_eq!(seen, ["255000"]); // 0xFF k~m -> 255000 m, exact
@@ -1896,7 +1888,7 @@ mod reader_want_unit {
 
     #[test]
     fn test_real_string_never_converted() {
-        let flags = converted_flags(b".s = \"hello\";", |_| Some((si(BaseUnit::METER), 0)));
+        let flags = converted_flags(b".s = \"hello\";", |_| Some((si(BaseUnit::Meter), 0)));
         assert!(!flags.is_empty() && !flags.iter().any(|&f| f));
     }
 
@@ -1908,7 +1900,7 @@ mod reader_want_unit {
         let seen = read_with(
             &doc,
             false,
-            |_| Some((si(BaseUnit::METER), 10)),
+            |_| Some((si(BaseUnit::Meter), 10)),
             |d| {
                 d.converted
                     .then(|| (converted_str(d).unwrap(), d.raw.to_vec()))
@@ -1926,7 +1918,7 @@ mod reader_want_unit {
         // A 1056-bit binary float converts exactly: 70 significant digits.
         let digits = "1.234567890123456789012345678901234567890123456789012345678901234567891";
         let doc = format!(".d = <float:1056> {digits} k~m;");
-        let seen = converted_strs(doc.as_bytes(), si(BaseUnit::METER), Some(10));
+        let seen = converted_strs(doc.as_bytes(), si(BaseUnit::Meter), Some(10));
         assert_eq!(
             seen,
             ["1234.567890123456789012345678901234567890123456789012345678901234567891"]
@@ -1954,7 +1946,7 @@ mod reader_want_unit {
         let seen = read_with(
             b".x = <uint:64,_62> \"zz\" m;",
             false,
-            |_| Some((si(BaseUnit::METER), 0)),
+            |_| Some((si(BaseUnit::Meter), 0)),
             |d| d.converted.then(|| (converted_str(d), d.converted_base)),
         )
         .unwrap();
@@ -1972,7 +1964,7 @@ mod reader_want_unit {
     fn test_unrepresentable_value_is_error() {
         let code = error_code(
             b".d = <float:64> 1e1000000 k~m;",
-            si(BaseUnit::METER),
+            si(BaseUnit::Meter),
             0,
             false,
         );
@@ -1984,7 +1976,7 @@ mod reader_want_unit {
         // nan/inf carry no finite value: nothing to convert, and no error.
         for lit in ["nan", "inf", "ninf"] {
             let doc = format!(".d = <float:64,k~m> {lit};");
-            let flags = converted_flags(doc.as_bytes(), |_| Some((si(BaseUnit::METER), 0)));
+            let flags = converted_flags(doc.as_bytes(), |_| Some((si(BaseUnit::Meter), 0)));
             assert!(!flags.is_empty() && !flags.iter().any(|&f| f), "{lit}");
         }
     }
@@ -1992,7 +1984,7 @@ mod reader_want_unit {
     #[test]
     fn test_nonterminating_refused_by_default() {
         // 1 m -> mile is 125/201168: exact as a rational, no finite decimal.
-        let code = error_code(b".d = 1 m;", si(BaseUnit::MILE), 10, false);
+        let code = error_code(b".d = 1 m;", si(BaseUnit::Mile), 10, false);
         assert_eq!(code, Some(ErrorCode::UnitInexact));
     }
 
@@ -2001,7 +1993,7 @@ mod reader_want_unit {
         let seen = read_with(
             b".d = 1 m;",
             true,
-            |_| Some((si(BaseUnit::MILE), 10)),
+            |_| Some((si(BaseUnit::Mile), 10)),
             |d| d.converted.then(|| (converted_str(d), d.converted_base)),
         )
         .unwrap();
@@ -2010,21 +2002,21 @@ mod reader_want_unit {
 
     #[test]
     fn test_irrational_still_refused_with_opt_in() {
-        let code = error_code(".a = 90 °;".as_bytes(), si(BaseUnit::RADIAN), 0, true);
+        let code = error_code(".a = 90 °;".as_bytes(), si(BaseUnit::Radian), 0, true);
         assert_eq!(code, Some(ErrorCode::UnitInexact));
     }
 
     #[test]
     fn test_corrected_exact_factors() {
         // 1 Torr = 101325/760 Pa, so 760 Torr is exactly 101325 Pa.
-        let seen = converted_strs(".p = 760 Torr;".as_bytes(), si(BaseUnit::PASCAL), Some(10));
+        let seen = converted_strs(".p = 760 Torr;".as_bytes(), si(BaseUnit::Pascal), Some(10));
         assert_eq!(seen, ["101325"]);
     }
 
     #[test]
     fn test_nonterminating_factor_now_refuses() {
         // 1 rpm = 1/60 Hz has no finite decimal.
-        let code = error_code(b".f = 1 rpm;", si(BaseUnit::HERTZ), 10, false);
+        let code = error_code(b".f = 1 rpm;", si(BaseUnit::Hertz), 10, false);
         assert_eq!(code, Some(ErrorCode::UnitInexact));
     }
 
@@ -2037,7 +2029,7 @@ mod reader_want_unit {
             let kept_cell = std::cell::RefCell::new(&mut kept);
             let mut want = |d: &EventData<'_>| {
                 kept_cell.borrow_mut().push(bovnar::EventPayload::from(d));
-                Some((si(BaseUnit::METER), 0))
+                Some((si(BaseUnit::Meter), 0))
             };
             let mut on_event = |d: &EventData<'_>| {
                 if d.event == Event::Data {
@@ -2077,7 +2069,7 @@ mod reader_want_unit {
         let seen = read_with(
             b".d = 1 m;",
             true,
-            |_| Some((si(BaseUnit::MILE), 10)),
+            |_| Some((si(BaseUnit::Mile), 10)),
             |d| {
                 d.converted
                     .then(|| (converted_str(d), d.converted_rational()))
@@ -2097,7 +2089,7 @@ mod reader_want_unit {
         let seen = read_with(
             b".d = 5 k~m;",
             false,
-            |_| Some((si(BaseUnit::METER), 10)),
+            |_| Some((si(BaseUnit::Meter), 10)),
             |d| {
                 d.converted.then(|| {
                     (
@@ -2128,7 +2120,7 @@ mod reader_want_unit {
         std::fs::remove_file(&path).unwrap();
 
         let mut seen = Vec::new();
-        let mut want = |_: &EventData<'_>| Some((si(BaseUnit::METER), 0));
+        let mut want = |_: &EventData<'_>| Some((si(BaseUnit::Meter), 0));
         let mut on_event = |d: &EventData<'_>| {
             if d.event == Event::Data && d.converted {
                 seen.push(converted_str(d).unwrap());

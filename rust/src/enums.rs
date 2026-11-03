@@ -255,22 +255,27 @@ impl ErrorCode {
     }
 }
 
-/// Base-unit ids (`base_unit_t`), Python's `BaseUnit`: plain `i32` ids, so
-/// a unit read off the wire never fails to convert.
-pub struct BaseUnit;
-
 include!(concat!(env!("OUT_DIR"), "/generated/base_units.rs"));
 
 impl BaseUnit {
-    /// The member name of `id` (`BaseUnit(id).name`), or `None` when no
-    /// member has that id.
-    pub fn name(id: i32) -> Option<&'static str> {
-        Self::MEMBERS.iter().find(|m| m.1 == id).map(|m| m.0)
+    /// The Python member name (`BaseUnit.METER.name` is `"METER"`).
+    pub fn name(self) -> &'static str {
+        Self::MEMBERS
+            .iter()
+            .find(|m| m.1 == self)
+            .map_or("NONE", |m| m.0)
     }
 
-    /// The id of the member called `name` (`BaseUnit[name]`).
-    pub fn from_name(name: &str) -> Option<i32> {
+    /// The member with the Python name `name` (`BaseUnit[name]`).
+    pub fn from_name(name: &str) -> Option<Self> {
         Self::MEMBERS.iter().find(|m| m.0 == name).map(|m| m.1)
+    }
+}
+
+/// The Python member name, as `str(BaseUnit.METER)` gives `METER`.
+impl std::fmt::Display for BaseUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name())
     }
 }
 
@@ -281,59 +286,205 @@ pub const UNIT_BLOCK_SIZE: i32 = 10_000;
 pub const CURRENCY_FIRST: i32 = 900_000;
 
 /// Prefix systems (`unit_prefix_system_t`).
-pub struct PrefixSystem;
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
+pub enum PrefixSystem {
+    #[default]
+    Si = 0,
+    Iec = 1,
+}
 
 impl PrefixSystem {
-    pub const SI: i32 = 0;
-    pub const IEC: i32 = 1;
+    /// The variant for a raw C value, or `None` for a value this binding
+    /// does not know.
+    pub fn from_raw(raw: i32) -> Option<Self> {
+        Some(match raw {
+            0 => Self::Si,
+            1 => Self::Iec,
+            _ => return None,
+        })
+    }
 }
 
 /// SI prefixes (`si_prefix_t`).
-pub struct SIPrefix;
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
+pub enum SIPrefix {
+    #[default]
+    None = 0,
+    Quecto = 1,
+    Ronto = 2,
+    Yocto = 3,
+    Zepto = 4,
+    Atto = 5,
+    Femto = 6,
+    Pico = 7,
+    Nano = 8,
+    Micro = 9,
+    Milli = 10,
+    Centi = 11,
+    Deci = 12,
+    Deca = 13,
+    Hecto = 14,
+    Kilo = 15,
+    Mega = 16,
+    Giga = 17,
+    Tera = 18,
+    Peta = 19,
+    Exa = 20,
+    Zetta = 21,
+    Yotta = 22,
+    Ronna = 23,
+    Quetta = 24,
+}
 
 impl SIPrefix {
-    pub const NONE: i32 = 0;
-    pub const QUECTO: i32 = 1;
-    pub const RONTO: i32 = 2;
-    pub const YOCTO: i32 = 3;
-    pub const ZEPTO: i32 = 4;
-    pub const ATTO: i32 = 5;
-    pub const FEMTO: i32 = 6;
-    pub const PICO: i32 = 7;
-    pub const NANO: i32 = 8;
-    pub const MICRO: i32 = 9;
-    pub const MILLI: i32 = 10;
-    pub const CENTI: i32 = 11;
-    pub const DECI: i32 = 12;
-    pub const DECA: i32 = 13;
-    pub const HECTO: i32 = 14;
-    pub const KILO: i32 = 15;
-    pub const MEGA: i32 = 16;
-    pub const GIGA: i32 = 17;
-    pub const TERA: i32 = 18;
-    pub const PETA: i32 = 19;
-    pub const EXA: i32 = 20;
-    pub const ZETTA: i32 = 21;
-    pub const YOTTA: i32 = 22;
-    pub const RONNA: i32 = 23;
-    pub const QUETTA: i32 = 24;
+    const ALL: [Self; 25] = [
+        Self::None,
+        Self::Quecto,
+        Self::Ronto,
+        Self::Yocto,
+        Self::Zepto,
+        Self::Atto,
+        Self::Femto,
+        Self::Pico,
+        Self::Nano,
+        Self::Micro,
+        Self::Milli,
+        Self::Centi,
+        Self::Deci,
+        Self::Deca,
+        Self::Hecto,
+        Self::Kilo,
+        Self::Mega,
+        Self::Giga,
+        Self::Tera,
+        Self::Peta,
+        Self::Exa,
+        Self::Zetta,
+        Self::Yotta,
+        Self::Ronna,
+        Self::Quetta,
+    ];
+
+    /// The variant for a raw C value, or `None` for a value this binding
+    /// does not know.
+    pub fn from_raw(raw: i32) -> Option<Self> {
+        Self::ALL.get(usize::try_from(raw).ok()?).copied()
+    }
 }
 
 /// IEC binary prefixes (`iec_prefix_t`).
-pub struct IECPrefix;
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
+pub enum IECPrefix {
+    #[default]
+    None = 0,
+    Kibi = 1,
+    Mebi = 2,
+    Gibi = 3,
+    Tebi = 4,
+    Pebi = 5,
+    Exbi = 6,
+    Zebi = 7,
+    Yobi = 8,
+    Robi = 9,
+    Quebi = 10,
+}
 
 impl IECPrefix {
-    pub const NONE: i32 = 0;
-    pub const KIBI: i32 = 1;
-    pub const MEBI: i32 = 2;
-    pub const GIBI: i32 = 3;
-    pub const TEBI: i32 = 4;
-    pub const PEBI: i32 = 5;
-    pub const EXBI: i32 = 6;
-    pub const ZEBI: i32 = 7;
-    pub const YOBI: i32 = 8;
-    pub const ROBI: i32 = 9;
-    pub const QUEBI: i32 = 10;
+    const ALL: [Self; 11] = [
+        Self::None,
+        Self::Kibi,
+        Self::Mebi,
+        Self::Gibi,
+        Self::Tebi,
+        Self::Pebi,
+        Self::Exbi,
+        Self::Zebi,
+        Self::Yobi,
+        Self::Robi,
+        Self::Quebi,
+    ];
+
+    /// The variant for a raw C value, or `None` for a value this binding
+    /// does not know.
+    pub fn from_raw(raw: i32) -> Option<Self> {
+        Self::ALL.get(usize::try_from(raw).ok()?).copied()
+    }
+}
+
+/// A component's prefix: an SI or an IEC prefix (`value_unit_prefix_t`, the
+/// system and the id in one value). Python's pair of `prefix_system` and
+/// `prefix`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Prefix {
+    Si(SIPrefix),
+    Iec(IECPrefix),
+}
+
+impl Default for Prefix {
+    fn default() -> Self {
+        Prefix::Si(SIPrefix::None)
+    }
+}
+
+impl Prefix {
+    /// The prefix system.
+    pub fn system(self) -> PrefixSystem {
+        match self {
+            Prefix::Si(_) => PrefixSystem::Si,
+            Prefix::Iec(_) => PrefixSystem::Iec,
+        }
+    }
+
+    /// The prefix id within its system (0 for no prefix).
+    pub fn id(self) -> i32 {
+        match self {
+            Prefix::Si(p) => p as i32,
+            Prefix::Iec(p) => p as i32,
+        }
+    }
+
+    /// True for no prefix, in either system.
+    pub fn is_none(self) -> bool {
+        self.id() == 0
+    }
+
+    /// The prefix for a raw C `(system, id)`, or `None` for a value this
+    /// binding does not know.
+    pub fn from_raw(system: i32, id: i32) -> Option<Self> {
+        match PrefixSystem::from_raw(system)? {
+            PrefixSystem::Si => SIPrefix::from_raw(id).map(Prefix::Si),
+            PrefixSystem::Iec => IECPrefix::from_raw(id).map(Prefix::Iec),
+        }
+    }
+}
+
+/// A component's prefix compares equal to the bare SI or IEC prefix it is,
+/// as Python compares `prefix` alone.
+impl PartialEq<SIPrefix> for Prefix {
+    fn eq(&self, other: &SIPrefix) -> bool {
+        *self == Prefix::Si(*other)
+    }
+}
+
+impl PartialEq<IECPrefix> for Prefix {
+    fn eq(&self, other: &IECPrefix) -> bool {
+        *self == Prefix::Iec(*other)
+    }
+}
+
+impl From<SIPrefix> for Prefix {
+    fn from(p: SIPrefix) -> Self {
+        Prefix::Si(p)
+    }
+}
+
+impl From<IECPrefix> for Prefix {
+    fn from(p: IECPrefix) -> Self {
+        Prefix::Iec(p)
+    }
 }
 
 /// The smallest component exponent (`unit_exponent_t`).
@@ -341,28 +492,95 @@ pub const EXPONENT_MIN: i32 = -100;
 /// The largest component exponent.
 pub const EXPONENT_MAX: i32 = 100;
 
-/// Named component exponents. Like Python's open `Exponent`, any integer in
-/// `EXPONENT_MIN..=EXPONENT_MAX` except 0 is a valid exponent.
-pub struct Exponent;
+/// A component's exponent (`unit_exponent_t`). Like Python's deliberately
+/// open `Exponent`, any integer in `EXPONENT_MIN..=EXPONENT_MAX` is one, not
+/// only the named constants: a unit read off the wire may carry any of them,
+/// so this is a checked newtype rather than a closed enum. Zero is
+/// [`Exponent::INVALID`]: a component with exponent 0 is malformed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Exponent(i32);
 
 impl Exponent {
-    pub const INVALID: i32 = 0;
-    pub const LINEAR: i32 = 1;
-    pub const SQUARE: i32 = 2;
-    pub const CUBIC: i32 = 3;
-    pub const QUARTIC: i32 = 4;
-    pub const QUINTIC: i32 = 5;
-    pub const SEXTIC: i32 = 6;
-    pub const SEPTIC: i32 = 7;
-    pub const OCTIC: i32 = 8;
-    pub const NONIC: i32 = 9;
-    pub const NEG_LINEAR: i32 = -1;
-    pub const NEG_SQUARE: i32 = -2;
-    pub const NEG_CUBIC: i32 = -3;
-    pub const NEG_QUARTIC: i32 = -4;
-    pub const NEG_QUINTIC: i32 = -5;
-    pub const NEG_SEXTIC: i32 = -6;
-    pub const NEG_SEPTIC: i32 = -7;
-    pub const NEG_OCTIC: i32 = -8;
-    pub const NEG_NONIC: i32 = -9;
+    pub const INVALID: Self = Self(0);
+    pub const LINEAR: Self = Self(1);
+    pub const SQUARE: Self = Self(2);
+    pub const CUBIC: Self = Self(3);
+    pub const QUARTIC: Self = Self(4);
+    pub const QUINTIC: Self = Self(5);
+    pub const SEXTIC: Self = Self(6);
+    pub const SEPTIC: Self = Self(7);
+    pub const OCTIC: Self = Self(8);
+    pub const NONIC: Self = Self(9);
+    pub const NEG_LINEAR: Self = Self(-1);
+    pub const NEG_SQUARE: Self = Self(-2);
+    pub const NEG_CUBIC: Self = Self(-3);
+    pub const NEG_QUARTIC: Self = Self(-4);
+    pub const NEG_QUINTIC: Self = Self(-5);
+    pub const NEG_SEXTIC: Self = Self(-6);
+    pub const NEG_SEPTIC: Self = Self(-7);
+    pub const NEG_OCTIC: Self = Self(-8);
+    pub const NEG_NONIC: Self = Self(-9);
+
+    /// The exponent `raw`, or `None` outside `EXPONENT_MIN..=EXPONENT_MAX`.
+    pub fn from_raw(raw: i32) -> Option<Self> {
+        (EXPONENT_MIN..=EXPONENT_MAX)
+            .contains(&raw)
+            .then_some(Self(raw))
+    }
+
+    /// The exponent as an integer.
+    pub fn get(self) -> i32 {
+        self.0
+    }
 }
+
+/// A raw C value that names no variant: the `TryFrom<i32>` error of every
+/// enum here.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UnknownValue {
+    /// The enum's name, such as `"SIPrefix"`.
+    pub type_name: &'static str,
+    pub value: i32,
+}
+
+impl std::fmt::Display for UnknownValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} has no value {}", self.type_name, self.value)
+    }
+}
+
+impl std::error::Error for UnknownValue {}
+
+/// `TryFrom<i32>` (through `from_raw`) and `From<_> for i32` for the C enums.
+macro_rules! raw_conversions {
+    ($($t:ident => $to_raw:expr),* $(,)?) => {$(
+        impl TryFrom<i32> for $t {
+            type Error = UnknownValue;
+            fn try_from(raw: i32) -> std::result::Result<Self, UnknownValue> {
+                $t::from_raw(raw).ok_or(UnknownValue {
+                    type_name: stringify!($t),
+                    value: raw,
+                })
+            }
+        }
+
+        impl From<$t> for i32 {
+            fn from(v: $t) -> i32 {
+                let to_raw: fn($t) -> i32 = $to_raw;
+                to_raw(v)
+            }
+        }
+    )*};
+}
+
+raw_conversions!(
+    Event => |v| v as i32,
+    TokenType => |v| v as i32,
+    ValueTypeFamily => |v| v as i32,
+    ErrorCode => |v| v as i32,
+    BaseUnit => |v| v as i32,
+    PrefixSystem => |v| v as i32,
+    SIPrefix => |v| v as i32,
+    IECPrefix => |v| v as i32,
+    Exponent => Exponent::get,
+);

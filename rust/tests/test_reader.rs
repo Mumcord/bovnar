@@ -513,11 +513,11 @@ fn test_a_kept_payload_outlives_the_reader() {
     let mut want = |d: &EventData<'_>| match d.unit_source {
         // 1 m in miles: no finite expansion
         b"m" => Some((
-            Unit::si(BaseUnit::MILE, SIPrefix::NONE, Exponent::LINEAR),
+            Unit::si(BaseUnit::Mile, SIPrefix::None, Exponent::LINEAR),
             10,
         )),
         b"k~m" => Some((
-            Unit::si(BaseUnit::METER, SIPrefix::NONE, Exponent::LINEAR),
+            Unit::si(BaseUnit::Meter, SIPrefix::None, Exponent::LINEAR),
             10,
         )),
         _ => None,

@@ -305,3 +305,39 @@ mod error_code {
         }
     }
 }
+
+#[test]
+fn test_raw_conversions_round_trip_and_refuse_unknown_values() {
+    use bovnar::{
+        BaseUnit, ErrorCode, Event, Exponent, IECPrefix, Prefix, PrefixSystem, SIPrefix,
+        UnknownValue,
+    };
+    assert_eq!(SIPrefix::try_from(15), Ok(SIPrefix::Kilo));
+    assert_eq!(i32::from(SIPrefix::Kilo), 15);
+    assert_eq!(IECPrefix::try_from(3), Ok(IECPrefix::Gibi));
+    assert_eq!(PrefixSystem::try_from(1), Ok(PrefixSystem::Iec));
+    assert_eq!(Event::try_from(9), Ok(Event::Data));
+    assert_eq!(i32::from(ErrorCode::ValueOutOfRange), 35);
+    assert_eq!(BaseUnit::try_from(100003), Ok(BaseUnit::Meter));
+    assert_eq!(i32::from(BaseUnit::Meter), 100003);
+    assert_eq!(BaseUnit::Meter.name(), "METER");
+    assert_eq!(BaseUnit::from_name("CUP_"), Some(BaseUnit::Cup_));
+    assert_eq!(BaseUnit::Cup_.to_string(), "CUP_");
+    assert_eq!(BaseUnit::try_from(200000), Ok(BaseUnit::UcumIu));
+    assert_eq!(
+        SIPrefix::try_from(25),
+        Err(UnknownValue {
+            type_name: "SIPrefix",
+            value: 25
+        })
+    );
+    assert!(BaseUnit::try_from(42).is_err());
+    assert!(PrefixSystem::try_from(2).is_err());
+    // Exponent is open: any power in range, not only the named ones.
+    assert_eq!(Exponent::try_from(42).map(Exponent::get), Ok(42));
+    assert_eq!(Exponent::try_from(-1), Ok(Exponent::NEG_LINEAR));
+    assert!(Exponent::try_from(101).is_err());
+    assert_eq!(Prefix::from(SIPrefix::Kilo).system(), PrefixSystem::Si);
+    assert!(Prefix::Iec(IECPrefix::None).is_none());
+    assert_eq!(Prefix::from_raw(1, 3), Some(Prefix::Iec(IECPrefix::Gibi)));
+}

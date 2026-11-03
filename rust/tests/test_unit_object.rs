@@ -294,7 +294,7 @@ fn test_multiplicative_ones_still_answer() {
 #[test]
 fn test_prefix_system_is_not_identity_without_a_prefix() {
     let a = parse_unit("B").unwrap();
-    let b = Unit::iec(BaseUnit::BYTE, IECPrefix::NONE, Exponent::LINEAR);
+    let b = Unit::iec(BaseUnit::Byte, IECPrefix::None, Exponent::LINEAR);
     assert_eq!(a, b);
     assert_eq!(h(&a), h(&b));
     assert_eq!(HashSet::from([a, b]).len(), 1);
@@ -368,17 +368,14 @@ fn test_want_unit_may_return_one() {
 #[test]
 fn test_repr_of_a_profile_only_unit_does_not_raise() {
     // Python checks the repr names the opaque atom id and LITER; Rust's
-    // components carry the id, and BaseUnit::name gives the member name.
+    // components carry the BaseUnit, and BaseUnit::name gives the member name.
     let vu = parse_unit("ucum:[IU]/mL").unwrap();
     let comps = vu.components();
-    assert!(comps.iter().any(|c| c.base == 200000));
-    assert!(
-        comps
-            .iter()
-            .any(|c| BaseUnit::name(c.base) == Some("LITER"))
-    );
-    assert_eq!(comps[0].base, 200000);
-    assert!(format!("{:?}", comps[0]).contains("200000"));
+    assert!(comps.iter().any(|c| c.base as i32 == 200000));
+    assert!(comps.iter().any(|c| c.base.name() == "LITER"));
+    assert_eq!(comps[0].base as i32, 200000);
+    let atom = format!("{:?}", comps[0].base);
+    assert!(format!("{:?}", comps[0]).contains(&atom), "{atom}");
 }
 
 /// Upstream 2.0.0: `ucum:[iU]` is a second spelling of `ucum:[IU]` (UCUM
