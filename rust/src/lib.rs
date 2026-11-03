@@ -9,6 +9,7 @@
 pub mod bvnfloat;
 pub mod currency;
 pub mod decimal;
+pub mod dom;
 pub mod enums;
 pub mod error;
 #[allow(unsafe_code)]
@@ -22,6 +23,7 @@ pub mod writer;
 
 pub use bvnfloat::BvnFloat;
 pub use decimal::Decimal;
+pub use dom::{DomDoc, DomNode, DomType};
 pub use enums::{
     BaseUnit, ErrorCode, Event, Exponent, IECPrefix, Prefix, PrefixSystem, SIPrefix, TokenType,
     UnknownValue, ValueTypeFamily,
