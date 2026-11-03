@@ -32,6 +32,7 @@ pub use enums::{
 };
 pub use error::{Error, ErrorKind, Position, Result};
 pub use ffi::ValueTypeSpec;
+pub use quantity::ExactNumber;
 pub use quantity::Quantity;
 pub use reader::{EventData, EventPayload, ReadOptions, Reader, UnitPolicy, UnitRule};
 pub use unit::{MAX_UNIT_COMPONENTS, Unit, UnitComponent};
@@ -59,6 +60,12 @@ pub enum Value {
     Struct(Vec<(String, Value)>),
     /// A typed scalar with its literal, type and unit.
     Quantity(Box<Quantity>),
+    /// An exact decimal (Python's `Decimal`), written as a `float_dec:64`
+    /// literal, never through an `f64`.
+    Decimal(Decimal),
+    /// An exact rational (Python's `Fraction`), written as a `float_dec:64`
+    /// literal when its decimal expansion terminates and refused otherwise.
+    Fraction(num_rational::BigRational),
 }
 
 /// The library version, e.g. `"2.0.0"` (Python's `version`).
@@ -160,6 +167,17 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
             w.end_struct()
         }
         Value::Quantity(q) => w.write_quantity(key, q),
+        Value::Decimal(_) | Value::Fraction(_) => {
+            let number = quantity::ExactNumber::from_value(value).expect("a Decimal or Fraction");
+            let q = Quantity::from_number(
+                number,
+                ValueTypeFamily::FloatDec,
+                64,
+                None,
+                Unit::default(),
+            )?;
+            w.write_quantity(key, &q)
+        }
         Value::Array(rows) => {
             let mut vt = datetime_annotation(rows)?;
             let mut unit = None;
@@ -188,6 +206,9 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
             }
             if vt.is_none() {
                 vt = int_annotation(rows);
+            }
+            if vt.is_none() {
+                vt = decimal_annotation(rows);
             }
             if vt.is_none() && has_wide_int(rows) {
                 return Err(Error::argument(format!(
@@ -272,6 +293,20 @@ fn quantity_leaves(rows: &[Value]) -> Option<Vec<&Quantity>> {
 
 fn has_real_unit(q: &Quantity) -> bool {
     !q.unit.is_dimensionless()
+}
+
+/// Python's `_array_decimal_annotation`: `<float_dec:64>` for an array
+/// whose leaves are all decimals or fractions (nulls aside), the width a
+/// scalar decimal is written with. Written bare they would read back as a
+/// binary float or an integer.
+fn decimal_annotation(rows: &[Value]) -> Option<ValueTypeSpec> {
+    let (mut saw, mut other) = (false, false);
+    leaves(rows, &mut |v| match v {
+        Value::Null => {}
+        Value::Decimal(_) | Value::Fraction(_) => saw = true,
+        _ => other = true,
+    });
+    (saw && !other).then(|| writer::type_spec(ValueTypeFamily::FloatDec, 64, 0))
 }
 
 /// Python's `_array_datetime_annotation`: one datetime annotation for an
@@ -588,6 +623,13 @@ fn emit_element(
             w.emit(Event::StructEnd, EmitSpec::NONE)
         }
         Value::Array(rows) => emit_rows(w, rows, annotate, vt),
+        Value::Decimal(_) | Value::Fraction(_) => {
+            // The exact literal as a number; the array's annotation, when it
+            // has one, gives the real type.
+            let number = quantity::ExactNumber::from_value(elem).expect("a Decimal or Fraction");
+            let vt = writer::type_spec(ValueTypeFamily::FloatDec, 64, 0);
+            data(w, TokenType::ArrayNumber, vt, number.text()?.as_bytes())
+        }
     }
 }
 
@@ -681,7 +723,7 @@ fn held_element(elem: &Value, vt: ValueTypeSpec) -> Result<Option<(TokenType, St
             }
         }
         (F::Uint | F::Sint | F::Datetime, _) => return refuse("it is not an integer"),
-        (_, Value::Int(_) | Value::Float(_)) => {
+        (_, Value::Int(_) | Value::Float(_) | Value::Decimal(_) | Value::Fraction(_)) => {
             if fam == F::Float && vt.base != 0 && vt.base != 10 {
                 return refuse(
                     "a non-decimal float literal has to be given verbatim, as a Quantity",
@@ -690,17 +732,12 @@ fn held_element(elem: &Value, vt: ValueTypeSpec) -> Result<Option<(TokenType, St
             let text = match elem {
                 Value::Float(f) => exact_float_text(*f),
                 Value::Int(i) => i.to_string(),
-                _ => unreachable!("the arm matched an Int or a Float"),
+                _ => quantity::ExactNumber::from_value(elem)
+                    .expect("a Decimal or Fraction")
+                    .text()?,
             };
-            // decimal32 tops out below 9.9999995e96; the wider formats hold
-            // every f64.
-            if fam == F::FloatDec
-                && width == 32
-                && matches!(elem, Value::Float(f) if f.is_finite() && f.abs() >= 9.999_999_5e96)
-            {
-                return refuse(&format!(
-                    "{text} is out of range for float_dec:32 (it would materialise to infinity)"
-                ));
+            if fam == F::FloatDec {
+                quantity::check_decimal_fits(&text, width)?;
             }
             if fam == F::FloatFix
                 && !matches!(text.as_str(), "nan" | "inf" | "ninf")

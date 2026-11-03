@@ -21,8 +21,9 @@ use std::fmt;
 use std::str::FromStr;
 
 use num_bigint::{BigInt, BigUint, Sign};
+use num_integer::Integer;
 use num_rational::BigRational;
-use num_traits::{Pow, Zero};
+use num_traits::{One, Pow, Zero};
 
 use crate::error::{Error, Result};
 
@@ -35,8 +36,15 @@ enum Repr {
 
 /// An exact decimal: `(-1)^sign * coefficient * 10^exponent`, an infinity
 /// or NaN. See the module documentation.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Decimal(Repr);
+
+impl fmt::Debug for Decimal {
+    /// Python's `repr`: `Decimal("1.50")`.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Decimal({:?})", self.to_string())
+    }
+}
 
 impl Decimal {
     /// `Decimal((sign, digits, exponent))`: `coefficient * 10^exponent`,
@@ -123,6 +131,29 @@ impl Decimal {
         // Python's float() reads the decimal string too, and Rust's parser
         // rounds correctly and reads every spelling `Display` writes.
         self.to_string().parse().unwrap_or(f64::NAN)
+    }
+
+    /// The exact decimal of a rational whose reduced denominator has no
+    /// prime factors but 2 and 5, as `(numerator * 10^k / denominator, k)`
+    /// with the smallest such `k`; `None` for a non-terminating one.
+    pub(crate) fn terminating(r: &BigRational) -> Option<(BigInt, u32)> {
+        let den = r.denom();
+        let (mut d, mut a, mut b) = (den.clone(), 0u32, 0u32);
+        let (two, five) = (BigInt::from(2), BigInt::from(5));
+        while d.is_even() && !d.is_zero() {
+            d /= &two;
+            a += 1;
+        }
+        while (&d % &five).is_zero() && !d.is_zero() {
+            d /= &five;
+            b += 1;
+        }
+        if !d.is_one() {
+            return None;
+        }
+        let k = a.max(b);
+        let scale = BigInt::from(pow10(u64::from(k))) / den;
+        Some((r.numer() * scale, k))
     }
 
     /// `int * 10^exponent` as a decimal with that exponent.

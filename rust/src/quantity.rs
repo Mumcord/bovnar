@@ -42,10 +42,13 @@ impl Quantity {
         }
     }
 
-    /// A decimal number literal `text` (`"1.25"`) as a `float_dec`, `float`
-    /// or `float_fix` (with `frac` fractional bits) of `width` bits.
+    /// An exact number as a `float_dec`, `float` or `float_fix` (with
+    /// `frac` fractional bits) of `width` bits, stored as its exact decimal
+    /// literal (Python's `from_number`). `value` is an [`ExactNumber`]: a
+    /// literal (`"1.25"`), a [`Decimal`], a terminating `BigRational`, a
+    /// `BigInt` or an `f64` (only as precise as the double).
     pub fn from_number(
-        text: &str,
+        value: impl Into<ExactNumber>,
         family: ValueTypeFamily,
         width: u32,
         frac: Option<u32>,
@@ -67,7 +70,10 @@ impl Quantity {
         };
         let total = if width == 0 { 64 } else { width };
         validate_float_width(family, total)?;
-        if text.parse::<f64>().is_err() {
+        let value = value.into();
+        let text = value.text()?;
+        let text = text.as_str();
+        if matches!(value, ExactNumber::Text(_)) && text.parse::<f64>().is_err() {
             return Err(Error::argument(format!("{text:?} is not a decimal number")));
         }
         if family == ValueTypeFamily::FloatFix && !ffi::float_str_fits_fix(text, total, base) {
@@ -436,24 +442,124 @@ fn validate_float_width(family: ValueTypeFamily, width: u32) -> Result<()> {
 /// Refuses a finite decimal literal that `float_dec:width` cannot hold: the
 /// reader does not range-check a decimal float, so `1e400` written as a
 /// decimal64 would silently materialise to infinity. Only overflow is
-/// refused; rounding away extra digits or underflowing to zero is a rounding.
-fn check_decimal_fits(text: &str, width: u32) -> Result<()> {
-    // `nan`, `inf` and `ninf` have no digits and are not a range question.
-    if !text.bytes().any(|b| b.is_ascii_digit()) {
+/// refused; rounding away extra digits or underflowing to zero is a
+/// rounding. Text that is not a plain decimal literal is left to the writer.
+pub(crate) fn check_decimal_fits(text: &str, width: u32) -> Result<()> {
+    if !IEEE_WIDTHS.contains(&width) {
         return Ok(());
     }
-    let Some(bits) = ffi::float_strtodec(text, width) else {
+    let Ok(d) = text.parse::<Decimal>() else {
         return Ok(());
     };
-    // Combination field 11110 after the sign bit: infinity.
-    let top = bits.last().copied().unwrap_or(0);
-    if top & 0x7C == 0x78 {
+    if !d.is_finite() || d.is_zero() {
+        return Ok(());
+    }
+    if decimal_stored_value(&d, width)?.is_infinite() {
         return Err(Error::argument(format!(
             "{text} is out of range for float_dec:{width} (it would materialise to infinity); \
              use a wider float_dec"
         )));
     }
     Ok(())
+}
+
+/// A number [`Quantity::from_number`] takes, with what it is written as:
+/// the exact decimal literal (Python's `_exact_number_text`).
+#[derive(Clone, Debug, PartialEq)]
+pub enum ExactNumber {
+    /// A literal, used verbatim.
+    Text(String),
+    Int(BigInt),
+    /// Only as precise as the double: its shortest round-tripping decimal.
+    Float(f64),
+    Decimal(Decimal),
+    /// Written exactly when the decimal expansion terminates, refused
+    /// otherwise.
+    Fraction(BigRational),
+}
+
+impl ExactNumber {
+    /// The number inside a [`Value::Decimal`] or [`Value::Fraction`].
+    pub(crate) fn from_value(v: &Value) -> Option<Self> {
+        match v {
+            Value::Decimal(d) => Some(ExactNumber::Decimal(d.clone())),
+            Value::Fraction(f) => Some(ExactNumber::Fraction(f.clone())),
+            _ => None,
+        }
+    }
+
+    /// The exact literal: `nan`, `inf` and `ninf` for the specials, a
+    /// decimal's `str()` with a lower-case `e`, a terminating fraction's
+    /// exact decimal.
+    pub fn text(&self) -> Result<String> {
+        Ok(match self {
+            ExactNumber::Text(t) => t.clone(),
+            ExactNumber::Int(i) => i.to_string(),
+            ExactNumber::Float(f) if f.is_nan() => "nan".into(),
+            ExactNumber::Float(f) if f.is_infinite() => {
+                if *f > 0.0 { "inf" } else { "ninf" }.into()
+            }
+            ExactNumber::Float(f) => format!("{f:?}"),
+            ExactNumber::Decimal(d) => decimal_text(d),
+            ExactNumber::Fraction(fr) => {
+                // Python's scaleb() rounds this to its 28-digit context; the
+                // literal here keeps every digit, as the docstring promises.
+                let Some((scaled, k)) = Decimal::terminating(fr) else {
+                    return Err(Error::argument(format!(
+                        "{fr} is not a terminating decimal; round it to a Decimal first"
+                    )));
+                };
+                decimal_text(&Decimal::from_scaled(&scaled, -i64::from(k)))
+            }
+        })
+    }
+}
+
+/// A decimal as a literal the library reads.
+fn decimal_text(d: &Decimal) -> String {
+    if d.is_nan() {
+        "nan".into()
+    } else if d.is_infinite() {
+        if d.is_signed() { "ninf" } else { "inf" }.into()
+    } else {
+        d.to_string().replace('E', "e")
+    }
+}
+
+impl From<&str> for ExactNumber {
+    fn from(t: &str) -> Self {
+        ExactNumber::Text(t.into())
+    }
+}
+
+impl From<String> for ExactNumber {
+    fn from(t: String) -> Self {
+        ExactNumber::Text(t)
+    }
+}
+
+impl From<BigInt> for ExactNumber {
+    fn from(i: BigInt) -> Self {
+        ExactNumber::Int(i)
+    }
+}
+
+impl From<f64> for ExactNumber {
+    fn from(f: f64) -> Self {
+        ExactNumber::Float(f)
+    }
+}
+
+impl From<Decimal> for ExactNumber {
+    fn from(d: Decimal) -> Self {
+        ExactNumber::Decimal(d)
+    }
+}
+
+impl From<BigRational> for ExactNumber {
+    fn from(f: BigRational) -> Self {
+        ExactNumber::Fraction(f)
+    }
 }
 
 #[cfg(test)]
