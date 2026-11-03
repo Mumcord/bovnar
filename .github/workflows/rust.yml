@@ -1,0 +1,142 @@
+name: Rust
+
+# The Rust implementation lives in rust/ and is checked only when it, or the
+# C reference and data it is compared against, change.
+on:
+  push:
+    paths: &paths
+      - "rust/**"
+      - "src/**"
+      - "include/**"
+      - "tests/bvnr_conformance*.c"
+      - "CMakeLists*.txt"
+      - "cmake/**"
+      - ".github/workflows/rust.yml"
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Format
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Test (all features)
+        run: cargo test --workspace --all-features
+      - name: Test (no default features)
+        run: cargo test --lib --no-default-features
+      - name: Docs
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read rust-version from Cargo.toml
+        id: msrv
+        run: echo "version=$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml)" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Build
+        run: cargo build --lib --all-features
+      - name: Test
+        run: cargo test --lib --all-features
+
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown, wasm32-wasip2
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: wasm32-unknown-unknown (no default features)
+        run: cargo build --lib --target wasm32-unknown-unknown --no-default-features
+      - name: wasm32-unknown-unknown (serde only)
+        run: cargo build --lib --target wasm32-unknown-unknown --no-default-features --features serde
+      - name: wasm32-wasip2 (default features)
+        run: cargo build --lib --target wasm32-wasip2
+      - name: wasm32-wasip2 (all features)
+        run: cargo build --lib --target wasm32-wasip2 --all-features
+
+  features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      # The integration tests need the default profiles, so each combination
+      # checks and tests the library only.
+      - name: Each profile alone, and none
+        run: |
+          for features in "" profile-unece profile-qudt profile-qudt-qk profile-udunits profile-om; do
+            echo "::group::features: ${features:-none}"
+            cargo clippy --lib --no-default-features --features "$features" -- -D warnings
+            cargo test --lib --no-default-features --features "$features"
+            echo "::endgroup::"
+          done
+
+  tables:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generated unit tables match the C data in this tree
+        run: python3 -I scripts/gen-tables.py "$GITHUB_WORKSPACE" --check
+
+  conformance-c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Build the C reference (UCUM and CF off)
+        run: scripts/build-cref.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/cref"
+      - name: Upstream conformance suite against bovnar-iut
+        run: scripts/conformance-c.sh "$RUNNER_TEMP/cref"
+      - name: Differential test against the C reference (20000 inputs)
+        run: scripts/diff.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/cref" 20000
