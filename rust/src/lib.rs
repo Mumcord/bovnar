@@ -154,31 +154,43 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
         }
         Value::Quantity(q) => w.write_quantity(key, q),
         Value::Array(rows) => {
-            if let Some((vt, unit, src)) = shared_annotation(rows) {
-                return write_array(w, key, rows, Some(vt), Some(&unit), src.as_deref());
+            let mut vt = datetime_annotation(rows)?;
+            let mut unit = None;
+            if vt.is_none() {
+                (vt, unit) = quantity_annotation(rows);
             }
-            let mut annotate = false;
-            leaves(rows, &mut |v| {
-                annotate |= matches!(v, Value::Quantity(q) if needs_annotation(q))
-            });
-            if annotate {
+            let has_unit = array_has_unit(rows);
+            if unit.is_none() && has_unit && array_one_unit(rows) {
+                // One unit, several numeric types: the format takes that
+                // (homogeneity is about the unit), each element under its own
+                // annotation.
                 w.assignment(key)?;
                 return emit_rows(w, rows, true, None);
             }
-            let vt = wide_int_annotation(rows);
-            if vt.is_none() && has_wide_int(rows) {
-                // An integer past 64 bits is only readable under a width
-                // annotation, and an array has one. Beside a float, a bool or
-                // a string none covers them all, and the bare number is
-                // value_out_of_range to every reader.
+            if unit.is_none() && has_unit {
                 return Err(Error::Argument(format!(
-                    "Cannot serialise {key:?}: it holds an integer wider than 64 bits beside \
-                     elements that are not integers, and a Bovnar array has a single annotation \
-                     to give the width in. Keep wide integers in an all-integer array, or wrap \
-                     them in a Quantity."
+                    "cannot serialise {key:?}: its elements carry units but do not \
+                     agree on one type and unit, and a Bovnar array has a single \
+                     annotation for all of them; give them a common unit, or use a \
+                     struct with one field per value"
                 )));
             }
-            write_array(w, key, rows, vt, None, None)
+            if vt.is_none() && mixed_numeric_types(rows) {
+                w.assignment(key)?;
+                return emit_rows(w, rows, true, None);
+            }
+            if vt.is_none() {
+                vt = int_annotation(rows);
+            }
+            if vt.is_none() && has_wide_int(rows) {
+                return Err(Error::Argument(format!(
+                    "cannot serialise {key:?}: it holds an integer wider than 64 \
+                     bits beside elements that are not integers, and a Bovnar \
+                     array has a single annotation to give the width in"
+                )));
+            }
+            let src = unit.and_then(|_| array_unit_source(rows));
+            write_array(w, key, rows, vt, unit.as_ref(), src.as_deref())
         }
     }
 }
@@ -238,33 +250,154 @@ fn spec_version_needed(q: &Quantity) -> Option<u16> {
     }
 }
 
-/// The one annotation every non-null leaf shares, when all are quantities of
-/// the same type and unit and that annotation says something.
-fn shared_annotation(rows: &[Value]) -> Option<(ValueTypeSpec, Unit, Option<String>)> {
-    let mut first: Option<&Quantity> = None;
-    let (mut all, mut needed) = (true, false);
+/// The quantity leaves of an array, nulls skipped; `None` if any other
+/// leaf is not a quantity.
+fn quantity_leaves(rows: &[Value]) -> Option<Vec<&Quantity>> {
+    let mut out = Vec::new();
+    let mut all = true;
     leaves(rows, &mut |v| match v {
         Value::Null => {}
-        Value::Quantity(q) if q.raw.is_none() => {}
-        Value::Quantity(q)
-            if writer::is_numeric(q) || q.family() == Some(ValueTypeFamily::Datetime) =>
-        {
-            match first {
-                Some(f)
-                    if f.vtype != q.vtype || f.unit != q.unit || f.unit_source != q.unit_source =>
-                {
-                    all = false
-                }
-                _ => {
-                    first.get_or_insert(q);
-                    needed |= needs_annotation(q);
-                }
-            }
-        }
+        Value::Quantity(q) => out.push(&**q),
         _ => all = false,
     });
-    let q = first.filter(|_| all && needed)?;
-    Some((q.vtype, q.unit, q.unit_source.clone()))
+    all.then_some(out)
+}
+
+fn has_real_unit(q: &Quantity) -> bool {
+    !q.unit.is_dimensionless()
+}
+
+/// Python's `_array_datetime_annotation`: one datetime annotation for an
+/// array of datetimes (widest width wins); mixed epochs are refused.
+fn datetime_annotation(rows: &[Value]) -> Result<Option<ValueTypeSpec>> {
+    let (mut saw, mut other, mut width, mut base) = (false, false, 0, None);
+    let mut mixed = false;
+    leaves(rows, &mut |v| match v {
+        Value::Quantity(q) if q.family() == Some(ValueTypeFamily::Datetime) => {
+            saw = true;
+            width = width.max(q.vtype.width);
+            mixed |= *base.get_or_insert(q.vtype.base) != q.vtype.base;
+        }
+        _ => other = true,
+    });
+    if other || !saw {
+        return Ok(None);
+    }
+    if mixed {
+        return Err(Error::Argument(
+            "cannot serialise a datetime array whose elements use different \
+             epochs; split it into one array per epoch"
+                .into(),
+        ));
+    }
+    let width = if width == 0 { 64 } else { width };
+    Ok(Some(writer::type_spec(
+        ValueTypeFamily::Datetime,
+        width,
+        base.unwrap_or(0),
+    )))
+}
+
+/// Python's `_array_quantity_annotation`: the annotation every quantity
+/// leaf shares, when they agree on the effective type (`<uint:64>` is
+/// `<uint:64,_10>`) and the unit (`m*s` is `s*m`) and the annotation says
+/// something. The unit is `None` when it is no unit at all.
+fn quantity_annotation(rows: &[Value]) -> (Option<ValueTypeSpec>, Option<Unit>) {
+    use ValueTypeFamily as F;
+    let Some(qs) = quantity_leaves(rows) else {
+        return (None, None);
+    };
+    let key = |q: &Quantity| {
+        let fam = q.family();
+        let base = match (q.vtype.base, fam) {
+            (0, Some(F::Uint | F::Sint | F::Float)) => 10,
+            (b, _) => b,
+        };
+        let width = if q.vtype.width == 0 {
+            64
+        } else {
+            q.vtype.width
+        };
+        (q.vtype.family, width, base)
+    };
+    let Some(first) = qs.first() else {
+        return (None, None);
+    };
+    if qs.iter().any(|q| q.family() == Some(F::Datetime))
+        || qs
+            .iter()
+            .any(|q| q.unit != first.unit || key(q) != key(first))
+        || first.family() == Some(F::Plain)
+        || !qs.iter().any(|q| needs_annotation(q))
+    {
+        return (None, None);
+    }
+    (
+        Some(first.vtype),
+        has_real_unit(first).then_some(first.unit),
+    )
+}
+
+/// Python's `_array_has_unit`: any quantity leaf with a real unit.
+fn array_has_unit(rows: &[Value]) -> bool {
+    let mut any = false;
+    leaves(rows, &mut |v| {
+        any |= matches!(v, Value::Quantity(q) if has_real_unit(q));
+    });
+    any
+}
+
+/// Python's `_array_one_unit`: every non-null leaf a numeric quantity with
+/// a literal, all with the same real unit.
+fn array_one_unit(rows: &[Value]) -> bool {
+    let Some(qs) = quantity_leaves(rows) else {
+        return false;
+    };
+    let Some(first) = qs.first() else {
+        return false;
+    };
+    qs.iter()
+        .all(|q| writer::is_numeric(q) && has_real_unit(q) && q.unit == first.unit)
+}
+
+/// Python's `_array_unit_source`: the one spelling every quantity leaf
+/// agrees on, else `None`.
+fn array_unit_source(rows: &[Value]) -> Option<String> {
+    let (mut src, mut agree) = (None::<&str>, true);
+    leaves(rows, &mut |v| {
+        if let Value::Quantity(q) = v {
+            match (q.unit_source.as_deref(), src) {
+                (None, _) => agree = false,
+                (Some(s), None) => src = Some(s),
+                (Some(s), Some(first)) => agree &= s == first,
+            }
+        }
+    });
+    src.filter(|_| agree).map(str::to_owned)
+}
+
+/// Python's `_array_mixed_numeric_types`: unit-less numeric quantities, at
+/// least one with a type default synthesis would not give back.
+fn mixed_numeric_types(rows: &[Value]) -> bool {
+    use ValueTypeFamily as F;
+    let Some(qs) = quantity_leaves(rows) else {
+        return false;
+    };
+    let numeric = |q: &Quantity| {
+        matches!(
+            q.family(),
+            Some(F::Float | F::FloatDec | F::FloatFix | F::Uint | F::Sint)
+        )
+    };
+    if !qs.iter().all(|q| numeric(q) && !has_real_unit(q)) {
+        return false;
+    }
+    qs.iter().any(|q| q.raw.is_some() && needs_annotation(q))
+}
+
+/// Bits Python's `int.bit_length()` gives for `|i|`.
+fn bit_length(i: i128) -> u32 {
+    128 - i.unsigned_abs().leading_zeros()
 }
 
 /// Python's `_array_has_wide_int`: whether a plain integer leaf needs more
@@ -280,27 +413,31 @@ fn has_wide_int(rows: &[Value]) -> bool {
 
 /// Python's `_array_int_annotation`: for an all-integer array with an
 /// element wider than 64 bits, the width that holds every element.
-fn wide_int_annotation(rows: &[Value]) -> Option<ValueTypeSpec> {
-    let (mut ints, mut other, mut neg, mut width) = (false, false, false, 0);
+fn int_annotation(rows: &[Value]) -> Option<ValueTypeSpec> {
+    let (mut saw, mut other, mut neg) = (false, false, false);
+    let (mut pos_bits, mut neg_bits) = (0, 0);
     leaves(rows, &mut |v| match v {
         Value::Int(i) => {
-            ints = true;
-            neg |= *i < 0;
-            width = width.max(int_width(*i));
+            saw = true;
+            if *i < 0 {
+                neg = true;
+                neg_bits = neg_bits.max(bit_length(*i));
+            } else {
+                pos_bits = pos_bits.max(bit_length(*i));
+            }
         }
         Value::Null => {}
         _ => other = true,
     });
-    if !ints || other {
+    if !saw || other {
         return None;
     }
-    let width = if neg { width.max(2) } else { width };
-    let family = if neg {
-        ValueTypeFamily::Sint
+    let (family, width) = if neg {
+        (ValueTypeFamily::Sint, (pos_bits + 1).max(neg_bits + 1))
     } else {
-        ValueTypeFamily::Uint
+        (ValueTypeFamily::Uint, pos_bits)
     };
-    (width > 64).then(|| writer::type_spec(family, width, 0))
+    (width > 64).then(|| writer::type_spec(family, width, 10))
 }
 
 /// Writes `.key = [<annotation>] rows;`, like Python's `write_array`: a flat
@@ -368,6 +505,16 @@ fn emit_element(
     let data = |w: &mut Writer, token, vt, text: &[u8]| {
         w.data_event(Event::Data, token, vt, &none, [text, b"", b""])
     };
+    if let Some(held) = vt
+        && !matches!(elem, Value::Null | Value::Quantity(_) | Value::Array(_))
+    {
+        if matches!(elem, Value::Struct(_) | Value::Bytes(_)) {
+            return Err(refuse_under(elem, held, "an annotated array holds scalars"));
+        }
+        if let Some((token, text)) = held_element(elem, held)? {
+            return data(w, token, held, text.as_bytes());
+        }
+    }
     match elem {
         Value::Quantity(q) => {
             if annotate && writer::is_numeric(q) && q.raw.is_some() {
@@ -411,6 +558,130 @@ fn emit_element(
         }
         Value::Array(rows) => emit_rows(w, rows, annotate, vt),
     }
+}
+
+/// Python's `_refuse_under`.
+fn refuse_under(elem: &Value, vt: ValueTypeSpec, why: &str) -> Error {
+    let fam = family_name(vt.family).unwrap_or("plain");
+    let spec = if vt.width == 0 {
+        fam.to_owned()
+    } else {
+        format!("{fam}:{}", vt.width)
+    };
+    Error::Argument(format!(
+        "array element {elem:?} cannot be written under <{spec}>: {why}"
+    ))
+}
+
+fn family_name(family: i32) -> Option<&'static str> {
+    use ValueTypeFamily as F;
+    Some(match ValueTypeFamily::from_raw(family)? {
+        F::Utf8 => "utf8",
+        F::Sint => "sint",
+        F::Uint => "uint",
+        F::Float => "float",
+        F::FloatFix => "float_fix",
+        F::FloatDec => "float_dec",
+        F::Datetime => "datetime",
+        F::Bool => "bool",
+        _ => return None,
+    })
+}
+
+/// Python's `_exact_number_text` for a float: the shortest round-tripping
+/// decimal, with the format's spellings of the non-finite values.
+fn exact_float_text(f: f64) -> String {
+    if f.is_nan() {
+        "nan".into()
+    } else if f.is_infinite() {
+        if f > 0.0 { "inf" } else { "ninf" }.into()
+    } else {
+        format!("{f:?}")
+    }
+}
+
+/// Python's `_emit_held_element`: the token and literal of plain scalar
+/// `elem` held to the array annotation `vt`, refused where it does not fit.
+/// `None` for an annotation that holds its elements to nothing.
+fn held_element(elem: &Value, vt: ValueTypeSpec) -> Result<Option<(TokenType, String)>> {
+    use ValueTypeFamily as F;
+    let Some(fam) = family_name(vt.family).and(ValueTypeFamily::from_raw(vt.family)) else {
+        return Ok(None);
+    };
+    let refuse = |why: &str| Err(refuse_under(elem, vt, why));
+    let width = if vt.width == 0 { 64 } else { vt.width };
+    let held = match (fam, elem) {
+        (F::Bool, Value::Bool(b)) => (TokenType::Bool, b.to_string()),
+        (F::Bool, _) => return refuse("it is not a bool"),
+        (F::Utf8, Value::String(s)) => (TokenType::ArrayString, s.clone()),
+        (F::Utf8, _) => return refuse("it is not a str"),
+        (_, Value::Bool(_)) => return refuse("a bool is not a number"),
+        (F::Uint | F::Sint | F::Datetime, Value::Int(i)) => {
+            let (lo, hi) = if fam == F::Uint {
+                (
+                    0,
+                    if width >= 127 {
+                        i128::MAX
+                    } else {
+                        (1 << width) - 1
+                    },
+                )
+            } else if width >= 128 {
+                (i128::MIN, i128::MAX)
+            } else {
+                (-(1 << (width - 1)), (1 << (width - 1)) - 1)
+            };
+            if !(lo..=hi).contains(i) {
+                return refuse(&format!("it is outside [{lo}, {hi}]"));
+            }
+            // A datetime's `base` is its epoch index, not a radix.
+            let base = match (fam, vt.base) {
+                (F::Datetime, _) | (_, 0) => 10,
+                (_, b) => b,
+            };
+            if base == 10 {
+                (TokenType::ArrayNumber, i.to_string())
+            } else {
+                if fam == F::Sint && (base == 64 || base == 85) {
+                    return refuse(&format!("base {base} is unsigned"));
+                }
+                // Quoted, as the scalar writers do for every non-decimal base.
+                (TokenType::ArrayString, writer::format_bigint(*i, base)?)
+            }
+        }
+        (F::Uint | F::Sint | F::Datetime, _) => return refuse("it is not an integer"),
+        (_, Value::Int(_) | Value::Float(_)) => {
+            if fam == F::Float && vt.base != 0 && vt.base != 10 {
+                return refuse(
+                    "a non-decimal float literal has to be given verbatim, as a Quantity",
+                );
+            }
+            let text = match elem {
+                Value::Float(f) => exact_float_text(*f),
+                Value::Int(i) => i.to_string(),
+                _ => unreachable!("the arm matched an Int or a Float"),
+            };
+            // decimal32 tops out below 9.9999995e96; the wider formats hold
+            // every f64.
+            if fam == F::FloatDec
+                && width == 32
+                && matches!(elem, Value::Float(f) if f.is_finite() && f.abs() >= 9.999_999_5e96)
+            {
+                return refuse(&format!(
+                    "{text} is out of range for float_dec:32 (it would materialise to infinity)"
+                ));
+            }
+            if fam == F::FloatFix
+                && !matches!(text.as_str(), "nan" | "inf" | "ninf")
+                && !ffi::float_str_fits_fix(&text, width, vt.base)
+            {
+                return refuse(&format!("it does not fit q{}", vt.base));
+            }
+            (TokenType::ArrayNumber, text)
+        }
+        _ => return refuse("it is not a number"),
+    };
+    Ok(Some(held))
 }
 
 /// Python's `_decode_value`: one literal as a plain value. What cannot be

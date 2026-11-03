@@ -96,7 +96,7 @@ fn every_parse_result_round_trips_through_to_string() {
         .pos    = <sint:64> 7;
         .hexu   = <uint:16,_16> "ff";
         .fix    = <float_fix:32,q16> 1.5;
-        .units  = [<float:64,m> 1.5, <float:64,s> 2];
+        .units  = [<float:64,m> 1.5, <uint:8,m> 2];
     "#;
     let plain = parse(doc).unwrap();
     let Value::Struct(entries) = &plain else {
