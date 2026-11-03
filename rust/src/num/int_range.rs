@@ -257,6 +257,28 @@ fn pow2m1_dec(n: u32) -> Option<Vec<u8>> {
     (d.len() < DEC_SCRATCH).then_some(d)
 }
 
+/// An integer literal in `base` (optional sign, then digits) in decimal
+/// (`bvn_dom_int_to_str` with base 10), or `None` when it is not one or has
+/// 10000 or more decimal digits.
+pub(crate) fn int_to_decimal(text: &[u8], base: u32) -> Option<alloc::string::String> {
+    let (negative, digits) = match text.split_first() {
+        Some((b'-', rest)) => (true, rest),
+        Some((b'+', rest)) => (false, rest),
+        _ => (false, text),
+    };
+    if digits.is_empty() {
+        return None;
+    }
+    let dec = digits_to_dec(digits, base)?;
+    let dec = strip_zeros(&dec);
+    let mut out = alloc::string::String::with_capacity(dec.len() + 1);
+    if negative && dec != b"0" {
+        out.push('-');
+    }
+    out.extend(dec.iter().map(|&b| char::from(b)));
+    Some(out)
+}
+
 /// Converts a digit string in `base` to decimal (empty is "0"). `None` on a
 /// non-digit or a value with 10000 or more decimal digits.
 fn digits_to_dec(s: &[u8], base: u32) -> Option<Vec<u8>> {

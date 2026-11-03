@@ -222,7 +222,7 @@ fn utf8_feed_st(st: &mut (u8, u8, u8), b: u8) -> bool {
 }
 
 /// `bvn_validate_string`: the whole buffer is well-formed UTF-8.
-fn validate_utf8(data: &[u8]) -> bool {
+pub(crate) fn validate_utf8(data: &[u8]) -> bool {
     let mut st = (0, 0, 0);
     data.iter().all(|&b| utf8_feed_st(&mut st, b)) && st.0 == 0
 }

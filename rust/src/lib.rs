@@ -135,6 +135,7 @@ pub mod conformance;
 mod dom;
 mod error;
 mod event;
+pub mod json;
 mod limits;
 pub(crate) mod num;
 mod reader;

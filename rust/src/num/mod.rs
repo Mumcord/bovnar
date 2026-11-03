@@ -10,6 +10,7 @@
 mod bigint;
 mod datetime;
 mod fix;
+mod float_fmt;
 mod int_range;
 
 pub(crate) use datetime::{
@@ -17,7 +18,8 @@ pub(crate) use datetime::{
     str_is_iso_datetime, str_is_plain_integer,
 };
 pub(crate) use fix::float_str_fits_fix;
-pub(crate) use int_range::{validate_sint_range, validate_uint_range};
+pub(crate) use float_fmt::{fmt_g, parse_hex_float, shortest_bin53};
+pub(crate) use int_range::{int_to_decimal, validate_sint_range, validate_uint_range};
 
 /// The value of digit `c` in `base`, or `base` itself when `c` is not a digit
 /// of that base (`bvn_char_to_digit`).

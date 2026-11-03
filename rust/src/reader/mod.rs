@@ -11,6 +11,7 @@ mod options;
 mod queue;
 mod validator;
 
+pub(crate) use self::lexer::validate_utf8;
 use self::lexer::Lexer;
 pub use self::options::ReadOptions;
 use self::queue::QueuedEvent;
