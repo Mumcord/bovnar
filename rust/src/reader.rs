@@ -324,6 +324,11 @@ impl Reader {
         ErrorCode::from_raw(self.handle.error().code)
     }
 
+    /// The line of the last error, 0 after a clean read.
+    pub fn error_line(&self) -> u64 {
+        self.handle.error().line
+    }
+
     fn error(&self) -> Error {
         let e = self.handle.error();
         Error::Parse {
