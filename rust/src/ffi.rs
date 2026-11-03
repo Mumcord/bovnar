@@ -500,6 +500,15 @@ unsafe extern "C" {
     pub fn bvn_float_is_neg(f: *mut c_void) -> bool;
 }
 
+/// `bvn_error_to_string`: the C name of an error code, such as
+/// `"unexpected_input_byte"`.
+pub fn error_name(code: c_int) -> &'static str {
+    // SAFETY: the function returns a static NUL-terminated ASCII string and
+    // never NULL, for any code (unknown ones included).
+    let name = unsafe { std::ffi::CStr::from_ptr(bvn_error_to_string(code)) };
+    name.to_str().unwrap_or("unknown")
+}
+
 /// Checks every mirrored struct against the compiler's own layout, as printed
 /// by the upstream ABI manifest generator (tests/bvnr_abi_dump.c).
 #[cfg(all(test, not(target_family = "wasm")))]
