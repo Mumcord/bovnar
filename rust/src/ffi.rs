@@ -550,6 +550,84 @@ pub struct EventView<'a> {
     pub unit_source: &'a [u8],
     /// The converted literal when `data.converted`, or empty.
     pub conv_text: &'a [u8],
+    /// The exact converted value when `data.converted`.
+    pub conv_exact: Option<Rational<'a>>,
+}
+
+/// The exact result of a read-time conversion: the reader-owned bignums
+/// `conv.num / conv.den`, valid only for the duration of the callback.
+#[derive(Clone, Copy)]
+pub struct Rational<'a> {
+    num: *mut c_void,
+    den: *mut c_void,
+    _reader: std::marker::PhantomData<&'a BvnrData>,
+}
+
+impl std::fmt::Debug for Rational<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Rational")
+    }
+}
+
+impl<'a> Rational<'a> {
+    fn of(d: &'a BvnrData) -> Option<Self> {
+        (d.converted && !d.conv.num.is_null() && !d.conv.den.is_null()).then_some(Rational {
+            num: d.conv.num,
+            den: d.conv.den,
+            _reader: std::marker::PhantomData,
+        })
+    }
+
+    /// The reduced numerator and denominator in decimal.
+    pub fn parts(&self) -> Option<(String, String)> {
+        Some((int_to_decimal(self.num)?, int_to_decimal(self.den)?))
+    }
+
+    /// `bvn_rational_to_str`: the value in `base`; `Err` for a base the
+    /// library cannot write, `Ok(None)` when the expansion does not
+    /// terminate.
+    pub fn in_base(&self, base: u32) -> Result<Option<String>, ()> {
+        // SAFETY: num/den are live reader-owned bignums for 'a.
+        let size = unsafe { bvn_rational_str_bufsize(self.num, self.den, base) };
+        if size == 0 {
+            return Err(());
+        }
+        let mut buf = vec![0u8; size];
+        let mut exact = false;
+        // SAFETY: `buf` holds `size` bytes, as the library asked for.
+        let n = unsafe {
+            bvn_rational_to_str(
+                self.num,
+                self.den,
+                base,
+                buf.as_mut_ptr().cast(),
+                size,
+                &mut exact,
+            )
+        };
+        if n < 0 || !exact {
+            return Ok(None);
+        }
+        Ok(CStr::from_bytes_until_nul(&buf)
+            .ok()
+            .map(|t| t.to_string_lossy().into_owned()))
+    }
+}
+
+/// `bvn_int_to_str` in base 10.
+fn int_to_decimal(n: *mut c_void) -> Option<String> {
+    // SAFETY: `n` is a live bignum; the getters only read it.
+    let bits = unsafe { bvn_int_bitlen(n) }.max(1) as u32;
+    // SAFETY: plain values in.
+    let size = unsafe { bvn_int_str_bufsize(bits, 10) };
+    let mut buf = vec![0u8; size];
+    // SAFETY: `buf` holds `size` bytes, as the library asked for.
+    if unsafe { bvn_int_to_str(n, buf.as_mut_ptr().cast(), size, 10) } < 0 {
+        return None;
+    }
+    CStr::from_bytes_until_nul(&buf)
+        .ok()
+        .map(|t| t.to_string_lossy().into_owned())
 }
 
 impl<'a> EventView<'a> {
@@ -569,6 +647,7 @@ impl<'a> EventView<'a> {
             conv_text: d
                 .filter(|d| d.converted)
                 .map_or(&[][..], |d| view(d.conv.text.cast(), d.conv.length)),
+            conv_exact: d.and_then(Rational::of),
         }
     }
 }

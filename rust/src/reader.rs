@@ -110,6 +110,8 @@ pub struct EventData<'a> {
     pub converted_base: u32,
     /// The unit of `converted_text`.
     pub converted_unit: Unit,
+    /// The exact converted value, when `converted`.
+    conv_exact: Option<ffi::Rational<'a>>,
 }
 
 impl<'a> EventData<'a> {
@@ -132,7 +134,30 @@ impl<'a> EventData<'a> {
             converted_unit: d
                 .filter(|d| d.converted)
                 .map_or(Unit::default(), |d| Unit(d.conv.unit)),
+            conv_exact: view.conv_exact,
         })
+    }
+
+    /// The exact converted value as a reduced `(numerator, denominator)`
+    /// pair in decimal (it may exceed any machine integer), or `None` when no
+    /// conversion was applied (Python's `converted_rational`). The only
+    /// carrier of the value when the expansion does not terminate in the
+    /// requested base (`want_unit_allow_nonterminating`).
+    pub fn converted_rational(&self) -> Option<(String, String)> {
+        self.conv_exact?.parts()
+    }
+
+    /// The exact converted value rendered in `base` (2..62, 64 or 85), or
+    /// `None` when no conversion was applied or the value has no terminating
+    /// expansion in `base` (Python's `converted_in_base`). Fails for a base
+    /// the library cannot write.
+    pub fn converted_in_base(&self, base: u32) -> Result<Option<String>> {
+        let Some(exact) = self.conv_exact else {
+            return Ok(None);
+        };
+        exact
+            .in_base(base)
+            .map_err(|()| Error::Argument(format!("base {base} is not one bovnar can write")))
     }
 
     /// The payload as text, with invalid UTF-8 replaced.
