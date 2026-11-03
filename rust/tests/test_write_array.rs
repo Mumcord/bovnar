@@ -6,12 +6,14 @@
 //!   `write_array` takes a slice; Rust has no one-shot generator argument
 //!   whose head a probe could consume.
 //!
-//! Partly expressible: `TestDumpsBigInt::test_scalar_bigint_roundtrip` drops
-//! the cases 2**255 and -(2**255), which do not fit `Value::Int` (`i128`).
+//! In `TestDumpsBigInt::test_scalar_bigint_roundtrip` the cases 2**255 and
+//! -(2**255) do not fit `Value::Int` (`i128`): they are written as the
+//! `uint:256` / `sint:257` scalars Python's `dumps` writes for them and read
+//! back exactly through `parse_typed`.
 
 use bovnar::{
-    Error, Unit, Value, ValueTypeFamily, ValueTypeSpec, Writer, parse, parse_typed, to_string,
-    write_array,
+    Error, Quantity, Unit, Value, ValueTypeFamily, ValueTypeSpec, Writer, parse, parse_typed,
+    to_string, write_array,
 };
 
 /// Python's `DEFAULT_MEM_CAP`.
@@ -407,6 +409,28 @@ mod dumps_big_int {
             -7,
         ] {
             assert_eq!(rt("x", Value::Int(v)), Value::Int(v), "{v}");
+        }
+        let two_255: num_bigint::BigInt = num_bigint::BigInt::from(1) << 255u32;
+        // Python's widths: bit_length, one more for a negative number.
+        for (v, family, width) in [
+            (two_255.clone(), ValueTypeFamily::Uint, 256),
+            (-two_255, ValueTypeFamily::Sint, 257),
+        ] {
+            let vt = ValueTypeSpec {
+                family: family as i32,
+                width,
+                base: 0,
+            };
+            let q = Quantity::new(&v.to_string(), vt, Unit::default());
+            let doc = Value::Struct(vec![("x".into(), Value::Quantity(Box::new(q)))]);
+            let back = parse_typed(&to_string(&doc, true).unwrap()).unwrap();
+            let Value::Struct(fields) = back else {
+                panic!("not a struct");
+            };
+            let Value::Quantity(q) = &fields[0].1 else {
+                panic!("not a quantity: {:?}", fields[0].1);
+            };
+            assert_eq!(q.raw.as_deref(), Some(v.to_string().as_str()), "{v}");
         }
     }
 
