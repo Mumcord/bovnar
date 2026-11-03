@@ -667,6 +667,227 @@ impl Drop for ReaderHandle {
     }
 }
 
+/// An owned `bvn_dom_doc_t`.
+pub struct DocHandle(std::ptr::NonNull<c_void>);
+
+/// A node borrowed from a [`DocHandle`]; valid as long as the document.
+#[derive(Clone, Copy)]
+pub struct Node<'a>(
+    std::ptr::NonNull<c_void>,
+    std::marker::PhantomData<&'a DocHandle>,
+);
+
+/// Turns a borrowed `(key, node)` C entry array into Rust pairs.
+///
+/// SAFETY: `entries` must be NULL or point at `count` entries owned by a
+/// document that outlives `'a`.
+unsafe fn entries<'a>(entries: *const BvnDomEntry, count: u32) -> Vec<(&'a [u8], Node<'a>)> {
+    if entries.is_null() {
+        return Vec::new();
+    }
+    // SAFETY: guaranteed by the caller.
+    let list = unsafe { std::slice::from_raw_parts(entries, count as usize) };
+    list.iter()
+        .filter_map(|e| {
+            let node = std::ptr::NonNull::new(e.value)?;
+            let key = if e.key.is_null() {
+                &[][..]
+            } else {
+                // SAFETY: a non-NULL key is a NUL-terminated string the
+                // document owns.
+                unsafe { std::ffi::CStr::from_ptr(e.key) }.to_bytes()
+            };
+            Some((key, Node(node, std::marker::PhantomData)))
+        })
+        .collect()
+}
+
+impl DocHandle {
+    /// `bvn_dom_parse`. `None` only on allocation failure (or input over
+    /// 4 GiB, which the C length cannot express); a malformed document
+    /// returns a handle whose `parse_error` is set.
+    pub fn parse(data: &[u8]) -> Option<Self> {
+        let len = u32::try_from(data.len()).ok()?;
+        // SAFETY: `data` is valid for `len` bytes and only read during the call.
+        let doc = unsafe { bvn_dom_parse(data.as_ptr().cast_mut().cast(), len) };
+        std::ptr::NonNull::new(doc).map(Self)
+    }
+
+    /// `bvn_dom_doc_get_parse_error`.
+    pub fn parse_error(&self) -> c_int {
+        // SAFETY: the document is live.
+        unsafe { bvn_dom_doc_get_parse_error(self.0.as_ptr()) }
+    }
+
+    /// `bvn_dom_lookup`: a dotted path such as `"a.b"`.
+    pub fn lookup(&self, path: &str) -> Option<Node<'_>> {
+        let path = std::ffi::CString::new(path).ok()?;
+        // SAFETY: the document is live; `path` is NUL-terminated.
+        let node = unsafe { bvn_dom_lookup(self.0.as_ptr(), path.as_ptr()) };
+        std::ptr::NonNull::new(node).map(|n| Node(n, std::marker::PhantomData))
+    }
+
+    /// The top-level `(key, node)` pairs, in document order.
+    pub fn entries(&self) -> Vec<(&[u8], Node<'_>)> {
+        let doc = self.0.as_ptr();
+        // SAFETY: the document is live and owns the entry array.
+        unsafe { entries(bvn_dom_doc_entries(doc), bvn_dom_doc_count(doc)) }
+    }
+}
+
+impl Drop for DocHandle {
+    fn drop(&mut self) {
+        // SAFETY: the document is live and dropped exactly once; no Node can
+        // outlive it (they borrow it).
+        unsafe { bvn_dom_doc_destroy(self.0.as_ptr()) }
+    }
+}
+
+impl<'a> Node<'a> {
+    fn ptr(self) -> *mut c_void {
+        self.0.as_ptr()
+    }
+
+    /// `bvn_dom_node_type`.
+    pub fn node_type(self) -> c_int {
+        // SAFETY: the node is live (borrowed from its document).
+        unsafe { bvn_dom_node_type(self.ptr()) }
+    }
+
+    /// `bvn_dom_get_value_type`.
+    pub fn value_type(self) -> ValueTypeSpec {
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_value_type(self.ptr()) }
+    }
+
+    /// `bvn_dom_get_unit_string`: the canonical unit, empty when unitless.
+    pub fn unit_string(self) -> String {
+        let mut buf = vec![0u8; UNIT_STRING_MAX];
+        // SAFETY: the node is live; `buf` has UNIT_STRING_MAX writable bytes.
+        let n = unsafe { bvn_dom_get_unit_string(self.ptr(), buf.as_mut_ptr().cast(), buf.len()) };
+        buf.truncate(usize::try_from(n).unwrap_or(0).min(UNIT_STRING_MAX));
+        String::from_utf8_lossy(&buf).into_owned()
+    }
+
+    /// `bvn_dom_get_i64`.
+    pub fn get_i64(self) -> Option<i64> {
+        let mut v = 0;
+        // SAFETY: the node is live; `v` is a valid out-param.
+        unsafe { bvn_dom_get_i64(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// `bvn_dom_get_u64`.
+    pub fn get_u64(self) -> Option<u64> {
+        let mut v = 0;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_u64(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// `bvn_dom_get_float`.
+    pub fn get_float(self) -> Option<f64> {
+        let mut v = 0.0;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_float(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// `bvn_dom_get_bool`.
+    pub fn get_bool(self) -> Option<bool> {
+        let mut v = false;
+        // SAFETY: as above.
+        unsafe { bvn_dom_get_bool(self.ptr(), &mut v) }.then_some(v)
+    }
+
+    /// The bytes of a string, symbol, reference or octet-stream node,
+    /// chosen by `getter`.
+    fn get_bytes(
+        self,
+        getter: unsafe extern "C" fn(*mut c_void, *mut *const c_void, *mut u32) -> bool,
+    ) -> Option<&'a [u8]> {
+        let mut ptr = std::ptr::null();
+        let mut len = 0;
+        // SAFETY: the node is live; on success ptr/len describe bytes the
+        // node owns, so they live as long as the document.
+        unsafe { getter(self.ptr(), &mut ptr, &mut len).then(|| bytes(ptr, len)) }
+    }
+
+    /// `bvn_dom_get_string`.
+    pub fn get_string(self) -> Option<&'a [u8]> {
+        self.get_bytes(bvn_dom_get_string)
+    }
+
+    /// `bvn_dom_get_symbol`.
+    pub fn get_symbol(self) -> Option<&'a [u8]> {
+        self.get_bytes(bvn_dom_get_symbol)
+    }
+
+    /// `bvn_dom_get_reference`.
+    pub fn get_reference(self) -> Option<&'a [u8]> {
+        self.get_bytes(bvn_dom_get_reference)
+    }
+
+    /// `bvn_dom_get_octets`.
+    pub fn get_octets(self) -> Option<&'a [u8]> {
+        self.get_bytes(bvn_dom_get_octets)
+    }
+
+    /// `bvn_dom_int_to_str`: any integer node, however wide, in `base`.
+    pub fn int_to_str(self, base: u32) -> Option<String> {
+        // SAFETY: the node is live.
+        let s = unsafe { bvn_dom_int_to_str(self.ptr(), base) };
+        if s.is_null() {
+            return None;
+        }
+        // SAFETY: a non-NULL result is a fresh NUL-terminated string that we
+        // own and release exactly once, after copying it.
+        unsafe {
+            let text = std::ffi::CStr::from_ptr(s.cast())
+                .to_string_lossy()
+                .into_owned();
+            bvn_dom_free_string(s);
+            Some(text)
+        }
+    }
+
+    /// `bvn_dom_struct_count`.
+    pub fn struct_count(self) -> u32 {
+        // SAFETY: the node is live.
+        unsafe { bvn_dom_struct_count(self.ptr()) }
+    }
+
+    /// `bvn_dom_array_count`.
+    pub fn array_count(self) -> u32 {
+        // SAFETY: the node is live.
+        unsafe { bvn_dom_array_count(self.ptr()) }
+    }
+
+    /// `bvn_dom_array_dims`.
+    pub fn array_dims(self) -> u32 {
+        // SAFETY: the node is live.
+        unsafe { bvn_dom_array_dims(self.ptr()) }
+    }
+
+    /// `bvn_dom_struct_get`.
+    pub fn struct_get(self, key: &str) -> Option<Node<'a>> {
+        let key = std::ffi::CString::new(key).ok()?;
+        // SAFETY: the node is live; `key` is NUL-terminated.
+        let n = unsafe { bvn_dom_struct_get(self.ptr(), key.as_ptr()) };
+        std::ptr::NonNull::new(n).map(|n| Node(n, std::marker::PhantomData))
+    }
+
+    /// `bvn_dom_array_at`.
+    pub fn array_at(self, index: u32) -> Option<Node<'a>> {
+        // SAFETY: the node is live; the library bounds-checks `index`.
+        let n = unsafe { bvn_dom_array_at(self.ptr(), index) };
+        std::ptr::NonNull::new(n).map(|n| Node(n, std::marker::PhantomData))
+    }
+
+    /// The `(key, node)` pairs of a struct node, in document order.
+    pub fn struct_entries(self) -> Vec<(&'a [u8], Node<'a>)> {
+        // SAFETY: the node is live and owns its entry array.
+        unsafe { entries(bvn_dom_struct_entries(self.ptr()), self.struct_count()) }
+    }
+}
+
 /// Checks every mirrored struct against the compiler's own layout, as printed
 /// by the upstream ABI manifest generator (tests/bvnr_abi_dump.c).
 #[cfg(all(test, not(target_family = "wasm")))]
