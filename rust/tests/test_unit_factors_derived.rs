@@ -773,7 +773,10 @@ fn test_factor_matches_its_definition() {
 #[test]
 fn test_the_faq_category_breakdown_adds_up() {
     let total = units().len();
-    let faq = std::fs::read_to_string(format!("{ROOT}/doc/02_bovnar_faq.md")).expect("read FAQ");
+    // A Windows checkout may turn the FAQ's line endings into CRLF.
+    let faq = std::fs::read_to_string(format!("{ROOT}/doc/02_bovnar_faq.md"))
+        .expect("read FAQ")
+        .replace("\r\n", "\n");
     let marker = " named base units across the following categories:\n\n";
     let at = faq
         .find(marker)
