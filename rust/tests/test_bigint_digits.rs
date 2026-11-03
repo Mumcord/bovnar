@@ -1,21 +1,26 @@
 //! Port of `python/tests/test_bigint_digits.py`: integers far wider than any
 //! machine integer, up to the format's 32768 bits.
 //!
+//! A Rust `Value::Int` is an `i128`, so a Python int of thousands of digits
+//! is a `Value::Quantity` here: its exact decimal literal under a
+//! `uint`/`sint` annotation as wide as the number (what Python's `dumps`
+//! writes for it), built from a `BigInt`. Untyped `parse` has no integer
+//! wider than `i128` to return, so where Python checks `loads` the port reads
+//! the value back exactly through `parse_typed` (`Quantity::raw` parsed as a
+//! `BigInt`, and `Quantity::decimal`) or through `DomNode::as_int_str`.
+//!
 //! Not ported:
 //! - `test_helpers_round_trip_past_the_limit`: tests Python's private
 //!   `_bigint` helpers, which exist only to sidestep CPython's
 //!   `int_max_str_digits`; Rust has no such limit and no such helpers.
-//! - `test_loads_dumps_round_trip`, `test_array_round_trip`,
-//!   `test_dom_to_python`, `test_write_array_under_a_wide_annotation`,
-//!   `test_write_uint_refusal_message_does_not_raise_valueerror`: their values
-//!   are Python ints of thousands of digits; a Rust `Value::Int` is an `i128`,
-//!   so no such value can be built. (`test_quantity_from_number` passes them
-//!   to `Quantity::from_number`, which takes a `BigInt`.)
+//! - `test_write_uint_refusal_message_does_not_raise_valueerror`: passes
+//!   10**5000 to `write_uint`, whose Rust value is a `u64`; the call cannot
+//!   be written.
 //! - `test_numpy_object_array`: NumPy is not mirrored (README).
 
 use bovnar::{
     BaseUnit, Decimal, Error, Event, EventData, Exponent, Quantity, ReadOptions, Reader, SIPrefix,
-    Unit, Value, ValueTypeFamily, parse_typed, to_string,
+    Unit, Value, ValueTypeFamily, ValueTypeSpec, Writer, parse_typed, to_string, write_array,
 };
 use num_bigint::BigInt;
 use num_traits::{One, Pow};
@@ -28,6 +33,82 @@ fn big() -> [BigInt; 3] {
         -Pow::pow(&ten, 9000u32) + 1,
         (BigInt::one() << 32767) - 1,
     ]
+}
+
+/// The type Python's `dumps` writes `n` under: a `uint`/`sint` exactly as
+/// wide as the number (`write_bvni(key, n, width=n.bit_length())`, one more
+/// bit for a negative number).
+fn wide_type(n: &BigInt) -> ValueTypeSpec {
+    let (family, width) = if n.sign() == num_bigint::Sign::Minus {
+        (ValueTypeFamily::Sint, n.bits() + 1)
+    } else {
+        (ValueTypeFamily::Uint, n.bits())
+    };
+    ValueTypeSpec {
+        family: family as i32,
+        width: u32::try_from(width).unwrap(),
+        base: 0,
+    }
+}
+
+/// `n` as a typed scalar of type `vt`.
+fn int_of(n: &BigInt, vt: ValueTypeSpec) -> Value {
+    Value::Quantity(Box::new(Quantity::new(&n.to_string(), vt, Unit::default())))
+}
+
+/// `n` as Python's `dumps` writes it.
+fn wide(n: &BigInt) -> Value {
+    int_of(n, wide_type(n))
+}
+
+/// The fields of a typed parse of `doc`.
+fn typed_fields(doc: &[u8]) -> Vec<(String, Value)> {
+    let Value::Struct(fields) = parse_typed(doc).unwrap() else {
+        panic!("not a struct");
+    };
+    fields
+}
+
+/// The exact integer a typed scalar holds.
+fn typed_int(v: &Value) -> BigInt {
+    let Value::Quantity(q) = v else {
+        panic!("not a quantity: {v:?}");
+    };
+    q.raw.as_deref().unwrap().parse().unwrap()
+}
+
+#[test]
+fn test_loads_dumps_round_trip() {
+    for n in big() {
+        let doc = to_string(&Value::Struct(vec![("a".into(), wide(&n))]), true).unwrap();
+        let back = &typed_fields(&doc)[0].1;
+        assert_eq!(typed_int(back), n);
+        let Value::Quantity(q) = back else {
+            unreachable!()
+        };
+        assert_eq!(q.decimal().unwrap(), Some(Decimal::from(n.clone())));
+    }
+}
+
+#[test]
+fn test_array_round_trip() {
+    for n in big() {
+        let doc = to_string(
+            &Value::Struct(vec![(
+                "a".into(),
+                // Python annotates the whole array with the widest element's
+                // type, so both elements carry it here.
+                Value::Array(vec![wide(&n), int_of(&BigInt::one(), wide_type(&n))]),
+            )]),
+            true,
+        )
+        .unwrap();
+        let Value::Array(back) = &typed_fields(&doc)[0].1 else {
+            panic!("not an array");
+        };
+        let back: Vec<BigInt> = back.iter().map(typed_int).collect();
+        assert_eq!(back, [n, BigInt::one()]);
+    }
 }
 
 /// A wide literal written by hand keeps every digit through the typed parse.
@@ -109,4 +190,48 @@ fn test_quantity_from_number() {
         // decimal64 cannot hold it: a range refusal
         assert!(matches!(from_number(&n, 64), Err(Error::Argument { .. })));
     }
+}
+
+#[test]
+fn test_dom_to_python() {
+    for n in big() {
+        let doc = to_string(
+            &Value::Struct(vec![
+                ("a".into(), wide(&n)),
+                ("s".into(), Value::Struct(vec![("b".into(), wide(&n))])),
+            ]),
+            true,
+        )
+        .unwrap();
+        let dom = bovnar::DomDoc::parse(&doc).unwrap();
+        let digits = n.to_string();
+        assert_eq!(dom.get("a").unwrap().as_int_str(10), Some(digits.clone()));
+        assert_eq!(dom.lookup("s.b").unwrap().as_int_str(10), Some(digits));
+    }
+}
+
+#[test]
+fn test_write_array_under_a_wide_annotation() {
+    let n: BigInt = Pow::pow(&BigInt::from(10), 9000u32);
+    let vt = ValueTypeSpec {
+        family: ValueTypeFamily::Uint as i32,
+        width: 32768,
+        base: 0,
+    };
+    let mut w = Writer::to_mem(bovnar::writer::DEFAULT_MEM_CAP, false).unwrap();
+    write_array(
+        &mut w,
+        "a",
+        &[int_of(&n, vt), Value::Int(2)],
+        Some(vt),
+        None,
+        None,
+    )
+    .unwrap();
+    w.finish().unwrap();
+    let Value::Array(back) = &typed_fields(w.get_output())[0].1 else {
+        panic!("not an array");
+    };
+    let back: Vec<BigInt> = back.iter().map(typed_int).collect();
+    assert_eq!(back, [n, BigInt::from(2)]);
 }
