@@ -9,14 +9,11 @@ Rust bindings for the **Bovnar (BVNR)** typed serialisation library (library
 
 The crate is a thin wrapper around the C library: `build.rs` compiles the C
 sources into the crate, so there is no system library to install and nothing is
-looked up at run time. It is modelled one to one on the
-[Python bindings](09_bovnar_python_bindings.md) — the same names, the same entry
-points and the same behaviour — and **it mirrors Python's shapes rather than
-being an idiomatic Rust API**. Expect `parse` / `to_string` over a dynamic
-`Value`, `Reader` callbacks and `Writer` calls; there is no serde integration,
-no builder and no typed deserialisation. Where Rust's types can say more than
-Python's at no cost to that mirror they do: the C enums are Rust enums, and an
-error carries the library's error kind.
+looked up at run time. The API stays close to the C library's own shapes:
+`parse` / `to_string` over a dynamic `Value`, `Reader` callbacks, `Writer` calls
+and a random-access DOM. There is no serde integration, no builder and no typed
+deserialisation. Where Rust's types can say more at no cost, they do: the C
+enums are Rust enums, and an error carries the library's error kind.
 
 ---
 
@@ -89,13 +86,12 @@ error carries the library's error kind.
 |---|---|
 | Rust ≥ 1.88 | The crate's `rust-version`; CI builds and tests on it |
 | A C compiler | `build.rs` compiles the C library through the `cc` crate |
-| `python3` on `PATH` | The build runs the upstream table generators (`gen_units.py` and friends), exactly as CMake does. Set `PYTHON` to name a different interpreter |
-| `num-bigint`, `num-rational`, `num-integer`, `num-traits` | Pulled in by Cargo; they carry the exact numbers (Python's `int`, `Fraction` and the coefficient of its `Decimal`) |
+| Python 3 on `PATH` (build time only) | The build runs the upstream table generator scripts, exactly as CMake does. Set the `PYTHON` environment variable to name a different interpreter. Nothing needs it at run time |
+| `num-bigint`, `num-rational`, `num-integer`, `num-traits` | Pulled in by Cargo; they carry the exact numbers (arbitrary-width integers, rational numbers and the coefficient of a `Decimal`) |
 | [wasi-sdk](https://github.com/WebAssembly/wasi-sdk) | **Only** for the `wasm32-wasip2` target — see [§3](#3-building-the-c-library) |
 
-There are no optional features and no optional dependencies. The two Python
-bridges — **pint** and **NumPy** — have no Rust counterpart (they bridge two
-Python-only libraries); see [§16](#16-crate-layout).
+There are no optional features and no optional dependencies, and no integration
+with third-party unit or array libraries; see [§16](#16-crate-layout).
 
 ---
 
@@ -135,14 +131,14 @@ cargo test
 
 ## 3. Building the C library
 
-Where the Python bindings search for `libbvnr.so` at import time, the Rust crate
-has nothing to find: `build.rs` generates the unit tables with the repository's
-Python generators and compiles `../src` and `../include` into the crate. A
-downstream crate therefore needs a C compiler and Python at build time and
-nothing at run time.
+The crate has no shared library to find: `build.rs` generates the unit tables
+with the repository's table generators and compiles `../src` and `../include`
+into the crate. A downstream crate therefore needs a C compiler and the
+generators' interpreter ([§1](#1-requirements)) at build time and nothing at run
+time.
 
-`build.rs` re-runs when the C sources, the generators, `PYTHON` or
-`WASI_SDK_PATH` change.
+`build.rs` re-runs when the C sources, the generators, the interpreter override
+or `WASI_SDK_PATH` change.
 
 ### 3.1 WebAssembly (`wasm32-wasip2`)
 
@@ -164,8 +160,8 @@ The same applies to a crate that depends on this one and is built for
 
 ### 4.1 High-level API (`parse` / `to_string`)
 
-The dynamic document type is `Value`. `parse` is Python's `loads`, `to_string`
-is Python's `dumps`:
+The dynamic document type is `Value`. `parse` reads BVNR bytes into a `Value`
+and `to_string` writes a `Value` out as BVNR bytes:
 
 ```rust
 use bovnar::{Value, parse, to_string};
@@ -190,29 +186,29 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
-`Value` is the Rust counterpart of what `loads` returns and `dumps` takes:
+`Value` is what `parse` returns and `to_string` takes:
 
-| Variant | Python | Notes |
-|---|---|---|
-| `Null` | `None` | |
-| `Bool(bool)` | `bool` | |
-| `Int(i128)` | `int` | Any integer up to 128 bits, `uint64` and `sint64` included |
-| `Float(f64)` | `float` | |
-| `String(String)` | `str` | Symbols and references read back as strings too |
-| `Bytes(Vec<u8>)` | `bytes` | An octet stream |
-| `Array(Vec<Value>)` | `list` | A multi-row array is an array of row arrays |
-| `Struct(Vec<(String, Value)>)` | `dict` | Keys in document order; a struct is a `Vec` of pairs, not a map |
-| `Quantity(Box<Quantity>)` | `Quantity` | A typed scalar with its literal, type and unit |
-| `Decimal(Decimal)` | `Decimal` | Written as an exact `float_dec:64` literal |
-| `Fraction(BigRational)` | `Fraction` | Written as an exact `float_dec:64` literal when it terminates |
+| Variant | Notes |
+|---|---|
+| `Null` | |
+| `Bool(bool)` | |
+| `Int(i128)` | Any integer up to 128 bits, `uint64` and `sint64` included |
+| `Float(f64)` | |
+| `String(String)` | Symbols and references read back as strings too |
+| `Bytes(Vec<u8>)` | An octet stream |
+| `Array(Vec<Value>)` | A multi-row array is an array of row arrays |
+| `Struct(Vec<(String, Value)>)` | Keys in document order; a struct is a `Vec` of pairs, not a map |
+| `Quantity(Box<Quantity>)` | A typed scalar with its literal, type and unit |
+| `Decimal(Decimal)` | Written as an exact `float_dec:64` literal |
+| `Fraction(BigRational)` | Written as an exact `float_dec:64` literal when it terminates |
 
-`parse_typed` is `loads(typed=True)`: typed values come back as
+`parse_typed` is `parse` with typed values kept: they come back as
 `Value::Quantity` instead of being decoded to native scalars. That preserves the
 original text representation, exact type width, numeral base and physical unit
 for lossless round trips:
 
 ```rust
-use bovnar::{Quantity, Value, parse_typed, to_string};
+use bovnar::{Value, parse_typed, to_string};
 
 fn main() -> Result<(), bovnar::Error> {
     let bvnr = b".pressure = <float:32,Pa> 101325.0;";
@@ -220,7 +216,7 @@ fn main() -> Result<(), bovnar::Error> {
     let Value::Struct(fields) = &doc else { unreachable!() };
     let Value::Quantity(q) = &fields[0].1 else { unreachable!() };
     assert_eq!(q.raw.as_deref(), Some("101325.0"));
-    assert_eq!(Quantity::unit_str(q), "Pa");
+    assert_eq!(q.unit_str(), "Pa");
 
     // to_string() accepts Quantity values — annotation and raw text are re-emitted as-is
     let out = to_string(&doc, true)?;
@@ -232,7 +228,10 @@ fn main() -> Result<(), bovnar::Error> {
 `to_string(value, pretty)` takes a `Value::Struct` — any other top-level value is
 an `Error::Argument`. Its write buffer starts at 4 MiB and doubles on overflow
 up to 256 MiB; there is no `cap` argument. It returns `Vec<u8>` rather than
-`String`, because an octet stream is written raw.
+`String`, because an octet stream is written raw. `write_to(value, pretty, out)`
+does the same into any `std::io::Write`, and `parse_reader(input)` /
+`parse_typed_reader(input)` read from any `std::io::Read`
+([§4.7](#47-files-and-io-streams-stdioread--write)).
 
 > **`to_string()` writes what `parse()` reads — the streaming tier, not the
 > document tier.** `parse()` checks the grammar and each value's own type, unit
@@ -275,7 +274,7 @@ fn main() -> Result<(), bovnar::Error> {
     let mut values = Vec::new();
     let mut on_event = |d: &EventData<'_>| {
         if d.event == Event::AssignmentStart {
-            keys.push(EventData::text(d));
+            keys.push(d.text());
         } else if d.event == Event::Data {
             values.push(d.raw.to_vec());
         }
@@ -299,7 +298,7 @@ fn main() -> Result<(), bovnar::Error> {
 | `d.value_type` | `ValueTypeSpec` | The type annotation (family, width, base) |
 | `d.value_unit` | `Unit` | The unit the value carries (dimensionless when it has none) |
 | `d.raw` | `&[u8]` | The raw token bytes |
-| `EventData::text` | `String` | The token bytes as text, invalid UTF-8 replaced |
+| `text()` | `String` | The token bytes as text, invalid UTF-8 replaced |
 | `d.frac` | `&[u8]` | Verbatim ISO sub-second digits of a `datetime` literal (spec 1.1); empty when there are none |
 | `d.unit_source` | `&[u8]` | The unit exactly as the document spelled it (library 2.0); empty when the value carries no unit |
 | `d.converted` | `bool` | `true` when a `want_unit` conversion or a unit policy was applied |
@@ -309,28 +308,25 @@ fn main() -> Result<(), bovnar::Error> {
 | `d.converted_rational()` | `Option<(String, String)>` | The exact conversion as `(numerator, denominator)` decimal strings — they may exceed any machine integer |
 | `d.converted_in_base(base)` | `Result<Option<String>>` | The exact conversion re-rendered in `base` |
 
-Python's `data.raw_str()` / `raw_bytes()` / `converted_str()` are the `text()`
-method and the `raw`, `converted_text` fields.
-
 **The borrow ends with the callback.** `EventData<'a>` borrows the reader's
-memory, so a field cannot be kept past the call; copy what you need (`EventData::text`,
-`d.raw.to_vec()`). Python's payload is a copy the binding owns and can outlive
-its callback; here that copy is [`EventPayload`](#104-eventdata-and-eventpayload),
-which `iter_mem` collects for you.
+memory, so a field cannot be kept past the call; copy what you need (`text()`,
+`d.raw.to_vec()`). The owned copy that can outlive its callback is
+[`EventPayload`](#104-eventdata-and-eventpayload), which `iter_mem` collects for
+you.
 
 ### 4.3 Collecting events
 
 `Reader::iter_mem` returns the events as a `Vec` of owned `EventPayload` values
-(Python's generator, read to the end):
+(the whole stream, read to the end):
 
 ```rust
-use bovnar::{EventPayload, Reader};
+use bovnar::Reader;
 
 fn main() -> Result<(), bovnar::Error> {
     let bvnr_bytes = b".a = 1; .b = 2;";
     let mut r = Reader::new()?;
     for payload in r.iter_mem(bvnr_bytes, true, 0)? {
-        println!("{:?} {}", payload.event, EventPayload::text(&payload));
+        println!("{:?} {}", payload.event, payload.text());
     }
     Ok(())
 }
@@ -339,7 +335,7 @@ fn main() -> Result<(), bovnar::Error> {
 ### 4.4 DOM (random-access) API
 
 ```rust
-use bovnar::{DomDoc, DomNode, DomType};
+use bovnar::{DomDoc, DomType};
 
 fn main() -> Result<(), bovnar::Error> {
     let bvnr_bytes = br#"
@@ -361,7 +357,7 @@ fn main() -> Result<(), bovnar::Error> {
 
     // Array access
     let arr = doc.get("values").expect("present");
-    assert_eq!(DomNode::dom_type(arr), Some(DomType::Array));
+    assert_eq!(arr.dom_type(), Some(DomType::Array));
     let sum: f64 = (0..arr.len()).filter_map(|i| arr.at(i)?.as_float()).sum();
     assert_eq!(sum, 7.5);
 
@@ -392,7 +388,7 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
-Unlike Python, the scalar writers take **no unit arguments**: write a value with
+The scalar writers take **no unit arguments**: write a value with
 a unit through [`write_quantity`](#113-scalar-write-methods) or
 [`write_array`](#7-write_array-helper), which take a `Unit`.
 
@@ -431,21 +427,24 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
-The function arguments Python spells as keywords are positional here:
+All arguments are positional:
 
-| Function | Arguments | Python |
-|---|---|---|
-| `frame_documents(docs)` | already-serialised documents, `&[impl AsRef<[u8]>]` | — |
-| `dump_documents(values, pretty)` | `&[Value]` | `dump_documents` |
-| `load_documents(data, typed, continue_past_failed, max_document_size)` | `max_document_size` 0 is the default cap (`BVNR_DOC_DEFAULT_MAX`, 256 MiB) | `load_documents` |
-| `mux_dump(messages, key)` | `(u64, payload)` pairs; Python's default key is `"mux"` | `mux_dump` |
-| `mux_load(data, max_message, key)` | `max_message` 0 is the default cap (`BVNR_MUX_DEFAULT_MAX`, 64 MiB); `key` `None` accepts any | `mux_load` |
-| `embed_document(inner, key, pretty)` | Python's default key is `"payload"` | `embed_document` |
-| `parse_embedded(inner, typed)` | | `parse_embedded` |
+| Function | Arguments |
+|---|---|
+| `frame_documents(docs)` | already-serialised documents, `&[impl AsRef<[u8]>]` |
+| `dump_documents(values, pretty)` | `&[Value]` |
+| `load_documents(data, typed, continue_past_failed, max_document_size)` | `max_document_size` 0 is the default cap (`BVNR_DOC_DEFAULT_MAX`, 256 MiB) |
+| `mux_dump(messages, key)` | `(u64, payload)` pairs; the conventional key is `"mux"` |
+| `mux_load(data, max_message, key)` | `max_message` 0 is the default cap (`BVNR_MUX_DEFAULT_MAX`, 64 MiB); `key` `None` accepts any |
+| `embed_document(inner, key, pretty)` | the conventional key is `"payload"` |
+| `parse_embedded(inner, typed)` | |
 
 `parse_embedded` returns an `Error::Parse` carrying the inner document's own
 error code and, where the library reported one, its position. `mux_dump`
-channels are `u64`, so the range check Python makes at run time is the type.
+channels are `u64`, so the channel range is checked by the type.
+
+Each function has a twin for `std::io::Read` or `std::io::Write`
+([§4.7](#47-files-and-io-streams-stdioread--write)).
 
 The `Reader` and `Writer` types of [§10](#10-reader-reference) and
 [§11](#11-writer-reference) are the building blocks underneath: use them
@@ -454,10 +453,10 @@ one buffer.
 
 ### 4.7 Files and I/O streams (`std::io::Read` / `Write`)
 
-Python's `read_fd`, `parse_fd` and `to_fd` — and, given an opened
-`std::fs::File`, its `read_file`, `parse_file` and `to_file` — take any
-`std::io::Read` or `std::io::Write` here: a `File`, a pipe, a socket, a
-`Cursor`.
+Every entry point that reads or writes a whole document has a twin that takes
+any `std::io::Read` or `std::io::Write`: a `File`, a pipe, a socket, a `Cursor`.
+There is no separate path-based or file-descriptor form; open the `File` and
+pass it in.
 
 ```rust
 use std::io::Cursor;
@@ -491,21 +490,59 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-| Python | Rust |
+The plain-value and `stream` functions have twins too:
+
+```rust
+use std::io::Cursor;
+use bovnar::{parse_reader, stream, write_to};
+
+fn main() -> Result<(), bovnar::Error> {
+    let value = parse_reader(Cursor::new(b".a = 1;"))?;
+
+    // Serialise into any Write; here a Vec<u8>
+    let mut out = Vec::new();
+    write_to(&value, false, &mut out)?;
+    assert_eq!(bovnar::parse(&out)?, value);
+
+    // Framed documents round-trip through a Write and a Read
+    let mut framed = Vec::new();
+    stream::dump_documents_to(&[value.clone(), value.clone()], false, &mut framed)?;
+    let docs = stream::load_documents_reader(Cursor::new(framed), false, false, 0)?;
+    assert_eq!(docs, [Some(value.clone()), Some(value)]);
+    Ok(())
+}
+```
+
+| In-memory entry point | Reader or writer twin |
 |---|---|
-| `Reader.read_fd(fd, …)` / `read_file(path, …)` | `Reader::read_reader(input, &options, on_verified, on_unverified)` |
-| `read_fd(…, want_unit=…)` | `Reader::read_reader_want_unit(input, &options, want_unit, on_verified)` |
-| `DomDoc.parse_fd(fd)` / `parse_file(path)` | `DomDoc::parse_reader(input)` |
-| `DomDoc.parse_fd` with a policy | `DomDoc::parse_reader_with_policy(input, &policy)` |
-| `Writer.to_fd(fd, …)` / `to_file(path, …)` | `Writer::to_writer(out, pretty)` |
-| `to_fd(…, unit_flags=…, emit_version=…)` | `Writer::to_writer_with(out, cap, pretty, unit_flags, emit_version)` |
+| `parse(data)` | `parse_reader(input)` |
+| `parse_typed(data)` | `parse_typed_reader(input)` |
+| `to_string(value, pretty)` | `write_to(value, pretty, out)` |
+| `Reader::read_mem(data, …)` | `Reader::read_reader(input, &options, on_verified, on_unverified)` |
+| `Reader::read_mem_want_unit(data, …)` | `Reader::read_reader_want_unit(input, &options, want_unit, on_verified)` |
+| `DomDoc::parse(data)` | `DomDoc::parse_reader(input)` |
+| `DomDoc::parse_with_policy(data, &policy)` | `DomDoc::parse_reader_with_policy(input, &policy)` |
+| `Writer::to_mem(cap, pretty)` | `Writer::to_writer(out, pretty)` |
+| `Writer::to_mem_with(cap, pretty, unit_flags, emit_version)` | `Writer::to_writer_with(out, cap, pretty, unit_flags, emit_version)` |
+| `stream::frame_documents(docs)` | `stream::frame_documents_to(docs, out)` |
+| `stream::dump_documents(values, pretty)` | `stream::dump_documents_to(values, pretty, out)` |
+| `stream::load_documents(data, typed, continue_past_failed, max_document_size)` | `stream::load_documents_reader(input, typed, continue_past_failed, max_document_size)` |
+| `stream::mux_dump(messages, key)` | `stream::mux_dump_to(messages, key, out)` |
+| `stream::mux_load(data, max_message, key)` | `stream::mux_load_reader(input, max_message, key)` |
+| `stream::embed_document(inner, key, pretty)` | `stream::embed_document_to(inner, key, pretty, out)` |
+| `stream::parse_embedded(inner, typed)` | `stream::parse_embedded_reader(input, typed)` |
 
 **They go through memory.** The C library takes no callback source or sink, so
 nothing is streamed incrementally. A reader's input is read in full first —
 to one byte past `ReadOptions::max_file_size` when that is set, so a document over
-the cap fails with `file_too_long` at the same offset as in Python, and to at most
-`DOM_READ_MAX_BYTES` (256 MiB, the cap of `bvn_dom_parse_fd`) for the DOM — and
-then parsed as `read_mem` parses it, so the events are the same. A writer puts its
+the cap fails with `file_too_long` at the same offset as `read_mem` reports, and
+to at most `DOM_READ_MAX_BYTES` (256 MiB, the cap of `bvn_dom_parse_fd`) for the
+DOM — and then parsed as `read_mem` parses it, so the events are the same. The
+plain-value twins (`parse_reader`, `parse_typed_reader`) and the `stream` readers
+read their input to its end with no cap; `load_documents_reader` and
+`mux_load_reader` then apply `max_document_size` and `max_message` in the parse,
+as their in-memory twins do. The `stream` writers and `write_to` serialise first,
+so nothing reaches `out` when serialising fails; then they write once and flush. A writer puts its
 document together in a memory sink of `DEFAULT_MEM_CAP` (4 MiB) bytes, or the
 `cap` of `to_writer_with`, and **`finish()` writes it to `out` once and flushes
 it**: nothing reaches `out` before then. Writing past the cap fails with
@@ -516,8 +553,7 @@ A failing `input` or `out` is an `Error::Io` ([§13](#13-error-handling)) with t
 code the C library gives an unreadable fd source or unwritable fd sink
 (`reading_from_source_fd`, `writing_to_sink`); no event is delivered for a reader
 that failed, because nothing is parsed before the input has been read. No file
-descriptor is involved, so these work the same on Windows. `parse`, `to_string`
-and the `stream` helpers have no fd form in Python, and so none here.
+descriptor is involved, so these work the same on Windows.
 
 ---
 
@@ -544,7 +580,7 @@ fn main() -> Result<(), bovnar::Error> {
     assert_eq!(unit_prefix_factor(&Unit::parse("in")?), 1.0); // NOT 0.0254 — the inch has no prefix
     assert_eq!(unit_prefix_factor(&Unit::parse("h")?), 1.0);  // NOT 3600.0
 
-    // unit_factor() is the FULL factor to coherent SI, which Python's is not
+    // unit_factor() is the FULL factor to coherent SI
     assert_eq!(unit_factor("M~Hz")?, 1_000_000.0);
     assert_eq!(unit_factor("in")?, 0.0254);
     assert_eq!(unit_factor("h")?, 3600.0);
@@ -552,14 +588,12 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
-**`unit_factor` is not Python's `unit_factor`.** Python's returns the prefix scale
-alone; the Rust function is `Unit::factor` on the parsed unit, the full factor to
-coherent SI, and it fails for an affine unit (`°C`) or one with no SI factor.
-For the prefix alone call `unit_prefix_factor`.
+**`unit_factor` is the full factor, not the prefix scale.** It is `Unit::factor`
+on the parsed unit, the full factor to coherent SI, and it fails for an affine
+unit (`°C`) or one with no SI factor. For the prefix alone call
+`unit_prefix_factor`.
 
-Python has two unit types, the raw `ValueUnit` struct and the `Unit` wrapper
-around it. The Rust crate has only `Unit`; every function that takes a
-`ValueUnit` in Python takes a `&Unit` here.
+`Unit` is the one unit type; every function that takes a unit takes a `&Unit`.
 
 ### 5.1 The unit-profile notations (spec 1.2)
 
@@ -604,7 +638,7 @@ fn main() -> Result<(), bovnar::Error> {
     assert_eq!(unit_to_str(&iu)?, "ucum:[IU].mL-1");
 
     let packaging = Unit::parse("unece:XBX")?;
-    assert!(Unit::is_profile_only(&packaging));              // a countable package
+    assert!(packaging.is_profile_only());              // a countable package
     assert_eq!(unit_to_str(&packaging)?, "unece:XBX");    // in its OWN namespace
 
     assert_eq!(unit_error_code("ucum:B[SPL]"), ErrorCode::UnitProfileUnsupported as i32); // 50
@@ -772,9 +806,8 @@ mode lands on one spelling.
 
 ### 5.4 `Prefix`
 
-`Prefix` is one value for what the C struct `value_unit_prefix_t` and Python's
-`ValueUnitPrefix` split into a system and an id: an enum with an SI and an IEC
-variant. It is what `UnitComponent::prefix` holds:
+`Prefix` is one value for what the C struct `value_unit_prefix_t` splits into a
+system and an id: an enum with an SI and an IEC variant. It is what `UnitComponent::prefix` holds:
 
 ```rust
 use bovnar::{IECPrefix, Prefix, SIPrefix, Unit};
@@ -794,7 +827,7 @@ fn main() -> Result<(), bovnar::Error> {
 ```
 
 `Prefix::default()` is no prefix (`SIPrefix::None`), and an unprefixed component
-equals whatever its prefix system, as in Python.
+equals whatever its prefix system.
 
 ### 5.5 Inline unit suffix
 
@@ -1056,15 +1089,15 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
-Python's `make_unit_si`, `make_unit_iec` and `make_unit_compound` are
+The C constructors `make_unit_si`, `make_unit_iec` and `make_unit_compound` are
 `Unit::si`, `Unit::iec` and `Unit::compound`; the prefix and exponent are always
 passed (`SIPrefix::None`, `Exponent::LINEAR` for a plain base unit), and
 `Unit::compound` fails with `Error::Argument` beyond `MAX_UNIT_COMPONENTS` (32)
 components.
 
 **`Unit::default()` and `Unit::dimensionless()` are not the same thing**, even
-though both render as `no_unit`. The first (Python's `make_unit_none()`) is a
-unit with no components at all — a value carrying no unit. The second (Python's
+though both render as `no_unit`. The first (the C `make_unit_none()`) is a
+unit with no components at all — a value carrying no unit. The second (the C
 `make_unit_dimensionless()`) is one component whose base is `BaseUnit::None` — a
 value carrying `no_unit` explicitly. That is exactly the pair
 `UnitPolicy { require_unit: true, .. }` refuses together (§5.6):
@@ -1110,8 +1143,8 @@ fn main() -> Result<(), bovnar::Error> {
     let vt = ValueTypeSpec { family: ValueTypeFamily::Float as i32, width: 32, base: 0 };
     let q = Quantity::new("101325.0", vt, Unit::default());       // dimensionless
     let q2 = Quantity::new("9.81", vt, Unit::parse("m/s²")?);     // with a unit
-    assert_eq!(Quantity::unit_str(&q), "");
-    assert_eq!(Quantity::unit_str(&q2), "m/s²");
+    assert_eq!(q.unit_str(), "");
+    assert_eq!(q2.unit_str(), "m/s²");
     Ok(())
 }
 ```
@@ -1148,8 +1181,8 @@ non-finite `f64` is stored under the format's own spelling (`inf`, `ninf`,
 
 ### 6.2 Fields and methods
 
-`Quantity` is a plain struct, so the Python properties that merely hold a value
-are public fields and the others are methods:
+`Quantity` is a plain struct: the properties that merely hold a value are public
+fields and the others are methods:
 
 | Name | Type | Description |
 |---|---|---|
@@ -1159,33 +1192,33 @@ are public fields and the others are methods:
 | `q.token_type` | `TokenType` | How the literal was written: number, quoted string, symbol, ... |
 | `q.frac` | `Option<String>` | For a `datetime` written as a literal with a fractional second, the verbatim sub-second digits (spec 1.1) |
 | `q.unit_source` | `Option<String>` | The unit exactly as the document spelled it (library 2.0) — `ucum:mL{total}` where `q.unit` is `m~L`. Set by `parse_typed`; `to_string()` writes it back, and refuses one that does not parse to `q.unit` — including a spelling on a `Quantity` that has no unit at all. `None` writes the canonical form |
-| `Quantity::value` | `Value` | Decode `raw` to the closest plain value (`Int`, `Float`, `String`, `Bool`) — **lossy** for `float_dec` / `float_fix` / `float:128`+ (goes through a C `double`) |
+| `value()` | `Value` | Decode `raw` to the closest plain value (`Int`, `Float`, `String`, `Bool`) — **lossy** for `float_dec` / `float_fix` / `float:128`+ (goes through a C `double`) |
 | `q.family()` | `Option<ValueTypeFamily>` | The type family, when it is one this binding knows |
-| `Quantity::unit_str` | `String` | Canonical unit string (e.g. `"m/s²"`), or `""` when dimensionless |
-| `Quantity::decimal` | `Result<Option<Decimal>>` | **Exact** value as a `Decimal` from the verbatim literal — lossless at any width; an error for non-numeric families, `None` for a typed null |
-| `Quantity::fraction` | `Result<Option<BigRational>>` | Exact value as a rational (for `float_fix`, the exact `mantissa / 2**frac`) |
-| `Quantity::fixed_point` | `Result<(BigInt, u32)>` | `(mantissa, frac_bits)` of a `float_fix` value; the value is `mantissa / 2**frac_bits` |
-| `Quantity::stored_value` | `Result<Option<Decimal>>` | The value materialised into the declared IEEE/fixed format (round-to-nearest-even) — differs from `decimal` only when the literal carries more precision than the format holds. `None` for a typed null, as `decimal` is |
-| `Quantity::ieee_bits` | `Result<Vec<u8>>` | IEEE-754 interchange bytes (binary16…256 for `float`, decimal16…256 for `float_dec`), little-endian word order |
-| `Quantity::epoch_name` | `Option<String>` | For a `datetime`, the epoch name (`"unix"`, `"tai"`, …); `None` otherwise |
-| `Quantity::epoch_mjd` | `Option<i32>` | For a `datetime`, the epoch's Modified Julian Day; `None` otherwise |
+| `unit_str()` | `String` | Canonical unit string (e.g. `"m/s²"`), or `""` when dimensionless |
+| `decimal()` | `Result<Option<Decimal>>` | **Exact** value as a `Decimal` from the verbatim literal — lossless at any width; an error for non-numeric families, `None` for a typed null |
+| `fraction()` | `Result<Option<BigRational>>` | Exact value as a rational (for `float_fix`, the exact `mantissa / 2**frac`) |
+| `fixed_point()` | `Result<(BigInt, u32)>` | `(mantissa, frac_bits)` of a `float_fix` value; the value is `mantissa / 2**frac_bits` |
+| `stored_value()` | `Result<Option<Decimal>>` | The value materialised into the declared IEEE/fixed format (round-to-nearest-even) — differs from `decimal` only when the literal carries more precision than the format holds. `None` for a typed null, as `decimal` is |
+| `ieee_bits()` | `Result<Vec<u8>>` | IEEE-754 interchange bytes (binary16…256 for `float`, decimal16…256 for `float_dec`), little-endian word order |
+| `epoch_name()` | `Option<String>` | For a `datetime`, the epoch name (`"unix"`, `"tai"`, …); `None` otherwise |
+| `epoch_mjd()` | `Option<i32>` | For a `datetime`, the epoch's Modified Julian Day; `None` otherwise |
 
 ### 6.3 Exact numbers (`Decimal`, `BigRational`, `BvnFloat`)
 
-`Quantity::value` decodes through a C `double`, which loses precision for the
+`value()` decodes through a C `double`, which loses precision for the
 decimal-float, fixed-point, and wide binary-float families. The accessors above
 instead use the verbatim literal text (and bovnar's arbitrary-precision
 `bvn_float`), so the full precision the format carries is reachable from Rust.
 
-Python's `int` is `i128` in a `Value` and `num_bigint::BigInt` where a number
-has no width limit, its `Fraction` is `num_rational::BigRational`, and its
-`Decimal` is **`bovnar::Decimal`**: an exact decimal — sign, coefficient
-(`BigUint`) and exponent, or an infinity or a NaN — that compares numerically and
-prints like Python's `str()`. `Decimal` is the exact value only; it does no
-arithmetic.
+An integer is `i128` in a `Value` and `num_bigint::BigInt` where a number has no
+width limit, a rational is `num_rational::BigRational`, and a decimal is
+**`bovnar::Decimal`**: an exact decimal — sign, coefficient (`BigUint`) and
+exponent, or an infinity or a NaN — that compares numerically and prints in the
+General Decimal Arithmetic scientific-string form (`1.50` stays `1.50`). `Decimal` is the exact value
+only; it does no arithmetic.
 
 ```rust
-use bovnar::{Decimal, Quantity, Value, parse_typed};
+use bovnar::{Decimal, Value, parse_typed};
 
 fn main() -> Result<(), bovnar::Error> {
     let doc = parse_typed(b".p=<float_dec:64> 3.141592653589793238462643383279503;")?;
@@ -1193,19 +1226,19 @@ fn main() -> Result<(), bovnar::Error> {
     let Value::Quantity(p) = &fields[0].1 else { unreachable!() };
 
     // Quantity::value is lossy: a C double
-    assert_eq!(Quantity::value(p), Value::Float(3.141592653589793));
+    assert_eq!(p.value(), Value::Float(3.141592653589793));
     // the literal, every digit of it ...
     let literal: Decimal = "3.141592653589793238462643383279503".parse()?;
-    assert_eq!(Quantity::decimal(p)?, Some(literal));
+    assert_eq!(p.decimal()?, Some(literal));
     // ... and the value decimal64 stores: 16 digits, rounded half to even
-    assert_eq!(Quantity::stored_value(p)?.map(|d| d.to_string()), Some("3.141592653589793".into()));
-    assert_eq!(Quantity::ieee_bits(p)?.len(), 8);
+    assert_eq!(p.stored_value()?.map(|d| d.to_string()), Some("3.141592653589793".into()));
+    assert_eq!(p.ieee_bits()?.len(), 8);
 
     let doc = parse_typed(b".x=<float_fix:32,q8> 3.27;")?;
     let Value::Struct(fields) = doc else { unreachable!() };
     let Value::Quantity(f) = &fields[0].1 else { unreachable!() };
-    assert_eq!(Quantity::fraction(f)?, Some(num_rational::BigRational::new(837.into(), 256.into())));
-    assert_eq!(Quantity::fixed_point(f)?, (837.into(), 8));
+    assert_eq!(f.fraction()?, Some(num_rational::BigRational::new(837.into(), 256.into())));
+    assert_eq!(f.fixed_point()?, (837.into(), 8));
     Ok(())
 }
 ```
@@ -1216,7 +1249,7 @@ work at every binary width bovnar allows (16, or a multiple of 32 up to 32768);
 the bit-exact `stored_value` / `ieee_bits` apply to the IEEE encodings
 (`float:16/32/64/128/256`), which are also exposed directly as `bovnar::BvnFloat`.
 
-**`BvnFloat` and the `bvnfloat` module** (Python's `_bvnfloat.py`) reach the
+**`BvnFloat` and the `bvnfloat` module** reach the
 library's arbitrary-precision float: the IEEE binary and decimal interchange
 encodings and the fixed-point datum, plus the exact materialisers used past the
 C parser's exponent cap.
@@ -1226,7 +1259,7 @@ use bovnar::BvnFloat;
 
 fn main() -> Result<(), bovnar::Error> {
     let f = BvnFloat::from_str("0.1", 10, 256)?;     // text, base, precision in bits
-    assert!(!f.is_nan() && !BvnFloat::is_inf(&f) && !f.is_zero());
+    assert!(!f.is_nan() && !f.is_inf() && !f.is_zero());
     assert_eq!(f.to_double(), 0.1);
     let bits = f.to_binary_bits(32)?;                // binary32, little-endian
     assert_eq!(bits.len(), 4);
@@ -1235,9 +1268,9 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
-**One deliberate difference from Python.** The `stored_value` of a `float_fix`
-is exact, where Python divides in its 28-digit default context and rounds a
-wide datum; the same goes for the literal of a terminating `Fraction`.
+**Exactness.** The `stored_value` of a `float_fix` is exact, never rounded to a
+working precision, however wide the datum; the same goes for the literal of a
+terminating `Fraction`.
 
 ### 6.4 `to_string()` integration
 
@@ -1334,8 +1367,7 @@ fn main() -> Result<(), bovnar::Error> {
 
 The signature is `write_array(w, key, rows, vt, unit, unit_source)`: `vt` is the
 whole-array annotation (`Option<ValueTypeSpec>`), `unit` an `Option<&Unit>`, and
-`unit_source` the unit's spelling if it is to be kept. Python's `vu=` becomes
-`unit`.
+`unit_source` the unit's spelling if it is to be kept.
 
 Element types accepted per element: `Int`, `Float`, `String`, `Bool`, `Null`,
 `Bytes` (an octet stream), `Struct` (written as a struct), `Quantity`, or a
@@ -1355,8 +1387,7 @@ its own literal and is written as it is.
 
 ## 8. JSON conversion
 
-Python's package has no JSON module — its users have `json`. The Rust crate has
-`bovnar::json`, mirroring the CLI's `bovnar convert` in both directions:
+The `bovnar::json` module mirrors the CLI's `bovnar convert` in both directions:
 
 | Function | Description |
 |---|---|
@@ -1447,8 +1478,7 @@ fn main() -> Result<(), bovnar::Error> {
 ```
 
 `CurrencyInfo` is a plain struct (`base`, `code`, `numeric_code`, `minor_unit`,
-`name`) with an `is_fiat()` method; its `Display` is the code, like Python's
-`str(info)`. `currency_info`, `minor_unit`, `currency_name`, `currency_code` and
+`name`) with an `is_fiat()` method; its `Display` is the code. `currency_info`, `minor_unit`, `currency_name`, `currency_code` and
 `from_code` fail with `Error::Argument` for non-currency bases or unknown codes.
 `CURRENCY_FIRST`, `CURRENCY_LAST` and `CURRENCY_COUNT` are re-exported from the
 module.
@@ -1475,7 +1505,7 @@ and a dropped reader cannot be used again because the compiler has moved it.
 
 ### 10.2 `read_mem`
 
-```text
+```rust
 read_mem(data: &[u8], options: &ReadOptions,
          on_verified: Option<&mut dyn FnMut(&EventData) -> bool>,
          on_unverified: Option<&mut dyn FnMut(&EventData) -> bool>) -> Result<()>
@@ -1484,9 +1514,8 @@ read_mem_want_unit(data, options, want_unit: &mut dyn FnMut(&EventData) -> Optio
                    on_verified) -> Result<()>
 ```
 
-Parse BVNR from a byte slice. Python's keyword parameters are the `ReadOptions`
-struct, and its `want_unit=` keyword is the separate method
-`read_mem_want_unit`.
+Parse BVNR from a byte slice. The options are the `ReadOptions` struct, and the
+`want_unit` hook is the separate method `read_mem_want_unit`.
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -1517,8 +1546,7 @@ rest with `..ReadOptions::default()`.
 | `want_unit_allow_nonterminating` | `bool` | `false` | Deliver an exact-rational-but-non-terminating conversion (e.g. km/h→m/s) as a rational — `converted_rational()` returns the exact pair — instead of aborting with `error_unit_inexact` |
 | `max_conversion_length` | `u32` | `0` (default 1024) | Longest converted text a conversion may produce, in characters; a longer exact result aborts with `error_value_out_of_range` |
 
-Python's `read_file` caps the size at `MAX_FILESIZE_BYTES` (16 MiB) by default;
-there is no such constant here, so set `max_file_size` where a cap matters.
+`max_file_size` is 0 by default, which means no cap; set it where a cap matters.
 
 ### 10.4 `EventData` and `EventPayload`
 
@@ -1562,11 +1590,11 @@ and `recovery_count()` is how to tell that any were (spec §13.4).
 
 | Method | Type | Description |
 |---|---|---|
-| `Reader::error_code` | `Option<ErrorCode>` | The error that ended the read; `ErrorCode::None` after a successful one |
-| `Reader::error_line` | `u64` | 1-based line number of the error |
-| `Reader::recovery_count` | `u64` | Number of times resync was entered (incremented at error entry, not at resync completion) |
-| `Reader::skipped_bytes` | `u64` | How many input bytes a `continue_on_error` read skipped |
-| `Reader::declared_version` | `Option<(u16, u16)>` | The `#!bovnar M.N` directive of the last read, or `None` when the document carried none |
+| `error_code()` | `Option<ErrorCode>` | The error that ended the read; `ErrorCode::None` after a successful one |
+| `error_line()` | `u64` | 1-based line number of the error |
+| `recovery_count()` | `u64` | Number of times resync was entered (incremented at error entry, not at resync completion) |
+| `skipped_bytes()` | `u64` | How many input bytes a `continue_on_error` read skipped |
+| `declared_version()` | `Option<(u16, u16)>` | The `#!bovnar M.N` directive of the last read, or `None` when the document carried none |
 
 The column and the byte offset of the error are on the `Error` itself — see
 [§13](#13-error-handling) — as `position()`.
@@ -1579,11 +1607,10 @@ The column and the byte offset of the error are on the `Error` itself — see
 
 | Method | Description |
 |---|---|
-| `Writer::to_mem(cap, pretty)` | Write to an in-process buffer of `cap` bytes; `pretty` indents the output. Writing past `cap` fails with `sink_buffer_exhausted` (`DEFAULT_MEM_CAP` is 4 MiB, Python's default) |
-| `Writer::to_mem_with(cap, pretty, unit_flags, emit_version)` | `to_mem` with the remaining keywords of Python's `to_mem`: `unit_flags` ([`UnitFlags`](#53-unitflags)) rewrite units on output, `emit_version` leads the document with `#!bovnar <major>.<minor>` |
-
-| `Writer::to_writer(out, pretty)` | Write to any `std::io::Write` (Python's `to_fd` / `to_file`): the document is put together in a memory sink of `DEFAULT_MEM_CAP` bytes and `finish()` writes it to `out` and flushes it |
-| `Writer::to_writer_with(out, cap, pretty, unit_flags, emit_version)` | `to_writer` with a sink of `cap` bytes and the remaining keywords of `to_fd` |
+| `Writer::to_mem(cap, pretty)` | Write to an in-process buffer of `cap` bytes; `pretty` indents the output. Writing past `cap` fails with `sink_buffer_exhausted` (`DEFAULT_MEM_CAP` is 4 MiB) |
+| `Writer::to_mem_with(cap, pretty, unit_flags, emit_version)` | `to_mem` with two more settings: `unit_flags` ([`UnitFlags`](#53-unitflags)) rewrite units on output, `emit_version` leads the document with `#!bovnar <major>.<minor>` |
+| `Writer::to_writer(out, pretty)` | Write to any `std::io::Write`: the document is put together in a memory sink of `DEFAULT_MEM_CAP` bytes and `finish()` writes it to `out` and flushes it |
+| `Writer::to_writer_with(out, cap, pretty, unit_flags, emit_version)` | `to_writer` with a sink of `cap` bytes, plus `unit_flags` and `emit_version` as in `to_mem_with` |
 
 See [§4.7](#47-files-and-io-streams-stdioread--write) for the I/O writer. Every writer accepts structs and arrays nested up to **255** deep,
 the same limit `Reader` and `parse()` read at. `unit_flags` takes
@@ -1607,9 +1634,8 @@ There is no `destroy()`: dropping the `Writer` releases the C object.
 
 ### 11.3 Scalar write methods
 
-Every scalar writer takes the key first and returns `Result<()>`. Python's
-keyword-only unit parameters are **not** mirrored on them: a value that carries a
-unit is written with `write_quantity` (or inside [`write_array`](#7-write_array-helper)),
+Every scalar writer takes the key first and returns `Result<()>`. They take no
+unit parameters: a value that carries a unit is written with `write_quantity` (or inside [`write_array`](#7-write_array-helper)),
 which take a `Unit`.
 
 #### `write_uint(key, value: u64, width: u32, base: Base)`
@@ -1686,7 +1712,7 @@ fn main() -> Result<(), bovnar::Error> {
 Arbitrary-width integer writer that supports all Bovnar numeral bases (**2–62,
 64, and 85**), for an integer of any width up to 128 bits. Non-decimal values
 are formatted with bovnar's own big-integer arithmetic and emitted as quoted
-strings. `signed` is Python's `signed=True`, `False` or `None` as a
+strings. `signed` is a
 `Signedness`: `Signed`, `Unsigned`, or `Auto` — `sint` for a negative value,
 `uint` otherwise (the default). `format_bigint(value, base)` renders an integer in
 any base on its own.
@@ -1790,20 +1816,19 @@ that drives them for you.
 
 ### 11.8 Low-level `emit`
 
-```text
+```rust
 w.emit(event: Event, spec: EmitSpec<'_>) -> Result<()>
 ```
 
-Send an arbitrary event to the C writer. What goes with it — Python's `key=`,
-`value=` and `vt=` keyword arguments — is an `EmitSpec`; Python's `vu=` is not
-mirrored. When both a `vt` and a `value` are supplied the token type is
+Send an arbitrary event to the C writer. What goes with it — a key, a value and a type
+annotation — is an `EmitSpec`; it carries no unit. When both a `vt` and a `value` are supplied the token type is
 inferred: a string token for `ValueTypeFamily::Utf8`, a number otherwise.
 
-| Python | Rust |
+| Purpose | Call |
 |---|---|
-| `w.emit(Event.ASSIGNMENT_START, key="x")` | `w.emit(Event::AssignmentStart, EmitSpec::key("x"))` |
-| `w.emit(Event.DATA, value="42", vt=spec)` | `w.emit(Event::Data, EmitSpec::value("42", spec))` |
-| `w.emit(Event.STRUCT_END)` | `w.emit(Event::StructEnd, EmitSpec::NONE)` |
+| Start an assignment with a key | `w.emit(Event::AssignmentStart, EmitSpec::key("x"))` |
+| Write a typed value | `w.emit(Event::Data, EmitSpec::value("42", spec))` |
+| End a struct (nothing attached) | `w.emit(Event::StructEnd, EmitSpec::NONE)` |
 
 ```rust
 use bovnar::{EmitSpec, Event, ValueTypeFamily, ValueTypeSpec, Writer};
@@ -1851,25 +1876,22 @@ Owning wrapper around `bvn_dom_doc_t`. Dropping it frees the entire tree; the
 | Method | Description |
 |---|---|
 | `DomDoc::parse(data)` | Parse a byte slice |
-| `DomDoc::parse_reader(input)` | `parse` over any `std::io::Read` — Python's `parse_fd` / `parse_file`; see the note below |
+| `DomDoc::parse_reader(input)` | `parse` over any `std::io::Read`; see the note below |
 | `DomDoc::parse_reader_with_policy(input, &policy)` | `parse_reader` under a policy |
 | `DomDoc::parse_with_policy(data, &policy)` | Parse under a [`UnitPolicy`](#56-unitpolicy--validation-and-conversion-without-a-callback): values arrive converted, and a document breaking the policy fails with `unit_mismatch` |
 | `doc.get(key)` | The top-level value assigned to `key`, as `Option<DomNode>` |
 | `doc.lookup(path)` | Dot-separated path lookup, e.g. `"server.tls.cert"`, with indexed elements (`"matrix[1][0]"`). `None` when absent |
 | `doc.len()` / `doc.is_empty()` | Number of top-level entries |
 | `doc.entries()` | All top-level `(String, DomNode)` pairs, in document order |
-| `doc.to_value()` | The whole document as a `Value::Struct` (Python's `to_dict`), dropping type and unit info. Fails where a node cannot be read as its kind — see `DomNode::to_value` |
+| `doc.to_value()` | The whole document as a `Value::Struct`, dropping type and unit info. Fails where a node cannot be read as its kind — see `node.to_value()` |
 
 > **File-size limits:** `DomDoc::parse_reader` and `parse_reader_with_policy` take
-> any `std::io::Read` (Python's `parse_fd` / `parse_file`) and apply the same
-> ceiling, `DOM_READ_MAX_BYTES` (256 MiB, `BVN_DOM_FD_MAX_BYTES`) — 16× the
-> default of Python's `Reader.read_file`. A longer input is an `Error::Parse` with
-> `file_too_long`, where the C function returns no document and Python raises
-> `MemoryError`. Input over 4 GiB is refused as well (the C API's length is a
+> any `std::io::Read` and apply the same ceiling, `DOM_READ_MAX_BYTES`
+> (256 MiB, `BVN_DOM_FD_MAX_BYTES`). A longer input is an `Error::Parse` with
+> `file_too_long`, where the C function returns no document. Input over 4 GiB is refused as well (the C API's length is a
 > `uint32_t`).
 
-Python's `doc[key]`, `key in doc` and `iter(doc)` are `get`, `get(..).is_some()`
-and `entries()`.
+Membership is `get(key).is_some()`, and iteration is `entries()`.
 
 ### 12.3 `DomNode`
 
@@ -1877,10 +1899,10 @@ A `Copy` view into a `bvn_dom_node_t` that borrows its `DomDoc`.
 
 | Method | Description |
 |---|---|
-| `DomNode::dom_type` | `Option<DomType>` — `None` for a kind this binding does not know |
+| `dom_type()` | `Option<DomType>` — `None` for a kind this binding does not know |
 | `node.value_type()` | `ValueTypeSpec` |
 | `node.unit()` | `Unit`; dimensionless when the value has none |
-| `DomNode::unit_str` | Unit as a canonical string via `bvn_dom_get_unit_string`, or `""` when the value carries no unit — the same contract as `Quantity::unit_str` (the C formatter's `no_unit` spelling is never returned) |
+| `unit_str()` | Unit as a canonical string via `bvn_dom_get_unit_string`, or `""` when the value carries no unit — the same contract as `unit_str()` (the C formatter's `no_unit` spelling is never returned) |
 | `node.is_null()` | `true` for null values |
 | `node.value_in_base_units()` | Numeric value scaled to SI base units (`f64`); an affine unit gets its offset applied (`25 °C` → `298.15`). Returns `0.0` for *any* failure — non-numeric node, currency, affine-in-compound — which is indistinguishable from a genuine zero, and it rounds to `double`. Use `units::unit_to_si_factor()` (which reports the failure) or the `want_unit` hook when either matters |
 | `node.as_i64()` / `as_u64()` | Signed / unsigned 64-bit integer, as an `Option` |
@@ -1892,7 +1914,7 @@ A `Copy` view into a `bvn_dom_node_t` that borrows its `DomDoc`.
 | `node.as_str()` | `Option<&str>` for `String`, `Symbol`, or `Reference` nodes |
 | `node.as_bytes()` | `Option<&[u8]>` for `OctetStream` nodes |
 | `node.as_int_str(base)` | Any integer node, however wide, as digits in the given base |
-| `DomNode::datetime_fraction` | `Option<&str>` of the verbatim ISO sub-second digits for a `datetime` written as a literal with a fraction (spec 1.1) |
+| `datetime_fraction()` | `Option<&str>` of the verbatim ISO sub-second digits for a `datetime` written as a literal with a fraction (spec 1.1) |
 | `node.unit_source()` | `Option<&str>` of the unit exactly as the document spelled it (library 2.0), where that differs from the canonical form — `ucum:mL{total}` for a unit of `m~L`; `None` for a node with no unit, one already written canonically, or one a unit policy converted |
 | `node.get(key)` | Child `DomNode` by string key (struct) |
 | `node.at(index)` | Child `DomNode` by flat index (array) |
@@ -1901,18 +1923,18 @@ A `Copy` view into a `bvn_dom_node_t` that borrows its `DomDoc`.
 | `node.array_dims()` | Number of `/`-separated dimensions (array nodes only) |
 | `node.to_value()` | Recursively convert to a plain `Value` (drops type/unit info). A multi-row array comes back as an array of rows, empty rows included (`[]/[]` → `[[], []]`), as `parse()` gives it |
 
-**The `as_*` accessors return `Option`.** Python's return a zero or raise;
-here a node that is not that kind simply gives `None`, and `as_i64` on a
+**The `as_*` accessors return `Option`.** A node that is not that kind gives `None`
+rather than a zero or a panic, and `as_i64` on a
 `float` node is `None` rather than a truncated number.
 
-**`to_value` fails where Python would default.** Text or a key that is not
+**`to_value` fails rather than inventing a value.** Text or a key that is not
 UTF-8, a float or bool node without its value, or an unknown node kind is an
 `Error`, rather than an invented value: two distinct keys must not collapse
 into one.
 
 ### 12.4 `DomType`
 
-```
+```text
 Null=0  Int=1  Float=2  String=3  Symbol=4
 Reference=5  Struct=6  Array=7  OctetStream=8  Bool=9
 ```
@@ -1924,18 +1946,17 @@ Reference=5  Struct=6  Array=7  OctetStream=8  Bool=9
 ## 13. Error handling
 
 Every fallible call returns `bovnar::Result<T>`, whose error is `bovnar::Error`.
-`Error` mirrors Python's exception classes:
+`Error` has one variant per failure class:
 
-| Variant | Python | When raised |
-|---|---|---|
-| `Error::Parse { code, position }` | `BovnarParseError` | Parse error in `Reader` or `DomDoc` (carries the code and, where the library reported one, the `Position`) |
-| `Error::Write { code, offset }` | `BovnarWriteError` | Write error in `Writer` |
-| `Error::Argument { code, message }` | `BovnarArgumentError` | Invalid argument passed to a helper (e.g. bad unit string, refused unit policy) |
-| `Error::OutOfMemory(call)` | `MemoryError` | The library could not allocate; names the call that failed |
-| `Error::Io { code, io_kind, message }` | — (no Python class) | The `std::io::Read` or `Write` behind `read_reader`, `parse_reader` or `to_writer` failed. `code` is what the C library reports for an unreadable fd source or unwritable fd sink (`reading_from_source_fd`, `writing_to_sink`); `io_kind` and `message` keep what the I/O error said |
+| Variant | When raised |
+|---|---|
+| `Error::Parse { code, position }` | Parse error in `Reader` or `DomDoc` (carries the code and, where the library reported one, the `Position`) |
+| `Error::Write { code, offset }` | Write error in `Writer` |
+| `Error::Argument { code, message }` | Invalid argument passed to a helper (e.g. bad unit string, refused unit policy) |
+| `Error::OutOfMemory(call)` | The library could not allocate; names the call that failed |
+| `Error::Io { code, io_kind, message }` | The `std::io::Read` or `Write` behind `read_reader`, `parse_reader`, `write_to`, `to_writer` or a `stream` twin failed. `code` is what the C library reports for an unreadable fd source or unwritable fd sink (`reading_from_source_fd`, `writing_to_sink`); `io_kind` and `message` keep what the I/O error said |
 
-There is no `BovnarLibraryNotFound` — the library is part of the crate — and no
-`BovnarCallbackAbort`, which Python defines and never raises. `Error`
+The library is part of the crate, so there is no library-not-found error. `Error`
 implements `std::error::Error` and `Display`, so it works with `?` into
 `Box<dyn Error>` and `anyhow`.
 
@@ -2033,7 +2054,7 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
-`parse`, `parse_typed`, `to_string` and the `units`, `currency` and `json`
+`parse`, `parse_typed`, `to_string`, their `_reader` / `write_to` twins and the `units`, `currency` and `json`
 functions are free functions that build their own reader, writer or DOM for each
 call, so no two calls share an object and they can run on several threads at
 once.
@@ -2055,12 +2076,11 @@ cargo test --test test_units
 cargo test --doc
 ```
 
-`cargo test` runs the Rust tests: 33 of the Python suite's 38 test files are
-ported one to one, one `tests/*.rs` file each with the Python test names. The ABI
-check (`test_abi.py`) is three unit tests of the same names in `src/ffi.rs`,
-because the mirrored structs are private. Tests that could not be ported are
-listed at the top of each port, with the reason, and summed up in
-`rust/README.md` under "Not mirrored".
+`cargo test` runs the unit tests in `src/`, the integration tests in `tests/`
+(one file per topic — `test_units.rs`, `test_dom.rs`, `test_stream.rs` and so
+on — plus `smoke.rs`) and the documentation examples. The ABI check is three
+unit tests in `src/ffi.rs`, because the C structs it compares against are
+private.
 
 `test_writers_agree` compares `to_string` with the C CLI's `pretty-print`, so it
 is `#[ignore]`d unless the CLI is built at `<repo>/build/bovnar`:
@@ -2090,7 +2110,7 @@ CC=clang CFLAGS="-fsanitize=fuzzer-no-link,address" \
 
 ## 16. Crate layout
 
-```
+```text
 rust/
 ├── Cargo.toml        # version = the C library's version; publish = false
 ├── build.rs          # generates the unit tables, compiles ../src and ../include
@@ -2099,7 +2119,7 @@ rust/
 │   ├── ffi.rs        # the C declarations; the only `unsafe` code
 │   ├── bvnfloat.rs   # BvnFloat: arbitrary-precision float + IEEE binary/decimal/fixed encoders
 │   ├── currency.rs   # ISO 4217 / crypto currency metadata (read from the C catalogue)
-│   ├── decimal.rs    # Decimal: the exact value of Python's decimal.Decimal
+│   ├── decimal.rs    # Decimal: an exact decimal number (sign, coefficient, exponent)
 │   ├── dom.rs        # DomDoc, DomNode, DomType — random-access DOM
 │   ├── enums.rs      # Rust enums mirroring the C enums
 │   ├── error.rs      # Error, ErrorKind, Position
@@ -2111,42 +2131,41 @@ rust/
 │   ├── unit.rs       # Unit, UnitComponent — a unit with equality, hashing and its operations
 │   ├── units.rs      # unit_to_si_factor, unit_convert_factor, etc.
 │   └── writer.rs     # Writer, Base, Signedness, EmitSpec
-├── tests/            # one file per ported Python test file, plus smoke.rs
+├── tests/            # one integration-test file per topic, plus smoke.rs
 └── fuzz/             # cargo-fuzz targets
 ```
 
-| Rust | Python |
+| Module | Contents |
 |---|---|
-| `src/ffi.rs` | `_ffi.py`, `structs.py` |
-| `src/reader.rs` | `reader.py` |
-| `src/writer.rs` | `writer.py` |
-| `src/dom.rs` | `dom.py` |
-| `src/enums.rs` | `enums.py` |
-| `src/error.rs` | `exceptions.py` |
-| `src/unit.rs` | `unit.py` |
-| `src/units.rs` | `units.py` and the unit functions of `__init__.py` |
-| `src/quantity.rs` | `quantity.py` |
-| `src/bvnfloat.rs` | `_bvnfloat.py` |
-| `src/decimal.rs` | Python's `decimal.Decimal` (the exact value only) |
-| `src/currency.rs` | `currency.py` |
-| `src/stream.rs` | `stream.py` |
-| `src/io.rs` | none — the `std::io::Read` helper behind `read_reader` and `parse_reader` |
-| `src/json.rs` | none — mirrors the CLI's `bovnar convert` JSON ⇄ BVNR |
-| `src/lib.rs` | `__init__.py` (`parse` / `parse_typed` / `to_string` = `loads` / `loads(typed=True)` / `dumps`, `write_array`) |
+| `src/ffi.rs` | the C declarations and the mirrored C structs |
+| `src/reader.rs` | `Reader`, `ReadOptions`, `EventData`, `EventPayload`, `UnitPolicy`, `UnitRule` |
+| `src/writer.rs` | `Writer`, `Base`, `Signedness`, `EmitSpec` |
+| `src/dom.rs` | `DomDoc`, `DomNode`, `DomType` |
+| `src/enums.rs` | the Rust enums behind the C enums, `Exponent` and `Base` |
+| `src/error.rs` | `Error`, `ErrorKind`, `Position` |
+| `src/unit.rs` | `Unit`, `UnitComponent` |
+| `src/units.rs` | the unit functions: conversion, dimension vectors, profile notations |
+| `src/quantity.rs` | `Quantity` |
+| `src/bvnfloat.rs` | `BvnFloat` and the IEEE / fixed-point encoders |
+| `src/decimal.rs` | `Decimal`, the exact decimal value |
+| `src/currency.rs` | currency metadata |
+| `src/stream.rs` | framing, multiplexing and document-in-document, with their `Read` / `Write` twins |
+| `src/io.rs` | the `std::io::Read` and `Write` helpers behind the `_reader` and `_to` entry points |
+| `src/json.rs` | JSON ⇄ BVNR, as the CLI's `bovnar convert` does it |
+| `src/lib.rs` | `parse`, `parse_typed`, `to_string`, the reader and writer twins, `write_array` and the crate-root re-exports |
 
-**Not mirrored.** The pint and NumPy bridges (Python-only libraries, so
-`test_numpy_bridge`, `test_pint_bridge`, `test_pint_factor_parity` and
-`test_example_numpy_roundtrip` have no port), and raw file descriptors: the fd
-entry points are `std::io::Read` / `std::io::Write` ones ([§4.7](#47-files-and-io-streams-stdioread--write)),
-and the path ones (`read_file`, `parse_file`, `to_file`) are those over an opened
-`std::fs::File`.
+**Out of scope.** The crate has no bridges to third-party unit or array
+libraries. It takes no raw file descriptors or paths either: the entry points
+that read or write a whole document are `std::io::Read` / `std::io::Write` ones
+([§4.7](#47-files-and-io-streams-stdioread--write)), and a file is an opened
+`std::fs::File` passed to them.
 
 ---
 
 ## 17. Enums and `BaseUnit`
 
-The C enums are Rust enums named like Python's `enums.py` members, in CamelCase
-(`BaseUnit.METER` is `BaseUnit::Meter`): `Event`, `TokenType`,
+The C enums are Rust enums with CamelCase variants (the C member `METER` is
+`BaseUnit::Meter`): `Event`, `TokenType`,
 `ValueTypeFamily`, `ErrorCode` (also `ErrorKind`), `BaseUnit`, `PrefixSystem`,
 `SIPrefix` and `IECPrefix`. Raw C values convert with `TryFrom<i32>`, which
 refuses an unknown value with an `UnknownValue` error, and back with
@@ -2171,27 +2190,98 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
-The `BaseUnit` enum mirrors the C `value_base_unit_e` with the **same ids** as
-Python's — the table of ranges in
-[Python Bindings §18](09_bovnar_python_bindings.md#18-baseunit-enum) applies
-unchanged, with the CamelCase spelling of each member (`POUND_FORCE` is
-`PoundForce`, `GERMAN_MILE` is `GermanMile`). Native units are 100000–100263 and
-the currencies 900000–900215 (`CURRENCY_FIRST` … `CURRENCY_LAST`); see
-doc/05 §12.1 for the block layout.
+The `BaseUnit` enum mirrors the C `value_base_unit_e`. See doc/05 §12.1 for the
+block layout — an id's leading two digits name the vocabulary it comes from. The
+native units are 100000–100263 (`UNIT_NATIVE_FIRST` … `UNIT_NATIVE_LAST`) and the
+currencies 900000–900215 (`CURRENCY_FIRST` … `CURRENCY_LAST`), with the
+CamelCase spelling of each member (`POUND_FORCE` is `PoundForce`, `GERMAN_MILE`
+is `GermanMile`):
 
-> **The profiles' opaque units are in this enum.** Python's `BaseUnit`
-> deliberately omits the C `value_base_unit_t` blocks of the profile-only units,
-> because they have no native spelling for a Python name to mirror. The Rust
-> `BaseUnit` covers them: UCUM's arbitrary atoms and UN/ECE's package and count
-> codes have members (`UcumIu` for `ucum:[IU]`), so `BaseUnit::try_from` accepts
-> the raw base of a profile-only unit. `unit_to_str` still returns the profile
-> notation (`"unece:XBX"`).
+| Range | Members |
+|---|---|
+| 0 | `None` |
+| 100000–100001 | `Bit`, `Byte` |
+| 100002–100008 | SI base units (`Second` … `Candela`) |
+| 100009–100027 | Named SI derived units (`Hertz` … `Katal`) |
+| 100028–100043 | Non-SI accepted units (`Liter` … `Year`) |
+| 100044–100053 | Imperial/US length (`Inch` … `Fathom`) |
+| 100054–100061 | Imperial/US mass (`Pound` … `Carat`) |
+| 100062 | `Fahrenheit` |
+| 100063–100066 | Pressure (`Atmosphere` … `Psi`) |
+| 100067–100070 | Energy (`Calorie` … `Therm`) |
+| 100071 | `Horsepower` |
+| 100072–100074 | Force (`PoundForce`, `Dyne`, `Kip`) |
+| 100075 | `Knot` |
+| 100076–100084 | US volume (`Gallon` … `Barrel`) |
+| 100085–100086 | Area (`Acre`, `Barn`) |
+| 100087–100089 | Angle (`Arcminute`, `Arcsecond`, `Grad`) |
+| 100090–100097 | CGS units (`Poise` … `Galileo`) |
+| 100098–100100 | Radiation (`Curie`, `Roentgen`, `Rem`) |
+| 100101–100102 | Logarithmic (`Neper`, `Decibel`) |
+| 100103 | `Rankine` |
+| 100104 | `Slug` |
+| 100105 | `Thou` |
+| 100106–100108 | UK imperial volume (`PintUk`, `FluidOunceUk`, `QuartUk`) |
+| 100109–100110 | Electrical power (`Var`, `VoltAmpere`) |
+| 100111 | `KilogramForce` |
+| 100112 | `InchHg` |
+| 100113 | `Rpm` |
+| 100114 | `FootPound` |
+| 100115–100116 | Mass additional (`Dram`, `Pennyweight`) |
+| 100117–100118 | Length additional (`Chain`, `Rod`) |
+| 100119–100120 | Volume additional (`Gill`, `GillUk`) |
+| 100121 | `StandardGravity` |
+| 100122 | `MetricHorsepower` |
+| 100123 | `Revolution` |
+| 100124–100125 | Time additional (`Month`, `Fortnight`) |
+| 100126 | `AtmosphereTechnical` |
+| 100127–100128 | Textile linear density (`Tex`, `Denier`) |
+| 100129–100132 | Apothecary/dry volume (`FluidDram`, `Minim`, `Peck`, `Bushel`) |
+| 100133–100145 | Historical German units (`Pfund`, `Zentner`, `Doppelzentner`, `Lot`, Prussian line/zoll/fuss/elle/rute, `Klafter`, `GermanMile`, `Morgen`, `Scheffel`) |
+| 100146–100152 | Additional physical units (`SurveyFoot`, `League`, `Cable`, `Hand`, `Quintal`, `Scruple`, `Baud`) |
+| 100153–100156 | Temperature scales (`Delisle`, `NewtonTemp`, `Reaumur`, `Romer`) |
+| 100157–100162 | Ratio/proportion units (`Percent`, `PerMille`, `PerMyriad`, `PerCentMille`, `Ppm`, `Ppb`) |
+| 100163 | `PhScale` |
+| 100164–100165 | Named speed units (`MilePerHour`, `KilometerPerHour`) |
+| 100166–100170 | Water hardness (`GermanHardness`, `EnglishHardness`, `FrenchHardness`, `RussianHardness`, `AmericanHardness`) |
+| 100171–100172 | Concentration (`Val`, `GrainsPerGallon`) |
+| 100173–100179 | Turbidity, salinity and conductivity (`TurbidityNtu`, `TurbidityFnu`, `PracticalSalinity`, `ConductivityFactor`, `TurbidityFtu`, `TurbidityFau`, `TurbidityJtu`) |
+| 100180–100185 | Temperature *differences* (`DeltaKelvin`, `DeltaFahrenheit`, `DeltaDelisle`, `DeltaNewtonTemp`, `DeltaReaumur`, `DeltaRomer`) — `Δ°C` shares `DeltaKelvin` and `Δ°Ra` shares `DeltaFahrenheit` |
+| 100186–100191 | The six units the profiles needed (`MeterWater`, `CalorieIt`, `BtuTh`, `TroyPound`, `ApothecaryDram`, `LongHundredweight`) |
+| 100192–100200 | US survey lengths (`SurveyInch` … `SurveyAcre`) |
+| 100201–100203 | Typographic lengths (`Point`, `Pica`, `Line`) |
+| 100204–100209 | US dry volumes and the trade measures (`DryGallon`, `DryQuart`, `DryPint`, `BoardFoot`, `Cord`, `SurveyAcreFoot`) |
+| 100210–100214 | `Darcy`, `ThermEc`, `RefrigerationTon`, `Dobson`, `Shake` |
+| 100215–100216 | The ratios below ppb (`Ppt`, `Ppq`) — spelled `pptr` and `ppq` in documents |
+| 100217–100225 | Nine units two or three vocabularies define (`PrintersPoint`, `PrintersPica`, `HorsepowerElectric`, `HorsepowerBoiler`, `Abvolt`, `AssayTon`, `BushelUk`, `Clo`, `Debye`) |
+| 100226–100236 | Calendar and sidereal time (`YearTropical`, `YearGregorian`, `YearSidereal`, `YearCommon`, `MonthSynodal`, `MonthTropical`, `MonthSidereal`, `DaySidereal`, `HourSidereal`, `MinuteSidereal`, `SecondSidereal`) |
+| 100237–100243 | CGS electrostatic (`Statvolt`, `Statampere`, `Statcoulomb`, `Statfarad`, `Statohm`, `Stathenry`, `Statsiemens`) |
+| 100244–100246 | Luminance (`Lambert`, `Apostilb`, `Footlambert`) |
+| 100247–100249 | Water-vapour permeance (`Perm0c`, `Perm23c`, `PermMetric`) |
+| 100250–100255 | Heat conventions (`CalorieMean`, `Calorie15c`, `Calorie20c`, `Btu59f`, `Btu60f`, `BtuMean`) |
+| 100256–100261 | `ElementaryCharge`, `Spere`, `CircularMil`, `UnitPole`, `HorsepowerWater`, `MonthGregorian` |
+| 100262–100263 | CGS electrostatic magnetics (`Statweber`, `Stattesla`) |
+| 900000–900165 | ISO 4217 fiat currencies (`Aed` … `Zwl`), block 90 — starts at `CURRENCY_FIRST` |
+| 900166–900215 | Cryptocurrencies (`Btc` … `Rune`), the rest of block 90 — ends at `CURRENCY_LAST` |
+
+There is **no sentinel member** one past the highest id: the id space is blocked
+and sparse, so such a number would only invite a bounds check it cannot support.
+Use `UNIT_NATIVE_FIRST` / `UNIT_NATIVE_LAST` / `CURRENCY_FIRST` / `CURRENCY_LAST`,
+or ask `currency::is_currency`.
+
+> **The profiles' opaque units are in this enum.** The C `value_base_unit_t` has
+> a block per profile for the profile-only units, and as shipped two of them have
+> members: UCUM's arbitrary atoms (200000–200039, `UcumIu` for `ucum:[IU]`) and
+> UN/ECE's package and count codes (300000–300024, `UneceOne` … `UneceVial`; see
+> doc/11 §7.1). They have no native spelling, so a unit carrying one renders in
+> its profile notation: `unit_to_str` returns `"unece:XBX"`. `BaseUnit::try_from`
+> accepts the raw base of a profile-only unit.
 
 > **Note on `Cup_`:** the Cuban-Peso currency is exposed as **`BaseUnit::Cup_`**
 > (trailing underscore), not `BaseUnit::Cup`. The plain name `Cup` is the US-cup
 > volume unit (enum value 100080); since enum variant names must be unique, the
-> currency at value 900033 takes the suffixed name. This affects the Rust
-> variant name only — the `.bvnr` wire token is still the bare uppercase `CUP`,
+> currency at value 900033 takes the suffixed name. This affects the variant
+> name only — the `.bvnr` wire token is still the bare uppercase `CUP`,
 > and case stays load-bearing (`cup` = volume, `CUP` = currency).
 
 ---
@@ -2227,14 +2317,14 @@ exposed as:
   `parse_typed` → `to_string()` round trip is lossless (`…T12:00:00.5Z` survives
   verbatim). The plain (non-typed) value is only the whole-second integer
   carrier, so a non-typed `parse` → `to_string()` drops the fraction; to read it
-  explicitly use the DOM tier (`DomNode::datetime_fraction`) or the streaming
-  reader (`EventData::frac` via a callback). `ValueTypeFamily::Datetime` is the
+  explicitly use the DOM tier (`datetime_fraction()`) or the streaming
+  reader (`d.frac` in a callback). `ValueTypeFamily::Datetime` is the
   family enum member.
 - **Reference array indexing:** `&.matrix[0][1]` paths are stored verbatim and
   resolved by `DomDoc::lookup("matrix[0][1]")` at the DOM layer.
 
 ```rust
-use bovnar::{Quantity, Value, parse_typed, peek_version, spec_version, to_string};
+use bovnar::{Value, parse_typed, peek_version, spec_version, to_string};
 
 fn main() -> Result<(), bovnar::Error> {
     assert_eq!(spec_version(), (1, 2));
@@ -2244,7 +2334,7 @@ fn main() -> Result<(), bovnar::Error> {
     let doc = parse_typed(bvnr)?;
     let Value::Struct(fields) = &doc else { unreachable!() };
     let Value::Quantity(q) = &fields[0].1 else { unreachable!() };
-    assert_eq!(Quantity::epoch_name(q).as_deref(), Some("unix"));
+    assert_eq!(q.epoch_name().as_deref(), Some("unix"));
     assert_eq!(q.frac.as_deref(), Some("5"));
     // the fraction survives a typed round trip
     assert_eq!(parse_typed(&to_string(&doc, true)?)?, doc);
@@ -2275,7 +2365,6 @@ to them; the notices are at
 ## See also
 
 - [Read & Write API](08_bovnar_readwrite_api.md) — the C reader, writer, and DOM these bindings wrap
-- [Python Bindings](09_bovnar_python_bindings.md) — the package this crate mirrors, name for name
 - [Streaming, Framing & Multiplexing](10_bovnar_streaming.md) — the framing, multiplexing and embedding behind `bovnar::stream`
 - [Specification](03_bovnar_spec.md) — the format the crate reads and writes
 - [Unit & Currency Reference](05_bovnar_unit_system.md) — the unit model behind `Unit` and `Quantity`
