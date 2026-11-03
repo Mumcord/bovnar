@@ -291,10 +291,12 @@ impl<'a> DomNode<'a> {
                     .collect();
                 let rows = self.array_dims();
                 if rows > 1 && flat.len().is_multiple_of(rows) {
+                    // Index by row rather than chunking: rows of zero
+                    // elements ("[]/[]") still count, as loads() keeps them.
                     let width = flat.len() / rows;
                     Value::Array(
-                        flat.chunks(width)
-                            .map(|r| Value::Array(r.to_vec()))
+                        (0..rows)
+                            .map(|i| Value::Array(flat[i * width..(i + 1) * width].to_vec()))
                             .collect(),
                     )
                 } else {
