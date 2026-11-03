@@ -53,19 +53,146 @@ generators with Python. Publishing would take:
 
 ## Usage
 
+The examples below are compiled and run as doctests (`cargo test --doc`).
+
+### Read
+
 ```rust
-use bovnar::{parse, to_string, DomDoc, Value};
+use bovnar::{DomDoc, Event, EventData, ReadOptions, Reader, Value, parse};
 
-let doc = parse(b".host = \"api.example.com\"; .matrix = [1, 2]/[3, 4];")?;
+fn main() -> Result<(), bovnar::Error> {
+    // Python's loads(): a plain Value tree.
+    let doc = parse(b".host = \"api.example.com\"; .port = <uint:16> 443;")?;
+    let Value::Struct(fields) = doc else { unreachable!() };
+    assert_eq!(fields[1], ("port".to_string(), Value::Int(443)));
 
-let out = to_string(
-    &Value::Struct(vec![("port".into(), Value::Int(443))]),
-    true,
-)?;
+    // The DOM: look values up, with their units.
+    let dom = DomDoc::parse(b".link = { .length = 1.5 k~m; };")?;
+    let length = dom.lookup("link.length").expect("present");
+    assert_eq!(length.as_float(), Some(1.5));
+    assert_eq!(length.unit_str(), "k~m");
 
-let dom = DomDoc::parse(&out)?;
-assert_eq!(dom.get("port").and_then(|n| n.as_u64()), Some(443));
+    // Streaming: one callback per event.
+    let mut keys = Vec::new();
+    let mut on_event = |d: &EventData<'_>| {
+        if d.event == Event::AssignmentStart {
+            keys.push(d.text());
+        }
+        true
+    };
+    Reader::new()?.read_mem(
+        b".a = 1; .b = 2;",
+        &ReadOptions::default(),
+        Some(&mut on_event),
+        None,
+    )?;
+    assert_eq!(keys, ["a", "b"]);
+    Ok(())
+}
 ```
+
+### Write
+
+```rust
+use bovnar::{Base, Value, Writer, to_string};
+
+fn main() -> Result<(), bovnar::Error> {
+    // Python's dumps(): a Value tree to a document.
+    let out = to_string(&Value::Struct(vec![("port".into(), Value::Int(443))]), false)?;
+    assert_eq!(bovnar::parse(&out)?, bovnar::parse(b".port = 443;")?);
+
+    // The streaming writer: typed scalars, structs, arrays.
+    let mut w = Writer::to_mem(4096, false)?;
+    w.write_uint("flags", 0xff, 8, Base::HEX)?;
+    w.begin_struct("server")?;
+    w.write_string("host", "example.com")?;
+    w.end_struct()?;
+    w.finish()?;
+    let back = bovnar::parse(w.get_output())?;
+    let Value::Struct(fields) = back else { unreachable!() };
+    assert_eq!(fields[0], ("flags".to_string(), Value::Int(255)));
+    Ok(())
+}
+```
+
+### JSON
+
+```rust
+fn main() -> Result<(), bovnar::Error> {
+    let bvnr = bovnar::json::from_json(r#"{"name": "mumcord", "ports": [64738, 443]}"#)?;
+    let json = bovnar::json::to_json(&bvnr)?;
+    assert_eq!(bovnar::json::from_json(&json)?, bvnr);
+    Ok(())
+}
+```
+
+### Enums
+
+The C enums are Rust enums named like Python's `enums.py` members, in
+CamelCase (`BaseUnit.METER` is `BaseUnit::Meter`). Raw C values convert with
+`TryFrom<i32>`, which refuses an unknown value, and back with `i32::from`.
+`Exponent` and `Base` are open ranges, so they are checked newtypes with the
+common values named.
+
+```rust
+use bovnar::{BaseUnit, Exponent, SIPrefix, Unit};
+
+fn main() -> Result<(), bovnar::Error> {
+    let km = Unit::si(BaseUnit::Meter, SIPrefix::Kilo, Exponent::LINEAR);
+    assert_eq!(km.to_string(), "k~m");
+    assert_eq!(Unit::parse("k~m")?, km);
+    let c = km.components()[0];
+    assert_eq!((c.base, c.prefix), (BaseUnit::Meter, SIPrefix::Kilo.into()));
+    assert_eq!(BaseUnit::try_from(i32::from(BaseUnit::Meter)), Ok(BaseUnit::Meter));
+    assert_eq!(BaseUnit::Meter.name(), "METER");
+    Ok(())
+}
+```
+
+### Errors
+
+`Error` mirrors Python's exception classes (`Parse`, `Write`, `Argument`,
+and `OutOfMemory` for `MemoryError`). `kind()` gives the library's error
+name as an `ErrorKind` wherever it reported one, `position()` where the
+input was refused.
+
+```rust
+use bovnar::{Error, ErrorKind, Unit};
+
+let err = bovnar::parse(b".a = 1;\n.b = @;").unwrap_err();
+assert_eq!(err.kind(), Some(ErrorKind::UnexpectedInputByte));
+assert_eq!(err.position().map(|p| p.line), Some(2));
+
+match Unit::parse("furlong per fortnight") {
+    Err(Error::Argument { code, message }) => {
+        assert!(code.is_some(), "the library said why: {message}");
+    }
+    other => panic!("expected an argument error, got {other:?}"),
+}
+```
+
+### In a Mumcord plugin (wasm32-wasip2)
+
+The crate compiles its C sources itself, so a WebAssembly build needs a C
+compiler for WASI: [wasi-sdk](https://github.com/WebAssembly/wasi-sdk). Point
+`WASI_SDK_PATH` at it and build for `wasm32-wasip2`:
+
+```sh
+rustup target add wasm32-wasip2
+export WASI_SDK_PATH=/opt/wasi-sdk        # where wasi-sdk is unpacked
+cargo build --release --target wasm32-wasip2
+```
+
+In the plugin's `Cargo.toml`, depend on a fixed commit of this branch, as
+Mumcord does:
+
+```toml
+[dependencies]
+bovnar = { git = "https://github.com/Mumcord/bovnar", rev = "<commit>" }
+```
+
+`python3` must be on `PATH` at build time: `build.rs` runs the upstream
+table generators.
 
 Lower level: `Reader` (streaming events) and `Writer` (streaming output into
 memory). Errors carry the library's error code and its C name
