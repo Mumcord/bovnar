@@ -22,6 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # bvnr_release_links counts commits and reads tags.
+          fetch-depth: 0
       - run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBVNR_BUILD_TESTS=ON .
       - run: cmake --build build --parallel
       - run: ctest --test-dir build --output-on-failure --parallel 4
