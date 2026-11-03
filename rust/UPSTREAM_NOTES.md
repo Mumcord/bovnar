@@ -175,3 +175,30 @@ None yet.
   array, each nested array and each null, as well as each number: five
   "value(s) lose their unit" where the document wrote one unit.
 - What C does: as described. bovnar-rs reports the same counts.
+
+### The writer accepts events whose output its reader refuses
+
+- Section: doc/08 §2.7 (`bvnr_write_event`); `src/writer/bovnar_writer.c`,
+  `bvn_writer_validate_event` and the `bvn_validate_*_for_writer` helpers.
+- Issue: `bvnr_write_event` promises not to write what the reader refuses,
+  but replaying generated event sequences through it (`scripts/writer-diff.sh`)
+  finds these cases where it reports success and writes a document the
+  reader rejects:
+  - A key or symbol with an embedded NUL byte: the helpers check a
+    NUL-terminated copy, so only the part before the NUL is checked, and the
+    whole value is written (`.a\0 = ;`).
+  - A `/` after anything that followed a closed row: `w_after_row_end` is
+    only cleared by the next row or `/`, so `.a = []; .b = / [];` is written.
+  - A datetime annotation under a version directive older than 1.1: the
+    check only asks whether a directive was written (`#!bovnar 1.0` then
+    `<datetime>`).
+  - Annotation parameters the family does not take, written as their
+    effective value: a Q on any family but float_fix (`<uint:q0>`), a base
+    on float_fix (`<float_fix:_10>`), `no_unit` on utf8 or bool
+    (`<utf8:no_unit>`), and the family `plain` (`<plain>`).
+  - An empty string under a numeric annotation (`<uint> ""`):
+    `bvn_validate_string_as_number` accepts an empty value.
+- C: as described. bovnar-rs reports the C writer's error code wherever the
+  C writer reports one, and refuses these events with the error its reader
+  reports for the output. The `writer_error_parity` test pins one example of
+  each difference.

@@ -44,3 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Writer checks that are stricter than the C writer where the C writer
   accepts input its own reader rejects, including correct counting of nested
   array rows (see `UPSTREAM_NOTES.md`).
+- The writer reports the C writer's error codes for every invalid event,
+  key or value; differential tester `bovnar-writer-diff`
+  (`scripts/writer-diff.sh`) and a fixture of captured C results.

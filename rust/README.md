@@ -247,13 +247,14 @@ Places where the specification and the C reference disagree are listed in
   default, `0` for unlimited streams) bounds the input, and
   `Limits::max_dom_nodes` bounds the number of values in a parsed tree. Both
   report the error `file_too_long`.
-- **Stricter writer.** The writer refuses events that would produce a
-  document its own reader rejects, in some places where the C writer accepts
-  them. In those cases the error code can differ from what the C writer
-  reports, or the C writer reports none. Examples: an empty struct under a
-  type annotation is refused at the struct start with `type_value_mismatch`;
-  an untyped integer after a datetime is checked against the inherited
-  datetime type.
+- **Writer error codes.** The writer checks each event as the C writer's
+  `bvnr_write_event` does and reports the same error code. Where the C
+  writer accepts an event and writes output its own reader rejects (a key
+  with an embedded NUL byte, a datetime under a `#!bovnar 1.0` directive,
+  `<uint:q0>`, `<uint> ""`, an empty struct under a type annotation, an
+  untyped integer after a datetime, ...), bovnar-rs refuses it with the error
+  the reader reports. Like the C writer, it holds keys and values to what any
+  reader configuration takes, not to the value limits in `Limits`.
 - **Array row counting in the writer fixed.** The C writer counts a nested
   row as two elements and therefore refuses some valid documents and writes
   some invalid ones; bovnar-rs counts rows the way both readers do.
