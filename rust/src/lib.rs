@@ -17,6 +17,7 @@ mod event;
 mod limits;
 pub(crate) mod num;
 mod reader;
+pub mod stream;
 mod types;
 pub mod units;
 mod value;
