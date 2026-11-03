@@ -246,6 +246,12 @@ impl Reader {
         self.handle.recovery().0
     }
 
+    /// The `#!bovnar M.N` directive of the last read, or `None` when the
+    /// document carried none (Python's `declared_version`).
+    pub fn declared_version(&self) -> Option<(u16, u16)> {
+        self.handle.declared_version()
+    }
+
     /// How many input bytes a `continue_on_error` read skipped.
     pub fn skipped_bytes(&self) -> u64 {
         self.handle.recovery().1

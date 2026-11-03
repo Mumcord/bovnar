@@ -53,6 +53,23 @@ pub enum Value {
     Quantity(Box<Quantity>),
 }
 
+/// The library version, e.g. `"2.0.0"` (Python's `version`).
+pub fn version() -> String {
+    ffi::version_string()
+}
+
+/// The newest format version the library implements, as `(major, minor)`
+/// (Python's `spec_version`).
+pub fn spec_version() -> (u16, u16) {
+    ffi::spec_version()
+}
+
+/// The `#!bovnar M.N` directive leading `data` (a UTF-8 BOM before it is
+/// fine), or `None` when there is none (Python's `peek_version`).
+pub fn peek_version(data: &[u8]) -> Option<(u16, u16)> {
+    ffi::peek_version(data)
+}
+
 /// Parses a BVNR document into a [`Value::Struct`], like Python's `loads`.
 ///
 /// This is the single-pass streaming parse: it enforces the grammar and each

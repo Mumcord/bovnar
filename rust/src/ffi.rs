@@ -854,6 +854,15 @@ impl ReaderHandle {
         }
     }
 
+    /// `bvnr_reader_get_declared_version`: the `#!bovnar M.N` directive of
+    /// the last read, if it had one.
+    pub fn declared_version(&self) -> Option<(u16, u16)> {
+        let (mut major, mut minor) = (0u16, 0u16);
+        // SAFETY: the reader is live; the getter writes two u16 out-params.
+        unsafe { bvnr_reader_get_declared_version(self.0.as_ptr(), &mut major, &mut minor) }
+            .then_some((major, minor))
+    }
+
     /// The reader's last error and where it happened.
     pub fn error(&self) -> ReaderError {
         let r = self.0.as_ptr();
@@ -1578,6 +1587,39 @@ pub fn parse_currency(code: &str) -> c_int {
 }
 
 // ---------------------------------------------------------------------------
+// Versions.
+
+/// `bvnr_version_string`: the library version, e.g. `"2.0.0"`.
+pub fn version_string() -> String {
+    // SAFETY: returns a static NUL-terminated string.
+    unsafe { CStr::from_ptr(bvnr_version_string()) }
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// `bvnr_spec_version`: the newest format version the library implements.
+pub fn spec_version() -> (u16, u16) {
+    let (mut major, mut minor) = (0u16, 0u16);
+    // SAFETY: writes two u16 out-params.
+    unsafe { bvnr_spec_version(&mut major, &mut minor) };
+    (major, minor)
+}
+
+/// `bvnr_peek_version`: the `#!bovnar M.N` directive leading `data`, if any.
+pub fn peek_version(data: &[u8]) -> Option<(u16, u16)> {
+    let (mut major, mut minor) = (0u16, 0u16);
+    // SAFETY: the C side only reads `len` bytes of the buffer.
+    unsafe {
+        bvnr_peek_version(
+            data.as_ptr() as *mut c_void,
+            data.len() as u64,
+            &mut major,
+            &mut minor,
+        )
+    }
+    .then_some((major, minor))
+}
+
 // Numbers and datetimes.
 
 /// `bvnr_datetime_epoch_name` and `bvnr_datetime_epoch_mjd` of a datetime type.
