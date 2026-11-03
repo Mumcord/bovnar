@@ -9,6 +9,8 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+#[doc(hidden)]
+pub mod conformance;
 mod dom;
 mod error;
 mod event;

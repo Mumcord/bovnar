@@ -1,0 +1,16 @@
+[package]
+name = "bovnar-iut"
+version = "0.1.0"
+description = "Conformance IUT adapter (protocol bvnr-conformance-v1) for bovnar-rs"
+publish = false
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "bovnar-iut"
+path = "src/main.rs"
+
+[dependencies]
+bovnar-rs = { path = ".." }
