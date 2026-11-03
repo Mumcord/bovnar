@@ -39,13 +39,13 @@ const SOURCES: [&str; 18] = [
 /// The profile switches, passed as 0/1 like CMake does: bvn_profile_impl.h
 /// defaults each to 1 with #ifndef and tests it with #if.
 const PROFILES: [(&str, u8); 7] = [
-    ("BVNR_WITH_UCUM_PROFILE", 0),
+    ("BVNR_WITH_UCUM_PROFILE", 1),
     ("BVNR_WITH_UNECE_PROFILE", 1),
     ("BVNR_WITH_QUDT_PROFILE", 1),
     ("BVNR_WITH_QUDT_QK_PROFILE", 1),
     ("BVNR_WITH_UDUNITS_PROFILE", 1),
     ("BVNR_WITH_OM_PROFILE", 1),
-    ("BVNR_WITH_CF_PROFILE", 0),
+    ("BVNR_WITH_CF_PROFILE", 1),
 ];
 
 fn main() {
