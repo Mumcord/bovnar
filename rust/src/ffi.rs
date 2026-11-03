@@ -1457,14 +1457,6 @@ fn format(f: impl FnOnce(*mut c_char, usize) -> i32) -> Option<String> {
     String::from_utf8(buf.get(..n)?.to_vec()).ok()
 }
 
-/// `bvnr_spec_version`: the BVNR spec version the library implements.
-pub fn spec_version() -> (u16, u16) {
-    let (mut major, mut minor) = (0u16, 0u16);
-    // SAFETY: both pointers are valid, writable u16 locals.
-    unsafe { bvnr_spec_version(&mut major, &mut minor) };
-    (major, minor)
-}
-
 /// `bvn_format_uint64`: `value` as digits in `base`.
 pub fn format_u64(value: u64, base: u32) -> Option<String> {
     // SAFETY: `buf` has `len` writable bytes for the call.

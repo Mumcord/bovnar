@@ -98,12 +98,6 @@ fn parse_with(data: &[u8], typed: bool) -> Result<Value> {
     Ok(parser.result())
 }
 
-/// The BVNR spec version (major, minor) the library implements, like
-/// Python's `spec_version`.
-pub fn spec_version() -> (u16, u16) {
-    ffi::spec_version()
-}
-
 /// Serialises a [`Value::Struct`] to a BVNR document, like Python's `dumps`.
 ///
 /// Returns bytes rather than `String`: an octet stream is written raw.
