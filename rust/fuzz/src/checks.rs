@@ -3,7 +3,8 @@
 //! This file is shared: the fuzz targets call it through the `bovnar-fuzz`
 //! crate, and `tests/fuzz_regressions.rs` includes it with `#[path]` to
 //! replay `fuzz/regressions/` under plain `cargo test`. It therefore only
-//! depends on `bovnar` and `std`.
+//! depends on `bovnar`, `std` and `serde_json` (a dev-dependency of the
+//! crate).
 //!
 //! Every check panics when a property fails, which is what makes libFuzzer
 //! report the input.
@@ -406,6 +407,125 @@ pub fn units(data: &[u8]) {
             again.to_string(),
             unit.to_string(),
             "printing is not stable"
+        );
+    }
+}
+
+/// The limits `bovnar convert` runs with (the default 16 MiB input cap is
+/// kept; fuzz inputs are far smaller).
+fn convert_limits() -> Limits {
+    let mut limits = Limits::default();
+    limits.max_struct_nesting = 255;
+    limits.max_array_nesting = 255;
+    limits
+}
+
+/// Two JSON values are the same per `bovnar::json`'s round-trip rules:
+/// same keys in the same order, same strings, booleans and nulls, integers
+/// equal, other numbers equal as 64-bit floats.
+fn same_json(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+    use serde_json::Value as J;
+    let mut stack = vec![(a, b)];
+    while let Some((a, b)) = stack.pop() {
+        match (a, b) {
+            (J::Object(x), J::Object(y)) => {
+                if x.len() != y.len() || !x.keys().eq(y.keys()) {
+                    return false;
+                }
+                stack.extend(x.values().zip(y.values()));
+            }
+            (J::Array(x), J::Array(y)) => {
+                if x.len() != y.len() {
+                    return false;
+                }
+                stack.extend(x.iter().zip(y.iter()));
+            }
+            (J::Number(x), J::Number(y)) => {
+                let ints = x.as_i64().zip(y.as_i64()).map(|(p, q)| p == q);
+                let uints = x.as_u64().zip(y.as_u64()).map(|(p, q)| p == q);
+                let same = ints.or(uints).unwrap_or_else(|| x.as_f64() == y.as_f64());
+                if !same {
+                    return false;
+                }
+            }
+            (x, y) => {
+                if x != y {
+                    return false;
+                }
+            }
+        }
+    }
+    true
+}
+
+/// JSON → Bovnar → JSON: never panics; whatever converts reads back as a
+/// tree, converts to JSON without loss, and that JSON has the input's value.
+/// Any Bovnar input that converts to JSON yields valid JSON.
+pub fn json(data: &[u8]) {
+    use bovnar::json::{from_bovnar, from_document, to_bovnar, to_document};
+
+    let limits = convert_limits();
+    if let Ok(out) = from_bovnar(data, &limits) {
+        if let Err(e) = serde_json::from_str::<serde_json::Value>(&out.json) {
+            assert!(
+                e.to_string().contains("recursion limit"),
+                "bvnr -> json printed invalid JSON: {e}"
+            );
+        }
+    }
+
+    let text = to_bovnar(data, &limits);
+    let doc = to_document(data, &limits);
+    assert_eq!(
+        text.is_ok(),
+        doc.is_ok(),
+        "to_bovnar and to_document disagree"
+    );
+    let (Ok(text), Ok(doc)) = (text, doc) else {
+        return;
+    };
+    assert_eq!(
+        parse_with(text.as_bytes(), &limits).as_ref(),
+        Ok(&doc),
+        "text and tree differ"
+    );
+    let out = from_document(&doc).expect("a tree from JSON converts back");
+    assert!(out.loss.is_empty(), "JSON-born tree lost {:?}", out.loss);
+    let back: serde_json::Value = match serde_json::from_str(&out.json) {
+        Ok(v) => v,
+        Err(e) if e.to_string().contains("recursion limit") => return,
+        Err(e) => panic!("json -> bvnr -> json is not JSON: {e}"),
+    };
+    // The reference's reader accepts a few inputs a strict JSON reader does
+    // not (truncated containers, VT and FF as whitespace); compare the rest.
+    if let Ok(input) = serde_json::from_slice::<serde_json::Value>(data) {
+        assert!(
+            same_json(&input, &back),
+            "round trip changed the value: {input} -> {back}"
+        );
+    }
+}
+
+/// Format sniffing never panics and never contradicts a parser: input that
+/// converts from JSON is detected as JSON, a Bovnar document with content
+/// as Bovnar.
+pub fn detect(data: &[u8]) {
+    use bovnar::{detect, Format};
+
+    let format = detect(data);
+    if bovnar::json::to_bovnar(data, &convert_limits()).is_ok() {
+        assert_eq!(format, Format::Json, "converting JSON not detected as JSON");
+    }
+    let blank = data
+        .strip_prefix(b"\xEF\xBB\xBF")
+        .unwrap_or(data)
+        .iter()
+        .all(|b| b" \t\n\r\x0b\x0c".contains(b));
+    if !blank && parse(data).is_ok() {
+        assert_eq!(
+            format,
+            Format::Bovnar,
+            "Bovnar document not detected as Bovnar"
         );
     }
 }

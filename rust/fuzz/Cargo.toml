@@ -16,6 +16,7 @@ path = "src/lib.rs"
 [dependencies]
 libfuzzer-sys = "0.4"
 bovnar-rs = { path = ".." }
+serde_json = { version = "1", features = ["float_roundtrip"] }
 
 [profile.release]
 debug = 1
@@ -51,6 +52,20 @@ bench = false
 [[bin]]
 name = "units"
 path = "fuzz_targets/units.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json"
+path = "fuzz_targets/json.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "detect"
+path = "fuzz_targets/detect.rs"
 test = false
 doc = false
 bench = false

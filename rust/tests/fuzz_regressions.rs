@@ -53,3 +53,13 @@ fn writer() {
 fn units() {
     replay("units", checks::units);
 }
+
+#[test]
+fn json() {
+    replay("json", checks::json);
+}
+
+#[test]
+fn detect() {
+    replay("detect", checks::detect);
+}

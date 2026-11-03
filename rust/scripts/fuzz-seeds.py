@@ -66,6 +66,19 @@ def main() -> int:
     for unit in sorted(units):
         for version in (0, 2):
             write(out / "units", bytes([version]) + unit.encode())
+    jsons = []
+    for d in (ROOT / "tests/json/inputs", upstream / "tests/json"):
+        jsons += [p.read_bytes() for p in sorted(d.glob("*.json"))]
+    expected = json.loads((ROOT / "tests/json/expected.json").read_text())
+    for case in expected["cases"]:
+        if "input" in case:
+            jsons.append(base64.b64decode(case["input"]))
+    for data in jsons:
+        write(out / "json", data)
+        write(out / "detect", data)
+    for doc in docs:
+        write(out / "json", doc)
+        write(out / "detect", doc)
     for seed in WRITER_SEEDS:
         for control in (0, 1, 13):
             write(out / "writer", bytes([control]) + seed)

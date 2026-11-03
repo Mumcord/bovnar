@@ -2,4 +2,4 @@
 
 mod checks;
 
-pub use checks::{dom, reader, roundtrip, units, writer};
+pub use checks::{detect, dom, json, reader, roundtrip, units, writer};

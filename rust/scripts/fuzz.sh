@@ -18,7 +18,7 @@ upstream=$1
 seconds=${2:-60}
 jobs=${3:-4}
 shift $(($# < 3 ? $# : 3))
-targets=${*:-reader dom roundtrip writer units}
+targets=${*:-reader dom roundtrip writer units json detect}
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root/fuzz"

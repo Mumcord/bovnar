@@ -1,0 +1,17 @@
+{
+  "name": "sensor",
+  "count": 42,
+  "big": 18446744073709551615,
+  "neg": -7,
+  "ratio": 3.5,
+  "ok": true,
+  "off": false,
+  "missing": null,
+  "tags": ["alpha", "beta"],
+  "samples": [1, 2, 3],
+  "matrix": [[1, 2], [3, 4]],
+  "single_row": [[1, 2, 3]],
+  "records": [{"id": 1, "label": "a"}, {"id": 2, "label": "b"}],
+  "deep": [[[1], [2]], [[3], [4]]],
+  "nested": {"inner": {"v": 100, "list": [9, 8, 7]}}
+}
