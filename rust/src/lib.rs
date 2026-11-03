@@ -466,11 +466,36 @@ pub fn write_array(
     unit: Option<&Unit>,
     unit_source: Option<&str>,
 ) -> Result<()> {
+    if let Some(vt) = vt {
+        check_rows(rows, vt)?;
+    }
     w.assignment(key)?;
     if let Some(vt) = vt {
         w.annotation(vt, unit.unwrap_or(&Unit::default()), unit.and(unit_source))?;
     }
     emit_rows(w, rows, false, vt)
+}
+
+/// Python's `_check_rows`: runs every element through the refusals
+/// [`emit_element`] would raise under `vt`, writing nothing. A refusal in the
+/// middle of the array used to leave the writer holding `.p=<uint:16>[80,` --
+/// an open array no later write could close, so the document was lost. (A
+/// struct element's own fields are checked when they are written; without an
+/// annotation every `Value` has a Bovnar form, so there is nothing to check.)
+fn check_rows(rows: &[Value], vt: ValueTypeSpec) -> Result<()> {
+    for elem in rows {
+        match elem {
+            Value::Quantity(_) | Value::Null => {}
+            Value::Array(inner) => check_rows(inner, vt)?,
+            Value::Struct(_) | Value::Bytes(_) => {
+                return Err(refuse_under(elem, vt, "an annotated array holds scalars"));
+            }
+            _ => {
+                held_element(elem, vt)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Python's `_emit_rows`: a single row, and rows of unequal length, are

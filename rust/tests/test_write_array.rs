@@ -742,6 +742,46 @@ mod write_array_held_to_annotation {
         assert!(matches!(r, Err(Error::Argument(_))), "{r:?}");
     }
 
+    /// The refusal used to come at the bad element, after `.p=<uint:16>[80,443,`
+    /// was already out: the writer was left inside an open array and every
+    /// later write failed with it. Now the whole array is checked first.
+    /// (Python's `10 ** 5000` and `object()` rows have no `Value` form.)
+    #[test]
+    fn test_a_refusal_writes_nothing() {
+        let u16_ = vt(ValueTypeFamily::Uint, 16, 0);
+        let cases = [
+            (v!([80, 443, 80800]), u16_),
+            (Value::Array(vec![v!([1, 2]), v!([3, 1.5])]), u16_),
+            (
+                Value::Array(vec![1.lit(), 2.lit(), st(vec![("a", 1.lit())])]),
+                u16_,
+            ),
+            (
+                Value::Array(vec!["a".lit(), 1.lit()]),
+                vt(ValueTypeFamily::Utf8, 0, 0),
+            ),
+        ];
+        for (rows, spec) in cases {
+            let mut w = Writer::to_mem(CAP, false).unwrap();
+            w.write_string("before", "x").unwrap();
+            let mark = w.get_output().to_vec();
+            let r = write_array(&mut w, "p", &items(rows), Some(spec), None, None);
+            assert!(matches!(r, Err(Error::Argument(_))), "{r:?}");
+            assert_eq!(w.get_output(), mark.as_slice());
+            write_array(&mut w, "q", &items(v!([1, 2])), Some(u16_), None, None).unwrap();
+            w.write_string("after", "y").unwrap();
+            w.finish().unwrap();
+            assert_eq!(
+                parse(w.get_output()).unwrap(),
+                st(vec![
+                    ("before", "x".lit()),
+                    ("q", v!([1, 2])),
+                    ("after", "y".lit()),
+                ])
+            );
+        }
+    }
+
     #[test]
     fn test_out_of_range_element_is_refused() {
         assert_refused(v!([80, 443, 80800]), vt(ValueTypeFamily::Uint, 16, 0));
