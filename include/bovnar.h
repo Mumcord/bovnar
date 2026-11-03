@@ -642,7 +642,9 @@ typedef struct bvnr_read_flags_s {
 	bvnr_on_error_fn	on_error;
 	/* When true, a leading "#!bovnar <major>.<minor>" directive declaring a
 	 * spec version this build does not support -- a newer minor, or any other
-	 * major (BVNR_SPEC_VERSION_*) -- is a hard error_unsupported_spec_version. When false (the zero-init default)
+	 * major (BVNR_SPEC_VERSION_*) -- is a hard error_unsupported_spec_version, and a
+ * malformed directive a hard error_invalid_spec_version: both end the read even
+ * under continue_on_error. When false (the zero-init default)
 	 * the declared version is recorded — query it with
 	 * bvnr_reader_get_declared_version() — but not enforced. Production
 	 * consumers that must not silently misread a future document should set it. */
@@ -1005,7 +1007,13 @@ BVN_API bool bvnr_canon_observer_finish(bvnr_canon_observer_t* obs);
  *          input buffer.
  *
  * byte is the offending input byte itself, or 0 where the error is not
- * attributable to a single byte. */
+ * attributable to a single byte.
+ *
+ * These describe the error that ENDED the read: meaningful after bvnr_read()
+ * returned false, and inside on_error, where they match its arguments. An
+ * error recovered under continue_on_error is reported through on_error only --
+ * after a read that returned true they give error_none and 0, however many
+ * errors were recovered; see bvnr_reader_get_recovery_count (doc/03 §13.4). */
 BVN_API error_code_t bvnr_reader_get_error(const bvnr_reader_t* r);
 BVN_API uint64_t     bvnr_reader_get_error_line  (const bvnr_reader_t* r);
 BVN_API uint64_t     bvnr_reader_get_error_column(const bvnr_reader_t* r);
@@ -1024,9 +1032,10 @@ BVN_API uint64_t     bvnr_reader_get_recovery_count(const bvnr_reader_t* r);
  * callbacks is not the whole document, and this is how much of it is absent.
  *
  * Counted in bytes of TEXT (an octet-stream payload is not scanned as text, so
- * it does not appear here), from the byte the error was raised on to the byte
- * recovery resumed at. Recovery that runs to end-of-input counts everything to
- * the end. */
+ * it does not appear here), from the byte the error was raised on up to, not
+ * including, the boundary recovery resumed at -- the ';' or the '.' that begins
+ * the next key. A value rejected at its own ';' therefore counts 0. Recovery
+ * that runs to end-of-input counts everything to the end. */
 BVN_API uint64_t     bvnr_reader_get_skipped_bytes(const bvnr_reader_t* r);
 /*
  * Spec version a document declared via a leading "#!bovnar <major>.<minor>"

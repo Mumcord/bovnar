@@ -945,11 +945,11 @@ All limits are configurable via `bvnr_read_flags_t`. The defaults are intentiona
 | `max_reference_length` | 65535 | 65535 |
 | `max_array_items` | 2 147 483 647 | application-defined |
 | `max_text_bytes` | 2 147 483 647 | application-defined |
-| `max_file_size` | 0 (unlimited / endless) | `16777216` (16 MiB) |
+| `max_file_size` | 0 (no total-byte cap) | `16777216` (16 MiB) |
 | `max_array_nesting` | 0 (→64 internal) | 32 or less for most applications |
 | `max_struct_nesting` | 0 (→64 internal) | 32 or less for most applications |
 
-Setting most fields to `0` in `bvnr_read_flags_t` causes the reader to substitute an internal default — **64** for both nesting depths, and **2 147 483 647** for `max_array_items` and `max_text_bytes`. **`max_file_size` is the exception: `0` means unlimited / endless** (no byte-count cap), which is the default so endless streams work out of the box. Explicitly setting `max_file_size = 16777216` (16 MiB) is the recommended practice for production deployments.
+Setting most fields to `0` in `bvnr_read_flags_t` causes the reader to substitute an internal default — **64** for both nesting depths, and **2 147 483 647** for `max_array_items` and `max_text_bytes`. **`max_file_size` is the exception: `0` means no total-byte cap**. That is not endless: the text is still bounded by `max_text_bytes`, so an endless text stream raises that as well. Explicitly setting `max_file_size = 16777216` (16 MiB) is the recommended practice for production deployments.
 
 ---
 

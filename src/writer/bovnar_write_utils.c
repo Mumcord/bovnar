@@ -457,8 +457,15 @@ bool bvnr_write_bvnf_base_unit(bvnr_writer_t *w, const char *key,
 	uint32_t effective_base = base ? base : 10u;
 	if (effective_base != 10u && effective_base != 16u)
 		return bvn_writer_set_error(w, error_invalid_argument);
-	if (!emit_key(w, key)) return false;
 	uint32_t prec = width ? width : (uint32_t)f->_prec;
+	/* Refuse an illegal width BEFORE the key goes out. The annotation check
+	 * that would catch it runs after emit_key, so the failed call left a
+	 * dangling ".c=" in the output -- with width 0 whenever f->_prec is not
+	 * itself a float width (a bvn_float_t of 53 bits is the common case). */
+	if (prec != 16u && (prec == 0u || prec % 32u != 0u ||
+			    prec > BVN_FLOAT_MAX_PREC))
+		return bvn_writer_set_error(w, error_illegal_value_type);
+	if (!emit_key(w, key)) return false;
 	value_type_spec_t vt = BVN_TYPE_FLOAT_BASE(prec,
 		effective_base == 10u ? 0u : 16u);
 	size_t bufsz = bvn_float_str_bufsize(prec, effective_base);

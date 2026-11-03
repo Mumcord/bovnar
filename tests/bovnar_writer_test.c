@@ -2660,6 +2660,58 @@ static void test_unit_reduce_annotation_matches_the_value(void)
 }
 
 
+/*
+ * Two writer defects from the 2026-11-03 review.
+ *
+ * bvnr_write_bvnf with width 0 takes the annotation width from f->_prec; a
+ * bvn_float_t of 53 bits is no float width, and the failed call left ".c=" in
+ * the output because the key went out before the width was checked.
+ *
+ * A key longer than 255 bytes was refused although a reader with
+ * max_identifier_length raised reads it back: 255 is the default, 65535 the
+ * ceiling.
+ */
+static void test_writer_review_2026_11(void)
+{
+	char out[200000];
+	bvn_float_t *f = bvn_float_alloc(53);
+	ASSERT_TRUE(f != NULL, "bvn_float_alloc");
+	if (!f) return;
+	bvn_float_from_str(f, "1.5", 10);
+
+	bvnr_writer_t *w = bvnr_writer_create();
+	bvnr_open_write_mem(w, out, sizeof out, false, NULL);
+	ASSERT_TRUE(bvnr_write_bvnf(w, "a", f, 64), "width 64 is written");
+	uint64_t before = bvnr_writer_bytes_written(w);
+	ASSERT_FALSE(bvnr_write_bvnf(w, "c", f, 0),
+		     "width 0 with a 53-bit float is refused");
+	ASSERT_EQ_INT((int)bvnr_writer_get_error(w), (int)error_illegal_value_type,
+		      "...as error_illegal_value_type");
+	ASSERT_EQ_UINT(bvnr_writer_bytes_written(w), before,
+		       "...and the refused call wrote nothing, not even its key");
+	bvnr_writer_destroy(w);
+	bvn_float_free(f);
+
+	/* A 65535-byte key: written, and read back by a reader that allows it. */
+	static char key[65536];
+	memset(key, 'k', 65535);
+	key[65535] = '\0';
+	w = bvnr_writer_create();
+	bvnr_open_write_mem(w, out, sizeof out, false, NULL);
+	ASSERT_TRUE(bvnr_write_uint(w, key, 0, 7), "a 65535-byte key is written");
+	ASSERT_TRUE(bvnr_write_finish(w), "and the document finishes");
+	uint64_t n = bvnr_writer_bytes_written(w);
+	bvnr_writer_destroy(w);
+
+	bvnr_read_flags_t rf;
+	memset(&rf, 0, sizeof rf);
+	rf.max_identifier_length = 65535;
+	bvnr_reader_t *r = bvnr_reader_create();
+	bvnr_open_read_mem(r, out, n, NULL, 0, &rf);
+	ASSERT_TRUE(bvnr_read(r), "a reader with the limit raised reads it back");
+	bvnr_reader_destroy(r);
+}
+
 static void test_writer_refuses_unreadable_output(void)
 {
 	/* The writer's contract is that it "cannot be coaxed into emitting a stream
@@ -2669,12 +2721,14 @@ static void test_writer_refuses_unreadable_output(void)
 	static char big[70000];
 	memset(big, 'a', sizeof big);
 
-	/* Payloads past the reader's FIXED caps: max_identifier_length is a uint8_t
-	 * and max_string_length/max_symbol_length are uint16_t, so no reader
-	 * configuration can accept more. */
+	/* Payloads past the reader's FIXED caps: max_identifier_length,
+	 * max_string_length and max_symbol_length are uint16_t, so no reader
+	 * configuration can accept more than 65535 bytes. (255 is the identifier
+	 * DEFAULT; a reader with the limit raised reads a longer key.) */
 	struct { const char *lbl; token_type_t tt; uint32_t len; int want; } lim[] = {
-		{ "identifier 255", token_is_identifier, 255,   0 },
-		{ "identifier 256", token_is_identifier, 256,   (int)error_identifier_too_long },
+		{ "identifier 256", token_is_identifier, 256,   0 },
+		{ "identifier 65535", token_is_identifier, 65535, 0 },
+		{ "identifier 65536", token_is_identifier, 65536, (int)error_identifier_too_long },
 		{ "string 65535",   token_is_string,     65535, 0 },
 		{ "string 65536",   token_is_string,     65536, (int)error_string_too_long },
 		{ "symbol 65536",   token_is_symbol,     65536, (int)error_symbol_too_long },
@@ -3061,6 +3115,7 @@ int main(void)
 	test_write_type_annotation_names_the_real_failure();
 	test_unwritable_unit_reports_a_unit_error();
 	test_writer_refuses_unreadable_output();
+	test_writer_review_2026_11();
 	test_every_unit_writer_round_trips();
 	test_writer_event_grammar();
 	test_writer_accepts_only_readable_streams();

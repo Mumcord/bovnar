@@ -11,6 +11,9 @@
 (*  UTF-8 classes of §12) is a BYTE CLASS defined by that comment --   *)
 (*  the role ISO 14977 gives a ? special sequence ?. It is not the     *)
 (*  empty production.                                                  *)
+(*  Updated: 2026-11-03 — "[]" derives only as the empty row: a one-  *)
+(*    element row needs a filled-elem (present-value split out of      *)
+(*    raw-value). No change to what the reader accepts.                *)
 (*  Updated: 2026-10-11 — review pass: a struct takes no annotation,  *)
 (*    utf8/bool refuse a zero width too, digit alphabets, the default  *)
 (*    Q, eight reserved words in the symbol section, 0xC2 in a         *)
@@ -234,8 +237,12 @@ value        = [type-annotation , ws] , ( scalar-with-unit | raw-value ) ;
 (* only from number_outro / string_outro, so no other value form takes one.    *)
 scalar-with-unit = ( number | string ) , ws-mandatory , inline-unit ;
 
-raw-value    = null-value
-             | bool-value
+raw-value    = null-value | present-value ;
+
+(* present-value: every raw-value that is not null.  Split out so a   *)
+(* one-element array row can require a non-empty element (row-content, *)
+(* §9) without restating the list.                                     *)
+present-value = bool-value
              | special-number
              | datetime-literal               (* spec 1.1 *)
              | number
@@ -939,7 +946,18 @@ array-row    = "[" , ws , [row-content] , ws , "]" ;
 (* row-content has at least one element position; leading / trailing /  *)
 (* consecutive commas each expand to a null-value element. An empty row  *)
 (* has width 0, a valid row width for /-dimension consistency.          *)
-row-content  = array-elem , {ws , "," , ws , array-elem} ;
+(* The productions, not this comment, settle "[]": a row of ONE element *)
+(* needs a filled-elem, so "[]" and "[ ]" cannot also derive as one     *)
+(* empty null-value. An element may be empty only beside a comma.       *)
+(* A type annotation alone fills the slot: "[<uint:8>]" is one typed    *)
+(* null, as "[<uint:8> ,]" is two elements.                              *)
+row-content  = filled-elem
+             | array-elem , ws , "," , ws , array-elem ,
+               {ws , "," , ws , array-elem} ;
+
+filled-elem  = type-annotation , ws , raw-value
+             | "null"
+             | present-value ;
 
 (* array-elem has the same structure as a top-level value, except that an  *)
 (* inline unit suffix is not permitted: it uses raw-value (no unit option), *)
@@ -1171,7 +1189,8 @@ byte         = (* any single byte 0x00–0xFF *) ;
 
   n) Error recovery (continue_on_error mode)
      When bvnr_read_flags_t.continue_on_error is set, any parse error
-     but one INSIDE A COMMENT invokes the on_error callback and then
+     in the text but one INSIDE A COMMENT invokes the on_error callback
+     and then
      enters the resync state machine (an invalid UTF-8 sequence or a
      control byte in a comment is reported and counted, and the comment
      runs on to its line end: nothing is unwound and nothing is lost).

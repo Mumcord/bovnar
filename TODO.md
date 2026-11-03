@@ -1,39 +1,47 @@
-# TODO — spec review round of 2026-10-12
+# TODO
 
-Fixes 1–4 of this round are committed as `759cd49` (spec §5.1 twice, §16.4,
-the grammar's escape comment, the IETF draft and its renderings, regenerated
-web pages). Full build + `ctest` 182/182 before the commit. Not pushed. No
-CHANGELOG entry was added (wording only, no behaviour change) and no
-ASan/UBSan pass was run (no C sources changed).
+## Closed 2026-11-03 — the open items of the 2026-10-12 spec review
 
-## Open findings, not fixed
+1. **`[]` was formally ambiguous in the grammar.** `row-content` now needs a
+   `filled-elem` when the row has one element, so `[]` derives only as the
+   empty row (`present-value` split out of `raw-value` in `doc/12_bovnar.ebnf`;
+   both ABNF copies in the IETF draft; one sentence in spec §7.2 and the
+   draft). No change to what the reader accepts: `[]`/`[ ]` are empty,
+   `[<uint:8>]` is one typed null.
+2. **`bvnr_reader_get_error` after a recovered error.** New spec §13.4, plus
+   the read/write API doc, the Python error-state properties and the header: the getters describe the error that
+   ended the read; after a read that returned true they give `error_none` and 0.
+   Tested in `bvnr_high_severity_test` (`test_error_getters_after_recovery`)
+   and asserted on every input by the reader fuzz harness.
+3. **Appendix C** lists the five length limits, their 65 535 ceiling and the
+   unit group-nesting limit.
+4. **FAQ datetime passage** (`doc/02_bovnar_faq.md`): the error split now
+   matches the spec (a wrong-width field is `error_invalid_datetime_literal`),
+   and injectivity is limited to the leap seconds the table records.
 
-1. **`[]` is formally ambiguous in the grammar** (`doc/12_bovnar.ebnf`, `array-row`
-   / `row-content` / `array-elem` / `null-value`): `[]` derives both as an absent
-   `row-content` (zero elements) and as one `array-elem` with the empty
-   `null-value` (one null). Only the comment above `row-content` settles it;
-   §7.2 says zero elements. Fix in the productions, then mirror in the ABNF
-   copies in the IETF draft.
-2. **`bvnr_reader_get_error` after a recovered error** (§13, §16.7): the spec does
-   not say what it returns under `continue_on_error`. Library behaviour not
-   tested yet.
-3. **Appendix C** does not list the five length limits (they are in the §12
-   table); consider adding them.
-4. `doc/02_bovnar_faq.md:305–309` still has the short wording on TAI injectivity
-   and the datetime error split. Not contradictory; left alone.
+Review coverage: spec §12–15 and §16–18 were read in full against the code,
+and the whole spec was read for cross-section contradictions (two reviewers,
+every claim reproduced). The verified wording findings are fixed in doc/03,
+doc/12 note n) and the IETF draft.
 
-## Review coverage still missing
+## Closed 2026-11-03 — the implementation leads from that review
 
-- Sections 12–15 got only a light read ("no findings" after five file reads).
-- No reviewer saw the whole spec at once, so nothing crossing sections was
-  looked for (each run covered one part plus the grammar).
-- `google/gemini-3.8-flash` produced one partial finding in four runs
-  (three aborts, one step-limit); its findings 1–7 on §16–18 and its finding 9
-  on `strict_version` were lost to truncation. Rerun §16–18 if wanted.
+All five fixed, each with a regression test (`test_recovery_review_2026_11` in
+`bvnr_high_severity_test`, `test_writer_review_2026_11` in `bvnr_writer_test`)
+and a CHANGELOG entry under 2.0.0:
+
+1. A stray multi-byte character is one error, not one per byte.
+2. `strict_version` ends the read under `continue_on_error` (an unsupported
+   version, and under `strict_version` a malformed directive).
+3. `bvnr_reader_get_skipped_bytes` counts from the offending byte up to, not
+   including, the resume boundary.
+4. `bvnr_write_bvnf` checks the width before writing the key.
+5. The writer's key cap is 65 535 bytes, the reader field's ceiling, not 255.
+
+Nothing is open.
 
 ## How the review was run
 
-crosscheck `delegate`, read-only, one part of the spec plus the full EBNF per
-run, at most 400 lines per read, and the instruction to stop reading and answer.
-The whole-spec run in one task returned an empty answer from both models.
-Cost so far: about $0.57 (gpt-6-luna about $0.07, gemini-3.8-flash about $0.50).
+Two read-only subagents, one on §12–15, one on §16–18 plus a whole-spec
+consistency pass, each reproducing its claims with the CLI or small C probes
+against `build/libbvnr.so`; every finding was re-checked before it was fixed.

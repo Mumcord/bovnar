@@ -227,10 +227,13 @@ static bool bvn_validate_id_for_writer(bvnr_writer_t* w,
 	memcpy(buf, data, length);
 	buf[length] = '\0';
 	bool ok = true;
-	/* The reader's identifier limit is a uint8_t, so NO reader configuration can
-	 * accept more than 255 bytes. Emitting a longer one produced a document
-	 * nothing could read back, reported as success. */
-	if (length > UINT8_MAX)
+	/* max_identifier_length is a uint16_t, so NO reader configuration can
+	 * accept more than 65535 bytes; emitting a longer key produced a document
+	 * nothing could read back, reported as success. The cap used to be 255, on
+	 * the belief that the field was a uint8_t: a key a reader with the limit
+	 * raised accepts was refused. 255 is the reader's DEFAULT, not its ceiling
+	 * -- the same distinction the string and symbol caps below make. */
+	if (length > UINT16_MAX)
 		ok = bvn_writer_set_error(w, error_identifier_too_long);
 	else if (!bvn_validate_identifier(buf))
 		ok = bvn_writer_set_error(w, error_invalid_argument);

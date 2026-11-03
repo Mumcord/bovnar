@@ -591,7 +591,8 @@ By default a consumer MUST accept a declared version it does not support,
 recording it, and MUST fail only if the document subsequently uses a
 construct the consumer does not implement. A consumer MAY offer a strict
 mode that rejects an unsupported declared version at the directive
-(`error_unsupported_spec_version`). Consumers processing input from an
+(`error_unsupported_spec_version`). The rejection ends parsing even in
+recovery mode ({{error-recovery}}). Consumers processing input from an
 untrusted source SHOULD enable strict mode; see {{security-version}}.
 
 # Lexical Structure {#lexis}
@@ -1530,7 +1531,9 @@ alone behaves predictably:
 ~~~ abnf
 array        = array-row *( ws "/" ws array-row )
 array-row    = "[" ws [ row-content ] ws "]"
-row-content  = array-elem *( ws "," ws array-elem )
+row-content  = filled-elem
+             / array-elem 1*( ws "," ws array-elem )
+filled-elem  = type-ann ws [ raw-value ] / raw-value
 array-elem   = [ type-ann ws ] [ raw-value ]
 ~~~
 
@@ -1546,7 +1549,9 @@ All `/`-rows of one array MUST have the same element count;
 `[]/[]` is two empty rows, while `[]/[1]` is an error.
 
 A leading, trailing, or doubled comma denotes a null element, as does the
-bare word `null`. `[,1,,2,]` has five elements.
+bare word `null`. `[,1,,2,]` has five elements. An element may be empty
+only beside a comma, so `[]` is the empty row and never one null; a type
+annotation alone is an element, so `[<uint:8>]` is one typed null.
 
 Array nesting is bounded by `max_array_nesting` and the total element
 count by `max_array_items` ({{limits}}).
@@ -1684,7 +1689,7 @@ everywhere.
 |---|---|---|
 | Components in one compound unit | 32 | `error_unit_illegal` |
 | Parenthesis nesting in a unit | 16 | `error_unit_illegal` |
-| `uint` / `sint` / `float` width | 32768 bits | `error_illegal_value_type` |
+| `uint` / `sint` / `float` / `datetime` width | 32768 bits | `error_illegal_value_type` |
 | Type-annotation body | 255 octets | `error_type_too_long` |
 | Inline unit suffix | 255 octets | `error_unit_too_long` |
 | `\u{}` escape digits | 6 | `error_illegal_escape_sequence` |
@@ -1699,10 +1704,11 @@ many long aliases, or a long foreign code ({{unit-profiles}}) - and is
 then `error_type_too_long`, so the caps are limits on valid documents and
 not only on malformed ones.
 
-The document-size default of *unlimited* deserves emphasis. It is chosen
-so that endless streams work without configuration, which is the right
-default for a telemetry pipeline and the wrong one for an untrusted
-input. Deployments that accept documents from an untrusted source MUST
+The document-size default of *unlimited* deserves emphasis. It sets no
+cap on the total, so octet-stream payload runs without bound; the text
+of a document is still bounded by the text-octet limit, which a consumer
+of an endless text stream raises as well. That is the right default for
+a telemetry pipeline and the wrong one for an untrusted input. Deployments that accept documents from an untrusted source MUST
 set an explicit cap; see {{security-dos}}.
 
 Setting a configurable limit to zero selects the default rather than
@@ -1783,10 +1789,11 @@ intact**:
   from what the consumer received - or, the one case that drops nothing,
   an octet inside a comment was.
 
-* **Skipped octets** is how much raw input was discarded unparsed. It
-  says what recovery *cost in text*, and it is the only way to learn
-  that: the skipped octets were never parsed, so no other event mentions
-  them.
+* **Skipped octets** is how much raw input was discarded unparsed: from
+  the octet the error was raised on up to, not including, the boundary
+  parsing resumed at. It says what recovery *cost in text*, and it is the
+  only way to learn that: the skipped octets were never parsed, so no
+  other event mentions them.
 
 A recovery can drop a value while skipping **zero** octets. Where a value
 is rejected and the very next octet is the statement's own `;`, there is
@@ -2264,8 +2271,9 @@ of work, and the defaults of {{limits}} are chosen for trusted pipelines
 rather than for hostile input.
 
 * **Document size is unbounded by default.** A consumer accepting input
-  from an untrusted source MUST set an explicit cap. Nothing else in the
-  format bounds the total.
+  from an untrusted source MUST set an explicit cap. Only the text is
+  otherwise bounded, by the text-octet limit; octet-stream payload is
+  not.
 
 * **Integer widths reach 32768 bits.** A single `<uint:32768>` value
   requires 4 KiB of storage and arbitrary-precision arithmetic to
@@ -2649,7 +2657,9 @@ inline-char  = unit-char
 
 array        = array-row *( ws "/" ws array-row )
 array-row    = "[" ws [ row-content ] ws "]"
-row-content  = array-elem *( ws "," ws array-elem )
+row-content  = filled-elem
+             / array-elem 1*( ws "," ws array-elem )
+filled-elem  = type-ann ws [ raw-value ] / raw-value
 array-elem   = [ type-ann ws ] [ raw-value ]
 
 struct       = "{" ws *( assignment ws ) "}"

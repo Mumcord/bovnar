@@ -22,7 +22,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Bovnar (BVNR) — unit-safe serialization">
 <meta property="article:published_time" content="2026-05-14">
-<meta property="article:modified_time" content="2026-10-12">
+<meta property="article:modified_time" content="2026-11-03">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Bovnar Specification (v1.2)">
@@ -32,7 +32,7 @@
 <link rel="stylesheet" href="/fonts/fonts.css?v=47fe6a616ffc">
 <link rel="stylesheet" href="/docs/docs.css?v=9cf496752b97">
 <link rel="alternate" type="text/markdown" href="/doc/03_bovnar_spec.md">
-<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "TechArticle", "headline": "Bovnar Specification (v1.2)", "description": "The complete Bovnar (BVNR) format specification, version 1.2: grammar, type system, physical units, numeric bases, limits, and error semantics.", "url": "https://www.bovnar.io/docs/spec/", "mainEntityOfPage": "https://www.bovnar.io/docs/spec/", "inLanguage": "en", "image": ["https://www.bovnar.io/bovnar-og.png"], "datePublished": "2026-05-14", "dateModified": "2026-10-12", "author": {"@type": "Person", "@id": "https://www.bovnar.io/#author", "name": "Janos Sonntag"}, "publisher": {"@type": "Organization", "@id": "https://www.bovnar.io/#organization", "name": "Bovnar", "url": "https://www.bovnar.io/", "logo": {"@type": "ImageObject", "url": "https://www.bovnar.io/apple-touch-icon.png", "width": 180, "height": 180}}, "isPartOf": {"@type": "WebSite", "@id": "https://www.bovnar.io/#website", "name": "Bovnar", "url": "https://www.bovnar.io/"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.bovnar.io/"}, {"@type": "ListItem", "position": 2, "name": "Documentation", "item": "https://www.bovnar.io/docs/"}, {"@type": "ListItem", "position": 3, "name": "Bovnar Specification (v1.2)", "item": "https://www.bovnar.io/docs/spec/"}]}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "TechArticle", "headline": "Bovnar Specification (v1.2)", "description": "The complete Bovnar (BVNR) format specification, version 1.2: grammar, type system, physical units, numeric bases, limits, and error semantics.", "url": "https://www.bovnar.io/docs/spec/", "mainEntityOfPage": "https://www.bovnar.io/docs/spec/", "inLanguage": "en", "image": ["https://www.bovnar.io/bovnar-og.png"], "datePublished": "2026-05-14", "dateModified": "2026-11-03", "author": {"@type": "Person", "@id": "https://www.bovnar.io/#author", "name": "Janos Sonntag"}, "publisher": {"@type": "Organization", "@id": "https://www.bovnar.io/#organization", "name": "Bovnar", "url": "https://www.bovnar.io/", "logo": {"@type": "ImageObject", "url": "https://www.bovnar.io/apple-touch-icon.png", "width": 180, "height": 180}}, "isPartOf": {"@type": "WebSite", "@id": "https://www.bovnar.io/#website", "name": "Bovnar", "url": "https://www.bovnar.io/"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.bovnar.io/"}, {"@type": "ListItem", "position": 2, "name": "Documentation", "item": "https://www.bovnar.io/docs/"}, {"@type": "ListItem", "position": 3, "name": "Bovnar Specification (v1.2)", "item": "https://www.bovnar.io/docs/spec/"}]}]}</script>
 </head>
 <body>
 <header class="site"><a class="brand" href="/"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6cb0ea"/><stop offset="1" stop-color="#0a85d6"/></linearGradient></defs><path d="M28 13 L12.5 32 L28 51" fill="none" stroke="url(#g)" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 13 L51.5 32 L36 51" fill="none" stroke="url(#g)" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 20 L44 32 L32 44 L20 32 Z" fill="#33a78f"/><path d="M32 20 L20 32 L32 32 Z" fill="#9cdcfe"/><path d="M32 20 L44 32 L32 32 Z" fill="#4ec9b0"/><path d="M20 32 L32 44 L32 32 Z" fill="#3fb89e"/><path d="M44 32 L32 44 L32 32 Z" fill="#2c9281"/></svg>BOVNAR<span class="ext">.bvnr</span></a><nav><a href="/#playground">Playground</a><a href="/#quickstart">Quick&nbsp;Start</a><a href="/docs/">Documentation</a><a class="cta" href="https://github.com/sothis/bovnar">GitHub&nbsp;↗</a><button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light theme" title="Toggle light / dark theme"><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button></nav></header>
@@ -149,6 +149,7 @@
 <li>13.1 <a href="#131-error-model">Error Model</a></li>
 <li>13.2 <a href="#132-recovery-mode">Recovery Mode</a></li>
 <li>13.3 <a href="#133-eof-in-resync">EOF in Resync</a></li>
+<li>13.4 <a href="#134-the-error-getters-under-recovery">The Error Getters Under Recovery</a></li>
 </ul>
 </li>
 <li><a href="#14-formal-ebnf">Formal EBNF</a></li>
@@ -506,7 +507,10 @@ those of the declared version as far as the reader knows them, so a document
 declaring <code>0.9</code> gets the 1.0 grammar and one declaring <code>2.0</code> everything this
 reader has. A reader
 opened with <code>strict_version</code> instead rejects any unsupported version
-(<code>error_unsupported_spec_version</code>) at the directive. A reader supports spec
+(<code>error_unsupported_spec_version</code>), and a malformed directive
+(<code>error_invalid_spec_version</code>), at the directive. The refusal ends the read
+even under <code>continue_on_error</code>: recovering from it would read the document
+the consumer asked not to read. A reader supports spec
 <code>&lt;major&gt;.&lt;minor&gt;</code> when <code>major</code> equals its own and <code>minor</code> is ≤ its own
 (<code>BVNR_SPEC_VERSION_*</code>).</p>
 <table>
@@ -1578,7 +1582,8 @@ and algebra is not. <code>m/s</code> matches <code>m*s^-1</code>, <code>km</code
 and <code>m*s</code> matches <code>s*m</code>; <code>N</code> does not match <code>k~g·m/s²</code>, and <code>m</code> does not match
 <code>no_unit</code>. An omitted annotation unit matches anything — the inline unit is then
 simply the unit. (This is <code>bvn_unit_equal</code>, §16.8; it is also the comparison
-§7.4 makes between array elements.)</p>
+§7.4 makes between array elements, except that the two dimensionless forms of
+§11.8 count as one unit there.)</p>
 <!-- bovnar-example: rejected -->
 
 <div class="codehilite"><pre><code class="language-bovnar"># Annotation unit with no inline unit — normal
@@ -1613,6 +1618,9 @@ produce null elements:</p>
 elements, no <code>ev_data</code> emitted. It is distinct from a one-null row:</p>
 <div class="codehilite"><pre><code class="language-bovnar">.empty = [];         # 0 elements
 .null1 = [null];     # 1 element (null)</code></pre></div>
+<p>An element may be empty only beside a comma, so whitespace alone (<code>[ ]</code>) is
+still the empty row. A type annotation alone is an element: <code>[&lt;uint:8&gt;]</code> is one
+typed null, not an empty row (§7.5).</p>
 <p>So <code>bvn_dom_array_count([])</code> is <code>0</code> and <code>bvn_dom_array_count([null])</code> is <code>1</code>. The
 canonical serialiser writes a null array element as the explicit <code>null</code> keyword
 (e.g. <code>[, 1]</code> round-trips through <code>[null, 1]</code>), so an empty slot never collides
@@ -1780,9 +1788,9 @@ ev_octet_stream_end
 
 <h3 id="95-constraints">9.5 Constraints</h3>
 <ul>
-<li>File size: <code>max_file_size</code> (0 → <strong>unlimited / endless</strong>, the default — no accumulated size limit; set to <code>16777216</code> for the recommended 16 MiB cap)</li>
+<li>File size: <code>max_file_size</code> (0 → <strong>no total-byte cap</strong>, the default; set to <code>16777216</code> for the recommended 16 MiB cap). The text is still bounded by <code>max_text_bytes</code> (§12.2)</li>
 <li>Octet stream bytes contribute to the file size limit but not to <code>max_text_bytes</code></li>
-<li>EOF inside an octet stream region preserves the current error code instead of overwriting with <code>error_got_incomplete_bvnr_stream</code></li>
+<li>EOF inside an octet stream region is <code>error_read_complete_chunk_failed</code>, never <code>error_got_incomplete_bvnr_stream</code>, and it is not recovered under <code>continue_on_error</code></li>
 </ul>
 <hr />
 <h2 id="10-default-type-synthesis">10. Default Type Synthesis</h2>
@@ -2696,11 +2704,11 @@ for anything genuinely out of range.</p>
 </tr>
 <tr>
 <td>Overlong encoding</td>
-<td>Rejected (by UTF-8 rules)</td>
+<td><code>error_invalid_utf8_byte</code></td>
 </tr>
 <tr>
 <td>Surrogate halves (U+D800–U+DFFF)</td>
-<td>Rejected</td>
+<td><code>error_invalid_utf8_byte</code></td>
 </tr>
 </tbody>
 </table>
@@ -2760,13 +2768,13 @@ for anything genuinely out of range.</p>
 <tr>
 <td>File size</td>
 <td>Yes (<code>max_file_size</code>)</td>
-<td>0 (→ unlimited / endless)</td>
+<td>0 (→ no total-byte cap; text stays bounded by <code>max_text_bytes</code>)</td>
 <td><code>error_file_too_long</code></td>
 </tr>
 <tr>
 <td>Struct nesting</td>
 <td>Yes (<code>max_struct_nesting</code>)</td>
-<td>0 (→64 internal)</td>
+<td>0 (→64 internal, hard cap 255)</td>
 <td><code>error_struct_nesting_too_high</code></td>
 </tr>
 <tr>
@@ -2791,7 +2799,7 @@ for anything genuinely out of range.</p>
 <td>Unit components</td>
 <td>No (<code>BVNR_MAX_UNIT_COMPONENTS</code>)</td>
 <td>32</td>
-<td><code>error_unit_illegal</code> (§11.7)</td>
+<td><code>error_unit_illegal</code> (§11.7); a profile expression, <code>error_unit_profile_unsupported</code></td>
 </tr>
 <tr>
 <td>Unit exponent</td>
@@ -2807,7 +2815,7 @@ for anything genuinely out of range.</p>
 </tr>
 </tbody>
 </table>
-<p>Setting most fields to <code>0</code> in <code>bvnr_read_flags_t</code> substitutes an internal default — <strong>64</strong> for both nesting depths, and <strong>2 147 483 647</strong> (2³¹ − 1) for <code>max_array_items</code> and <code>max_text_bytes</code>. <strong><code>max_file_size</code> is the exception: <code>0</code> means unlimited / endless</strong> (no byte-count cap accumulated), so endless streams are the default; set a positive value to cap. These defaults apply to both the reader and the writer. The writer does not internally limit array items, text bytes, or file size.</p>
+<p>Setting most fields to <code>0</code> in <code>bvnr_read_flags_t</code> substitutes an internal default — <strong>64</strong> for both nesting depths, and <strong>2 147 483 647</strong> (2³¹ − 1) for <code>max_array_items</code> and <code>max_text_bytes</code>. <strong><code>max_file_size</code> is the exception: <code>0</code> means no total-byte cap</strong>; set a positive value to cap. That is not the same as endless: the text of a document is still bounded by <code>max_text_bytes</code> (default 2³¹ − 1, <code>error_text_data_too_long</code>) and each array by <code>max_array_items</code>, and only octet-stream payload runs without bound. For an endless text stream raise <code>max_text_bytes</code> as well. The writer applies the two nesting defaults and consults no other field: it does not limit array items, text bytes or file size, and it ignores the five <code>max_*_length</code> fields — instead it refuses, whatever the flags say, an identifier, string or symbol over 65 535 bytes, the most any reader configuration accepts.</p>
 <h3 id="123-value-validation">12.3 Value Validation</h3>
 <table>
 <thead>
@@ -2818,8 +2826,12 @@ for anything genuinely out of range.</p>
 </thead>
 <tbody>
 <tr>
-<td>Number in base-N string contains out-of-base digit</td>
+<td>Number literal, bare or quoted, contains a digit outside its base</td>
 <td><code>error_digit_not_in_base</code></td>
+</tr>
+<tr>
+<td>Whitespace inside a type-annotation parameter (§5.3)</td>
+<td><code>error_type_param_whitespace</code></td>
 </tr>
 <tr>
 <td>Integer value exceeds declared width</td>
@@ -3081,12 +3093,12 @@ tool's "Validation tiers" (§3 of <code>doc/13_bovnar_conformance.md</code>).</p
 <td><code>error_octet_stream_out_of_sync</code></td>
 </tr>
 <tr>
-<td>Incomplete chunk read</td>
-<td><code>error_read_complete_chunk_failed</code></td>
+<td>Incomplete chunk read, or EOF anywhere before the closing <code>0x00</code></td>
+<td><code>error_read_complete_chunk_failed</code> — never followed by <code>error_got_incomplete_bvnr_stream</code>, and it ends the read even under <code>continue_on_error</code> (§13.2)</td>
 </tr>
 <tr>
-<td>EOF in binary mode</td>
-<td>Preserves current error</td>
+<td>An octet stream under <code>text_only</code></td>
+<td><code>error_octet_stream_forbidden</code></td>
 </tr>
 </tbody>
 </table>
@@ -3101,14 +3113,14 @@ tool's "Validation tiers" (§3 of <code>doc/13_bovnar_conformance.md</code>).</p
 </code></pre></div>
 
 <h3 id="132-recovery-mode">13.2 Recovery Mode</h3>
-<p>When <code>bvnr_read_flags_t.continue_on_error</code> is <code>true</code>, the parser enters <strong>resync mode</strong> after an error — any error but one inside a comment (below):</p>
+<p>When <code>bvnr_read_flags_t.continue_on_error</code> is <code>true</code>, the parser enters <strong>resync mode</strong> after an error in the text — any error but one inside a comment (below). A few errors end the read even so: a fault in an octet stream's framing (<code>error_octet_stream_out_of_sync</code>, <code>error_read_complete_chunk_failed</code>), <code>error_text_data_too_long</code>, <code>error_file_too_long</code>, a version directive refused under <code>strict_version</code> (§3.4), and a callback that returns <code>false</code>. The other limits of §12.2 — the five lengths, <code>max_array_items</code>, both nesting depths — are recovered from like any other error.</p>
 <ol>
 <li>The <code>on_error</code> callback is invoked with error details</li>
 <li>A <strong>resync state machine</strong> (<code>state_t: resync, resync_dot, resync_string, resync_string_escape, resync_comment</code>) skips bytes</li>
-<li>Tracking bracket <code>[]</code> and brace <code>{}</code> nesting</li>
+<li>Tracking bracket <code>[]</code> and brace <code>{}</code> nesting, each with its own counter (table below)</li>
 <li>Parsing resumes at whichever comes first: a <code>;</code> at the saved nesting depth, or the <strong>start of the next assignment</strong> — a <code>.</code> at the saved nesting depth followed by a byte that can begin an identifier</li>
 <li><code>recovery_count</code> (accessible via <code>bvnr_reader_get_recovery_count</code>) is incremented immediately when an error triggers entry into resync mode</li>
-<li>The bytes consumed and discarded while recovering are added to a running total, readable with <code>bvnr_reader_get_skipped_bytes</code>. <code>recovery_count</code> says how <em>often</em> recovery ran; this says what it <em>cost</em>, and it is the only way to learn it — the skipped bytes were never parsed, so no callback mentions them. A non-zero total means the document delivered to the callbacks is not the whole document</li>
+<li>The bytes discarded while recovering — from the byte the error was raised on up to, not including, the boundary recovery resumes at (the <code>;</code>, or the <code>.</code> that begins the next key) — are added to a running total, readable with <code>bvnr_reader_get_skipped_bytes</code>. <code>recovery_count</code> says how <em>often</em> recovery ran; this says what it <em>cost</em>, and it is the only way to learn it — the skipped bytes were never parsed, so no callback mentions them. A non-zero total means the document delivered to the callbacks is not the whole document. The converse does not hold: a value rejected right before its <code>;</code> skips zero bytes, so test <code>recovery_count</code>, not this, for "something was dropped" (§18.2)</li>
 </ol>
 <p>Both boundaries matter, because they cover different errors. When the error is
 <em>inside</em> a statement, that statement's own <code>;</code> is the next one, so the <code>;</code> rule
@@ -3122,7 +3134,11 @@ first point the document plausibly becomes readable again.</p>
 skipped-over junk (<code>1.5</code>, <code>.5</code>, a <code>.</code> in binary corruption) is just another
 skipped byte. A <code>.</code> inside a bracket opened <em>since</em> recovery began opens no
 assignment either, and is skipped. Neither boundary recovers less than the other
-alone would: <code>;</code> remains a boundary in every case it was one before.</p>
+alone would: <code>;</code> remains a boundary in every case it was one before. The other
+side of the rule: a <code>.</code> followed by an identifier byte <em>anywhere</em> in the rest of
+the broken statement is a boundary too — a reference such as <code>&amp;.c</code>, or <code>x.y</code> —
+so parsing restarts there, usually to report a further error, which
+<code>recovery_count</code> counts.</p>
 <p><strong>What recovery leaves open.</strong> On entry the reader closes — with their
 <code>ev_array_row_end</code> events — only the arrays opened <em>inside</em> the innermost open
 struct, the ones the broken statement itself was in. An array that struct is an
@@ -3159,11 +3175,11 @@ of the comment is never read as document text.</p>
 </tr>
 <tr>
 <td><code>[</code>, <code>{</code></td>
-<td>Increment <code>resync_depth</code></td>
+<td>Increment its own counter — <code>resync_array_depth</code> or <code>resync_struct_depth</code> — for brackets opened since recovery began</td>
 </tr>
 <tr>
 <td><code>]</code>, <code>}</code></td>
-<td>Decrement <code>resync_depth</code>; if 0, emit array/struct close</td>
+<td>If its own counter is non-zero, decrement it and keep skipping. Otherwise it closes a container that was open before the error — an array the innermost struct owns, or that struct — emitting its end event</td>
 </tr>
 <tr>
 <td><code>;</code> at depth 0</td>
@@ -3175,8 +3191,32 @@ of the comment is never read as document text.</p>
 </tr>
 </tbody>
 </table>
+<p>The two counters are independent: a <code>}</code> does not balance a junk <code>[</code>, so a
+statement that opens a bracket it never closes keeps recovery from resuming
+until the bracket is closed or the input ends (§13.3).</p>
 <h3 id="133-eof-in-resync">13.3 EOF in Resync</h3>
 <p>If EOF is reached while in any resync state, <code>error_got_incomplete_bvnr_stream</code> is fired as a <strong>second</strong> <code>on_error</code> notification in addition to the original error that triggered resync entry. Both error codes are delivered to the caller's <code>on_error</code> callback in order: the original error first, then <code>error_got_incomplete_bvnr_stream</code> when EOF is detected.</p>
+<h3 id="134-the-error-getters-under-recovery">13.4 The Error Getters Under Recovery</h3>
+<p>The error getters of §16.7 describe the error that <strong>ended</strong> a read, not the
+errors recovered from. A recovered error is reported through <code>on_error</code> and
+nowhere else:</p>
+<ul>
+<li><strong><code>bvnr_read</code> returned <code>false</code>:</strong> the getters hold the error that stopped it.
+  Under <code>continue_on_error</code> that is one of the errors recovery does not continue
+  past (§13.2: <code>max_text_bytes</code>, <code>max_file_size</code>, an octet-stream framing error, a
+  directive refused under <code>strict_version</code>, a callback that returned <code>false</code>) or the <code>error_got_incomplete_bvnr_stream</code> of
+  §13.3, positioned at the end of the input.</li>
+<li><strong><code>bvnr_read</code> returned <code>true</code>:</strong> <code>bvnr_reader_get_error</code> returns <code>error_none</code>
+  and the line, column, byte and offset getters return <code>0</code>, however many errors
+  were recovered. Whether any were, and what they cost, is what
+  <code>bvnr_reader_get_recovery_count</code> and <code>bvnr_reader_get_skipped_bytes</code> report.
+  A consumer that needs the recovered errors themselves collects them in
+  <code>on_error</code>.</li>
+<li><strong>During the read:</strong> inside <code>on_error</code> the getters agree with the callback's
+  arguments. After the callback returns they are unspecified until <code>bvnr_read</code>
+  returns: the position is cleared when recovery begins, and the code may still
+  hold the recovered error.</li>
+</ul>
 <hr />
 <h2 id="14-formal-ebnf">14. Formal EBNF</h2>
 <p>The complete grammar is maintained as a standalone file:</p>
@@ -3399,7 +3439,7 @@ of the comment is never read as document text.</p>
 . = 42;                          # error_empty_identifier
 
 # Type violation (type annotation on the identifier, not the value)
-.x&lt;utf8&gt; = 42;                   # error (annotation must be after &#x27;=&#x27;)
+.x&lt;utf8&gt; = 42;                   # error_unexpected_input_byte (annotation must be after &#x27;=&#x27;)
 
 # Correct: .x = &lt;utf8&gt; &quot;text&quot;;
 
@@ -3497,6 +3537,7 @@ of the comment is never read as document text.</p>
 <span class="w">    </span><span class="kt">uint32_t</span><span class="w">            </span><span class="n">base</span><span class="p">;</span><span class="w">  </span><span class="cm">/* for uint/sint/float: numeral base; 0 = default (10) */</span>
 <span class="w">                               </span><span class="cm">/* for float_fix:        Q (fractional bits)           */</span>
 <span class="w">                               </span><span class="cm">/* for float_dec:        unused (always 0)             */</span>
+<span class="w">                               </span><span class="cm">/* for datetime:         epoch index (0 = unix)        */</span>
 <span class="p">}</span><span class="w"> </span><span class="n">value_type_spec_t</span><span class="p">;</span>
 
 <span class="cp">#define BVNR_MAX_UNIT_COMPONENTS     32</span>
@@ -3550,7 +3591,7 @@ of the comment is never read as document text.</p>
 <span class="w">    </span><span class="kt">uint32_t</span><span class="w">          </span><span class="n">frac_length</span><span class="p">;</span><span class="w">  </span><span class="cm">/* spec 1.1 — length of frac_data, else 0 */</span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w">       </span><span class="n">unit_source</span><span class="p">;</span><span class="w">        </span><span class="cm">/* library 2.0 — the unit as the document spelled it, else NULL */</span>
 <span class="w">    </span><span class="kt">uint32_t</span><span class="w">          </span><span class="n">unit_source_length</span><span class="p">;</span><span class="w"> </span><span class="cm">/* library 2.0 — length of unit_source, else 0 */</span>
-<span class="w">    </span><span class="kt">bool</span><span class="w">              </span><span class="n">converted</span><span class="p">;</span><span class="w">    </span><span class="cm">/* a want_unit read-time conversion was applied (§ read-time conversion) */</span>
+<span class="w">    </span><span class="kt">bool</span><span class="w">              </span><span class="n">converted</span><span class="p">;</span><span class="w">    </span><span class="cm">/* a want_unit read-time conversion was applied (read/write API §1.10) */</span>
 <span class="w">    </span><span class="n">bvnr_converted_t</span><span class="w">  </span><span class="n">conv</span><span class="p">;</span><span class="w">         </span><span class="cm">/* the exact converted value (unit + text + rational); zeroed when converted is false */</span>
 <span class="p">}</span><span class="w"> </span><span class="n">bvnr_data_t</span><span class="p">;</span>
 </code></pre></div>
@@ -3567,9 +3608,11 @@ of the comment is never read as document text.</p>
 <span class="cp">#define BVN_TYPE_FLOAT_FIX(w,q) ((value_type_spec_t){ .family = vt_float_fix, .width = (w), .base = (q) })</span>
 <span class="cm">/* float_dec: base field is unused (always 0).                   */</span>
 <span class="cp">#define BVN_TYPE_FLOAT_DEC(w)   ((value_type_spec_t){ .family = vt_float_dec, .width = (w) })</span>
-<span class="cm">/* With explicit numeral base (uint/sint only):                   */</span>
+<span class="cm">/* With explicit numeral base:                                   */</span>
 <span class="cp">#define BVN_TYPE_UINT_BASE(w,b) ((value_type_spec_t){ .family = vt_uint, .width = (w), .base = (b) })</span>
 <span class="cp">#define BVN_TYPE_SINT_BASE(w,b) ((value_type_spec_t){ .family = vt_sint, .width = (w), .base = (b) })</span>
+<span class="cm">/* float: base 10 or 16 only (read/write API §2.14)                */</span>
+<span class="cp">#define BVN_TYPE_FLOAT_BASE(w,b) ((value_type_spec_t){ .family = vt_float, .width = (w), .base = (b) })</span>
 </code></pre></div>
 
 <h3 id="163-unit-macros">16.3 Unit Macros</h3>
@@ -3634,7 +3677,7 @@ of the comment is never read as document text.</p>
 <span class="w">    </span><span class="kt">uint16_t</span><span class="w">  </span><span class="n">max_reference_length</span><span class="p">;</span><span class="w">   </span><span class="c1">// 0 → 65535 default</span>
 <span class="w">    </span><span class="kt">uint64_t</span><span class="w">  </span><span class="n">max_array_items</span><span class="p">;</span><span class="w">        </span><span class="c1">// 0 → 2 147 483 647 internal default</span>
 <span class="w">    </span><span class="kt">uint64_t</span><span class="w">  </span><span class="n">max_text_bytes</span><span class="p">;</span><span class="w">         </span><span class="c1">// 0 → 2 147 483 647 internal default</span>
-<span class="w">    </span><span class="kt">uint64_t</span><span class="w">  </span><span class="n">max_file_size</span><span class="p">;</span><span class="w">          </span><span class="c1">// 0 → unlimited / endless (default); 16 777 216 recommended for a cap</span>
+<span class="w">    </span><span class="kt">uint64_t</span><span class="w">  </span><span class="n">max_file_size</span><span class="p">;</span><span class="w">          </span><span class="c1">// 0 → no total-byte cap (default; text still bounded by max_text_bytes); 16 777 216 recommended for a cap</span>
 <span class="w">    </span><span class="kt">uint8_t</span><span class="w">   </span><span class="n">max_struct_nesting</span><span class="p">;</span><span class="w">     </span><span class="c1">// 0 → 64 internal default; hard cap 255</span>
 <span class="w">    </span><span class="kt">uint8_t</span><span class="w">   </span><span class="n">max_array_nesting</span><span class="p">;</span><span class="w">      </span><span class="c1">// 0 → 64 internal default; hard cap 255</span>
 <span class="w">    </span><span class="kt">void</span><span class="o">*</span><span class="w">     </span><span class="n">userdata</span><span class="p">;</span>
@@ -3659,7 +3702,7 @@ of the comment is never read as document text.</p>
 <span class="kt">uint64_t</span><span class="w"> </span><span class="nf">bvnr_sink_bytes_written</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">bvnr_sink_t</span><span class="o">*</span><span class="w"> </span><span class="n">s</span><span class="p">);</span>
 </code></pre></div>
 
-<p><code>bvnr_sink_bytes_written</code> queries the total bytes written to a memory sink created with <code>bvnr_sink_to_mem</code> <strong>by the caller</strong>; <code>bvnr_open_write_sink</code> copies the sink, so writer output never advances the caller's struct and this stays 0. For writer output use <code>bvnr_writer_bytes_written</code> (read/write API §2.4).</p>
+<p><code>bvnr_sink_bytes_written</code> queries the total bytes written to a memory sink created with <code>bvnr_sink_to_mem</code> <strong>by the caller</strong>; <code>bvnr_open_write_sink</code> copies the sink, so writer output never advances the caller's struct and this stays 0. For writer output use <code>bvnr_writer_bytes_written</code> (read/write API §2.4, §2.10).</p>
 <h3 id="166-reading">16.6 Reading</h3>
 <div class="codehilite"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nf">bvnr_open_read_source</span><span class="p">(</span><span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">bvnr_source_t</span><span class="o">*</span><span class="w"> </span><span class="n">src</span><span class="p">,</span>
 <span class="w">                        </span><span class="k">const</span><span class="w"> </span><span class="n">bvnr_sink_t</span><span class="o">*</span><span class="w"> </span><span class="n">src_mirror</span><span class="p">,</span>
@@ -3670,6 +3713,15 @@ of the comment is never read as document text.</p>
 <span class="w">                        </span><span class="n">bvnr_read_flags_t</span><span class="o">*</span><span class="w"> </span><span class="n">options</span><span class="p">);</span>
 
 <span class="kt">bool</span><span class="w"> </span><span class="nf">bvnr_read</span><span class="p">(</span><span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">);</span>
+
+<span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="nf">bvnr_reader_create</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="w">   </span><span class="cm">/* the reader is opaque */</span>
+<span class="kt">void</span><span class="w">           </span><span class="nf">bvnr_reader_destroy</span><span class="p">(</span><span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">);</span>
+<span class="kt">bool</span><span class="w"> </span><span class="nf">bvnr_reader_get_declared_version</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">,</span>
+<span class="w">                                      </span><span class="kt">uint16_t</span><span class="o">*</span><span class="w"> </span><span class="n">major</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="o">*</span><span class="w"> </span><span class="n">minor</span><span class="p">);</span><span class="w"> </span><span class="cm">/* §3.4 */</span>
+
+<span class="kt">uint32_t</span><span class="w">    </span><span class="nf">bvnr_version</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="w">            </span><span class="cm">/* library version, §17 */</span>
+<span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="nf">bvnr_version_string</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+<span class="kt">void</span><span class="w">        </span><span class="nf">bvnr_spec_version</span><span class="p">(</span><span class="kt">uint16_t</span><span class="o">*</span><span class="w"> </span><span class="n">major</span><span class="p">,</span><span class="w"> </span><span class="kt">uint16_t</span><span class="o">*</span><span class="w"> </span><span class="n">minor</span><span class="p">);</span>
 </code></pre></div>
 
 <h3 id="167-error-queries">16.7 Error Queries</h3>
@@ -3679,9 +3731,13 @@ of the comment is never read as document text.</p>
 <span class="kt">uint32_t</span><span class="w">     </span><span class="nf">bvnr_reader_get_error_byte</span><span class="w">  </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">);</span>
 <span class="kt">uint64_t</span><span class="w">     </span><span class="nf">bvnr_reader_get_error_offset</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">);</span>
 <span class="kt">uint64_t</span><span class="w">     </span><span class="nf">bvnr_reader_get_recovery_count</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">);</span>
+<span class="kt">uint64_t</span><span class="w">     </span><span class="nf">bvnr_reader_get_skipped_bytes</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">bvnr_reader_t</span><span class="o">*</span><span class="w"> </span><span class="n">r</span><span class="p">);</span>
 <span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w">  </span><span class="nf">bvn_error_to_string</span><span class="p">(</span><span class="n">error_code_t</span><span class="w"> </span><span class="n">code</span><span class="p">);</span>
 </code></pre></div>
 
+<p>The getters describe the error that ended the read. After a read that returned
+<code>true</code> they report <code>error_none</code> and position <code>0</code>, even if errors were recovered
+under <code>continue_on_error</code> (§13.4).</p>
 <h3 id="168-utility-functions">16.8 Utility Functions</h3>
 <div class="codehilite"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nf">bvn_validate_identifier</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">id</span><span class="p">);</span>
 <span class="kt">bool</span><span class="w"> </span><span class="nf">bvn_validate_symbol</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">surr</span><span class="p">);</span>
@@ -3721,14 +3777,17 @@ of the comment is never read as document text.</p>
 
 <span class="cm">/* Serialize a value_unit_t (possibly compound) back to a string.</span>
 <span class="cm">   Numerator components are joined by &quot;·&quot;, followed by &quot;/&quot; and</span>
-<span class="cm">   denominator components joined by &quot;·&quot;.  Returns bytes written,</span>
-<span class="cm">   or -1 on buffer overflow. */</span>
+<span class="cm">   denominator components joined by &quot;·&quot;; when every exponent is</span>
+<span class="cm">   negative there is no &quot;/&quot; (m⁻¹·s⁻²).  Returns bytes written, or -1</span>
+<span class="cm">   on buffer overflow, an invalid unit, or an opaque unit with no</span>
+<span class="cm">   text. */</span>
 <span class="kt">int32_t</span><span class="w"> </span><span class="nf">bvn_unit_to_string</span><span class="p">(</span><span class="n">value_unit_t</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">bufsize</span><span class="p">);</span>
 
 <span class="cm">/* Extended variant accepting bvn_unit_flags_t:</span>
 <span class="cm">     BVN_UNIT_FLAGS_NONE  (0)      – Unicode superscript exponents, no reduction</span>
-<span class="cm">     BVN_UNIT_ASCII_EXP  (1 &lt;&lt; 1) – use ^N caret notation for exponents</span>
+<span class="cm">     BVN_UNIT_ASCII_EXP  (1 &lt;&lt; 1) – ^N caret exponents and &quot;*&quot; for &quot;·&quot;</span>
 <span class="cm">     BVN_UNIT_REDUCE     (1 &lt;&lt; 0) – reduce compound unit before serialising</span>
+<span class="cm">     BVN_NUM_CANONICAL   (1 &lt;&lt; 2) – see bovnar.h</span>
 <span class="cm">   Flags may be OR-combined.  Returns bytes written, or -1 on overflow. */</span>
 <span class="kt">int32_t</span><span class="w"> </span><span class="nf">bvn_unit_to_string_ex</span><span class="p">(</span><span class="n">value_unit_t</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">bufsize</span><span class="p">,</span>
 <span class="w">                               </span><span class="n">bvn_unit_flags_t</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span>
@@ -3807,7 +3866,8 @@ All functions return <code>false</code> on serialisation error.</p>
 <span class="w">                                </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">width</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">value_unit_t</span><span class="w"> </span><span class="n">unit</span><span class="p">);</span>
 
 <span class="cm">/* ── Wide-precision float writers (bvn_float_t) ─────────────────── */</span>
-<span class="cm">/* vt.width must match f-&gt;_prec or be 0 (auto).                      */</span>
+<span class="cm">/* width: the annotation width, any legal float width; 0 = use       */</span>
+<span class="cm">/* f-&gt;_prec, which must then itself be a legal float width.          */</span>
 <span class="kt">bool</span><span class="w"> </span><span class="nf">bvnr_write_bvnf</span><span class="w">     </span><span class="p">(</span><span class="n">bvnr_writer_t</span><span class="o">*</span><span class="w"> </span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">key</span><span class="p">,</span>
 <span class="w">                           </span><span class="k">const</span><span class="w"> </span><span class="n">bvn_float_t</span><span class="o">*</span><span class="w"> </span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">width</span><span class="p">);</span>
 <span class="kt">bool</span><span class="w"> </span><span class="nf">bvnr_write_bvnf_unit</span><span class="p">(</span><span class="n">bvnr_writer_t</span><span class="o">*</span><span class="w"> </span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">key</span><span class="p">,</span>
@@ -4131,8 +4191,10 @@ Internet-Draft in <code>doc/ietf/</code> carries the same material at greater le
 normative keywords.</p>
 <h3 id="181-resource-exhaustion">18.1 Resource Exhaustion</h3>
 <p>The defaults of §12.2 are chosen for trusted pipelines, not for hostile input.
-<strong>Document size is unbounded by default</strong> — <code>max_file_size</code> of 0 means endless,
-which is right for a telemetry stream and wrong for an untrusted one. A consumer
+<strong>Total input is unbounded by default</strong> — <code>max_file_size</code> of 0 sets no total-byte
+cap, so octet-stream payload is unlimited and only the text is capped (at 2³¹ − 1
+bytes, <code>max_text_bytes</code>). That is right for a telemetry stream and wrong for an
+untrusted one. A consumer
 at a trust boundary sets every limit in §12.2 explicitly.</p>
 <p>Four constructs give an attacker a high ratio of work to input bytes: integer
 and float widths reach 32768 bits (<code>BVN_MAX_INT_WIDTH</code> for <code>uint</code>/<code>sint</code>; <code>float</code> has the same ceiling, §5.2), and validating one
@@ -4171,7 +4233,8 @@ inside a payload — line-ending normalisation above all — shifts every subseq
 length field, and the reader begins interpreting attacker-supplied payload as tag
 and length fields. The common outcome is a quick <code>error_octet_stream_out_of_sync</code>,
 but that is not guaranteed, and a chunk length read out of a corrupted field is
-an allocation request. Bound the memory committed to a single chunk independently
+an allocation request — at most 65 536 bytes per chunk (§9.2), so the hazard is
+an implementation that pre-allocates or accumulates across chunks. Bound the memory committed to a single chunk independently
 of its declared length, and carry documents containing octet streams over
 transports that do not transform content.</p>
 <h3 id="185-reference-resolution">18.5 Reference Resolution</h3>
@@ -4192,9 +4255,10 @@ non-finite value arriving on an integer channel.</p>
 nothing in the document shows the producer honoured it. The reader's range
 validation (§6.2) is the only check, and it covers the integer families and
 <code>float_fix</code> alone: a <code>float</code> or <code>float_dec</code> literal is never held to its width,
-and a special number is held to nothing (above). Bases 64 and 85 are <code>uint</code>-only for the same family
-of reason: their alphabets use <code>+</code> and <code>-</code> as digits, so permitting a signed
-value there would introduce an ambiguity the format does not have.</p>
+and a special number is held to nothing (above). Bases 64 and 85 are <code>uint</code>-only:
+their alphabets use sign characters as digits (Base64 <code>+</code>, Ascii85 <code>+</code> and <code>-</code>),
+so permitting a signed value there would introduce an ambiguity the format does
+not have (§5.2).</p>
 <h3 id="187-units-are-validated-not-verified">18.7 Units Are Validated, Not Verified</h3>
 <p>The unit system rejects a unit that is malformed, unregistered, or contradicted
 by an inline suffix on the same value (§6.5, §12.8). It cannot verify that the
@@ -4203,11 +4267,11 @@ dimensionally consistent with each other, or that the producer measured what it
 claims. <em>It parsed</em> means the dimension is stated and internally consistent, not
 that it is correct.</p>
 <p>Read-time unit conversion carries a further trap: asking for a value in some
-unit is a <strong>request, not a guarantee</strong>. A target <em>list</em> (<code>want_unit</code>, <code>--unit</code>,
-<code>--si</code>) leaves a value it cannot convert — different dimensions, or two
-different currencies — in its <em>original</em> unit and reports no error; a
-per-field rule (<code>--field</code>, a policy rule by key path) fails with
-<code>error_unit_mismatch</code> instead. Only the first needs the check. A caller that
+unit is a <strong>request, not a guarantee</strong>. A target <em>list</em> (the unit policy's
+<code>targets</code>, <code>--unit</code>, <code>--si</code>) leaves a value it cannot convert — different
+dimensions, or two different currencies — in its <em>original</em> unit and reports no
+error; a per-field rule (<code>--field</code>, a policy rule by key path) and the
+<code>want_unit</code> hook fail with <code>error_unit_mismatch</code> instead. Only the first needs the check. A caller that
 assumes success then holds a number it believes is in one unit and which is in
 another, which is exactly the failure this format exists to prevent. Check
 whether the conversion occurred; do not infer it from the absence of an error.</p>
@@ -4467,6 +4531,36 @@ float_dec:
 <td>Default applied by the writer when <code>max_array_nesting</code> is 0; hard cap is 255</td>
 </tr>
 <tr>
+<td>reader default max_identifier_length</td>
+<td>255</td>
+<td>Default applied by the reader when <code>max_identifier_length</code> is 0; longer is <code>error_identifier_too_long</code></td>
+</tr>
+<tr>
+<td>reader default max_string_length</td>
+<td>65 535</td>
+<td>Default applied by the reader when <code>max_string_length</code> is 0; longer is <code>error_string_too_long</code></td>
+</tr>
+<tr>
+<td>reader default max_number_length</td>
+<td>65 535</td>
+<td>Default applied by the reader when <code>max_number_length</code> is 0; longer is <code>error_number_too_long</code></td>
+</tr>
+<tr>
+<td>reader default max_symbol_length</td>
+<td>255</td>
+<td>Default applied by the reader when <code>max_symbol_length</code> is 0; longer is <code>error_symbol_too_long</code></td>
+</tr>
+<tr>
+<td>reader default max_reference_length</td>
+<td>65 535</td>
+<td>Default applied by the reader when <code>max_reference_length</code> is 0; longer is <code>error_reference_too_long</code></td>
+</tr>
+<tr>
+<td>length-limit ceiling</td>
+<td>65 535</td>
+<td>The five <code>max_*_length</code> fields are 16-bit, so no setting raises a limit past this. The writer accepts them for symmetry and does not consult them</td>
+</tr>
+<tr>
 <td>reader default max_array_items</td>
 <td>2 147 483 647</td>
 <td>Default applied by the reader when <code>max_array_items</code> is 0</td>
@@ -4478,8 +4572,8 @@ float_dec:
 </tr>
 <tr>
 <td>reader default max_file_size</td>
-<td>0 (unlimited / endless)</td>
-<td>A <code>max_file_size</code> of 0 imposes no byte-count cap; set to 16 777 216 (16 MiB) in production</td>
+<td>0 (no total-byte cap)</td>
+<td>A <code>max_file_size</code> of 0 imposes no total-byte cap; the text is still bounded by <code>max_text_bytes</code>. Set to 16 777 216 (16 MiB) in production</td>
 </tr>
 <tr>
 <td>recommended file size cap</td>
@@ -4494,7 +4588,7 @@ float_dec:
 <tr>
 <td>type-annotation body</td>
 <td>255 bytes</td>
-<td>Everything between <code>&lt;</code> and <code>&gt;</code>; longer is <code>error_type_too_long</code></td>
+<td>The bytes between <code>&lt;</code> and <code>&gt;</code>, whitespace beside separators not counted (§12.2); longer is <code>error_type_too_long</code></td>
 </tr>
 <tr>
 <td>inline unit suffix</td>
@@ -4507,9 +4601,14 @@ float_dec:
 <td><code>BVN_EXPONENT_MIN</code> … <code>BVN_EXPONENT_MAX</code>, zero excluded (§11.5)</td>
 </tr>
 <tr>
+<td>unit <code>(…)</code> group nesting</td>
+<td>16</td>
+<td>Deeper is <code>error_unit_illegal</code> (§11.4)</td>
+</tr>
+<tr>
 <td><code>BVN_MAX_INT_WIDTH</code></td>
 <td>32768</td>
-<td>Maximum bit-width for <code>uint</code> and <code>sint</code> types. The validator and writer reject any declared width exceeding this value with <code>error_illegal_value_type</code>.</td>
+<td>Maximum bit-width for <code>uint</code>, <code>sint</code> and <code>datetime</code>; <code>float</code> has the same ceiling (§5.2). The validator and writer reject any declared width exceeding this value with <code>error_illegal_value_type</code>.</td>
 </tr>
 </tbody>
 </table>

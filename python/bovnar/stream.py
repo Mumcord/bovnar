@@ -47,7 +47,8 @@ from .reader import Reader
 from .writer import Writer
 
 # Mirrors of the C constants (bovnar.h / bovnar_stream.h).
-# 0 == unlimited / endless (the default for a zero-initialised max_file_size).
+# 0 == no total-byte cap (the default for a zero-initialised max_file_size);
+# the text is still bounded by max_text_bytes.
 BVNR_FILESIZE_UNLIMITED = 0
 BVNR_DOC_DEFAULT_MAX    = 256 * 1024 * 1024
 BVNR_MUX_DEFAULT_MAX    = 64 * 1024 * 1024

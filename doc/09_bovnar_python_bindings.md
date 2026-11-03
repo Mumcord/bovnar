@@ -1352,11 +1352,15 @@ Generator that collects all events from `read_mem` and yields
 
 ### 11.6 Error-state properties
 
-These properties query the C reader object after a failed parse.
+These properties query the C reader object after a failed parse. They describe
+the error that **ended** the read. An error recovered under
+`continue_on_error=True` does not appear here: after a read that succeeded,
+`error_code` is `ErrorCode.NONE` and the positions are `0`, however many errors
+were recovered, and `recovery_count` is how to tell that any were (spec §13.4).
 
 | Property | Type | Description |
 |---|---|---|
-| `error_code` | `ErrorCode` | Most recent error code |
+| `error_code` | `ErrorCode` | The error that ended the read; `NONE` after a successful one |
 | `error_line` | `int` | 1-based line number of the error |
 | `error_column` | `int` | 1-based column of the error |
 | `error_offset` | `int` | Byte offset of the error |

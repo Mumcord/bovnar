@@ -187,8 +187,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	if (!r) return 0;
 
 	bool opened = bvnr_open_read_mem(r, payload, plen, NULL, 0, &flags);
+	bool read_ok = false;
 	if (opened) {
-		(void)bvnr_read(r);
+		read_ok = bvnr_read(r);
 	}
 
 	error_code_t err = bvnr_reader_get_error(r);
@@ -203,6 +204,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 			__builtin_trap();
 	}
 	(void)col; (void)offset;
+
+	/* A read that returned true reports no error, however many it recovered
+	 * from (doc/03 §13.4): the getters describe the error that ended a read,
+	 * and the recovered ones were delivered through on_error only. */
+	if (opened && read_ok &&
+	    (err != error_none || line != 0 || col != 0 || offset != 0 ||
+	     bvnr_reader_get_error_byte(r) != 0))
+		__builtin_trap();
 
 	uint64_t recovery_count = bvnr_reader_get_recovery_count(r);
 

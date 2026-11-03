@@ -1061,11 +1061,11 @@ All limits are configurable via `bvnr_read_flags_t`. The defaults are intentiona
 | `max_reference_length` | 65535 | 65535 |
 | `max_array_items` | 2 147 483 647 | application-defined |
 | `max_text_bytes` | 2 147 483 647 | application-defined |
-| `max_file_size` | 0 (unlimited / endless) | `16777216` (16 MiB) |
+| `max_file_size` | 0 (no total-byte cap) | `16777216` (16 MiB) |
 | `max_array_nesting` | 0 (→64 internal) | 32 or less for most applications |
 | `max_struct_nesting` | 0 (→64 internal) | 32 or less for most applications |
 
-Setting most fields to `0` in `bvnr_read_flags_t` causes the reader to substitute an internal default — **64** for both nesting depths, and **2 147 483 647** for `max_array_items` and `max_text_bytes`. **`max_file_size` is the exception: `0` means unlimited / endless** (no byte-count cap), which is the default so endless streams work out of the box. Explicitly setting `max_file_size = 16777216` (16 MiB) is the recommended practice for production deployments.
+Setting most fields to `0` in `bvnr_read_flags_t` causes the reader to substitute an internal default — **64** for both nesting depths, and **2 147 483 647** for `max_array_items` and `max_text_bytes`. **`max_file_size` is the exception: `0` means no total-byte cap**. That is not endless: the text is still bounded by `max_text_bytes`, so an endless text stream raises that as well. Explicitly setting `max_file_size = 16777216` (16 MiB) is the recommended practice for production deployments.
 
 ---
 
@@ -1509,11 +1509,16 @@ round-trips. For sub-second values you compute on, use a finer integer carrier
 and `tai` (the offset is folded before `tai`'s leap-second lookup). A second of
 `60` is an inserted leap second: on the civil epochs it folds onto the following
 second (POSIX time has none to spend on it), but on `tai` it keeps its own value
-one below the boundary, which is what makes UTC⇄TAI injective there. The atomic
+one below the boundary, which is what makes UTC⇄TAI injective there — for the
+leap seconds the build's table records; a `:60` the table does not know
+collapses on `tai` too (spec §5.1). The atomic
 GNSS epochs (`gps`/`galileo`/`glonass`/`beidou`) reject a literal
-(`error_datetime_literal_unsupported_epoch`) — give those an integer carrier. An
-out-of-range field is `error_invalid_datetime_literal`; a literal of the wrong
-shape is a lexical error, `error_unexpected_input_byte`.
+(`error_datetime_literal_unsupported_epoch`) — give those an integer carrier.
+A literal with every separator in place but a bad field — out of range, the
+wrong width (`2026-6-15`, `+2:00`) or an empty fraction — is
+`error_invalid_datetime_literal`; one with a separator missing or wrong (no
+seconds, `+0200`, a lowercase `z`) is a lexical error,
+`error_unexpected_input_byte`.
 
 **Timestamp vs. duration — don't confuse them.** A *timestamp* (an instant) is a
 `datetime`; a *duration* (an elapsed amount) is a plain number with a time unit,
@@ -2599,15 +2604,16 @@ All limits are configurable via `bvnr_read_flags_t`. Defaults are permissive.
 | `max_reference_length` | 65535 | 65535 |
 | `max_array_items` | 0 (→ 2 147 483 647 internal default) | application-defined |
 | `max_text_bytes` | 0 (→ 2 147 483 647 internal default) | application-defined |
-| `max_file_size` | 0 (→ unlimited / endless) | `16777216` (16 MiB) |
+| `max_file_size` | 0 (→ no total-byte cap) | `16777216` (16 MiB) |
 | `max_array_nesting` | 0 (→ 64 internal default; hard cap 255) | 32 or less |
 | `max_struct_nesting` | 0 (→ 64 internal default; hard cap 255) | 32 or less |
 
 Setting a field to `0` causes the reader to substitute a finite internal
 default — **2 147 483 647** for `max_array_items`/`max_text_bytes` and **64**
 for both nesting depths. **`max_file_size` is the exception: `0` means
-unlimited / endless** (no byte-count cap), which is the default so endless
-streams work out of the box. Production deployments should set `max_file_size`
+no total-byte cap**. That is not endless: the text is still bounded by
+`max_text_bytes`, so an endless text stream raises that too; only octet-stream
+payload runs without bound. Production deployments should set `max_file_size`
 explicitly at minimum. For untrusted input, set `max_array_items`,
 `max_text_bytes`, and the nesting limits as well.
 
@@ -2843,6 +2849,7 @@ standard publication by three to five years.
     - 13.1 [Error Model](#131-error-model)
     - 13.2 [Recovery Mode](#132-recovery-mode)
     - 13.3 [EOF in Resync](#133-eof-in-resync)
+    - 13.4 [The Error Getters Under Recovery](#134-the-error-getters-under-recovery)
 14. [Formal EBNF](#14-formal-ebnf)
 15. [Complete Examples](#15-complete-examples)
     - 15.1 [Simple Configuration](#151-simple-configuration)
@@ -3100,7 +3107,10 @@ those of the declared version as far as the reader knows them, so a document
 declaring `0.9` gets the 1.0 grammar and one declaring `2.0` everything this
 reader has. A reader
 opened with `strict_version` instead rejects any unsupported version
-(`error_unsupported_spec_version`) at the directive. A reader supports spec
+(`error_unsupported_spec_version`), and a malformed directive
+(`error_invalid_spec_version`), at the directive. The refusal ends the read
+even under `continue_on_error`: recovering from it would read the document
+the consumer asked not to read. A reader supports spec
 `<major>.<minor>` when `major` equals its own and `minor` is ≤ its own
 (`BVNR_SPEC_VERSION_*`).
 
@@ -4058,7 +4068,8 @@ and algebra is not. `m/s` matches `m*s^-1`, `km` matches `k~m`, `L` matches `l`
 and `m*s` matches `s*m`; `N` does not match `k~g·m/s²`, and `m` does not match
 `no_unit`. An omitted annotation unit matches anything — the inline unit is then
 simply the unit. (This is `bvn_unit_equal`, §16.8; it is also the comparison
-§7.4 makes between array elements.)
+§7.4 makes between array elements, except that the two dimensionless forms of
+§11.8 count as one unit there.)
 
 <!-- bovnar-example: rejected -->
 ```bovnar
@@ -4115,6 +4126,10 @@ elements, no `ev_data` emitted. It is distinct from a one-null row:
 .empty = [];         # 0 elements
 .null1 = [null];     # 1 element (null)
 ```
+
+An element may be empty only beside a comma, so whitespace alone (`[ ]`) is
+still the empty row. A type annotation alone is an element: `[<uint:8>]` is one
+typed null, not an empty row (§7.5).
 
 So `bvn_dom_array_count([])` is `0` and `bvn_dom_array_count([null])` is `1`. The
 canonical serialiser writes a null array element as the explicit `null` keyword
@@ -4305,9 +4320,9 @@ ev_octet_stream_end
 
 ### 9.5 Constraints
 
-- File size: `max_file_size` (0 → **unlimited / endless**, the default — no accumulated size limit; set to `16777216` for the recommended 16 MiB cap)
+- File size: `max_file_size` (0 → **no total-byte cap**, the default; set to `16777216` for the recommended 16 MiB cap). The text is still bounded by `max_text_bytes` (§12.2)
 - Octet stream bytes contribute to the file size limit but not to `max_text_bytes`
-- EOF inside an octet stream region preserves the current error code instead of overwriting with `error_got_incomplete_bvnr_stream`
+- EOF inside an octet stream region is `error_read_complete_chunk_failed`, never `error_got_incomplete_bvnr_stream`, and it is not recovered under `continue_on_error`
 
 ---
 
@@ -4694,8 +4709,8 @@ The complete notation, the transliteration table, and the codes that have no rep
 | Constraint | Error |
 |------------|-------|
 | Non-UTF-8 byte sequence | `error_invalid_utf8_byte` |
-| Overlong encoding | Rejected (by UTF-8 rules) |
-| Surrogate halves (U+D800–U+DFFF) | Rejected |
+| Overlong encoding | `error_invalid_utf8_byte` |
+| Surrogate halves (U+D800–U+DFFF) | `error_invalid_utf8_byte` |
 
 ### 12.2 Size Limits
 
@@ -4708,22 +4723,23 @@ The complete notation, the transliteration table, and the codes that have no rep
 | Reference length | Yes (`max_reference_length`) | 65535 | `error_reference_too_long` |
 | Array items | Yes (`max_array_items`) | 2 147 483 647 | `error_too_many_array_items` |
 | Text bytes | Yes (`max_text_bytes`) | 2 147 483 647 | `error_text_data_too_long` |
-| File size | Yes (`max_file_size`) | 0 (→ unlimited / endless) | `error_file_too_long` |
-| Struct nesting | Yes (`max_struct_nesting`) | 0 (→64 internal) | `error_struct_nesting_too_high` |
+| File size | Yes (`max_file_size`) | 0 (→ no total-byte cap; text stays bounded by `max_text_bytes`) | `error_file_too_long` |
+| Struct nesting | Yes (`max_struct_nesting`) | 0 (→64 internal, hard cap 255) | `error_struct_nesting_too_high` |
 | Array nesting | Yes (`max_array_nesting`) | 0 (→64 internal, hard cap 255) | `error_array_nesting_too_high` |
 | Type-annotation body (the bytes between `<` and `>`, whitespace beside separators not counted) | No | 255 | `error_type_too_long` |
 | Inline unit suffix | No | 255 | `error_unit_too_long` |
-| Unit components | No (`BVNR_MAX_UNIT_COMPONENTS`) | 32 | `error_unit_illegal` (§11.7) |
+| Unit components | No (`BVNR_MAX_UNIT_COMPONENTS`) | 32 | `error_unit_illegal` (§11.7); a profile expression, `error_unit_profile_unsupported` |
 | Unit exponent | No | −100 … 100, zero excluded | `error_unit_illegal` (§11.5) |
 | Unit `(…)` group nesting | No | 16 | `error_unit_illegal` (§11.4) |
 
-Setting most fields to `0` in `bvnr_read_flags_t` substitutes an internal default — **64** for both nesting depths, and **2 147 483 647** (2³¹ − 1) for `max_array_items` and `max_text_bytes`. **`max_file_size` is the exception: `0` means unlimited / endless** (no byte-count cap accumulated), so endless streams are the default; set a positive value to cap. These defaults apply to both the reader and the writer. The writer does not internally limit array items, text bytes, or file size.
+Setting most fields to `0` in `bvnr_read_flags_t` substitutes an internal default — **64** for both nesting depths, and **2 147 483 647** (2³¹ − 1) for `max_array_items` and `max_text_bytes`. **`max_file_size` is the exception: `0` means no total-byte cap**; set a positive value to cap. That is not the same as endless: the text of a document is still bounded by `max_text_bytes` (default 2³¹ − 1, `error_text_data_too_long`) and each array by `max_array_items`, and only octet-stream payload runs without bound. For an endless text stream raise `max_text_bytes` as well. The writer applies the two nesting defaults and consults no other field: it does not limit array items, text bytes or file size, and it ignores the five `max_*_length` fields — instead it refuses, whatever the flags say, an identifier, string or symbol over 65 535 bytes, the most any reader configuration accepts.
 
 ### 12.3 Value Validation
 
 | Check | Error |
 |-------|-------|
-| Number in base-N string contains out-of-base digit | `error_digit_not_in_base` |
+| Number literal, bare or quoted, contains a digit outside its base | `error_digit_not_in_base` |
+| Whitespace inside a type-annotation parameter (§5.3) | `error_type_param_whitespace` |
 | Integer value exceeds declared width | `error_value_out_of_range` |
 | `float_fix` value outside the declared Q-format range (§6.2) | `error_value_out_of_range` |
 | Negative number with `uint` type | `error_value_out_of_range` |
@@ -4809,8 +4825,8 @@ Setting most fields to `0` in `bvnr_read_flags_t` substitutes an internal defaul
 | Check | Error |
 |-------|-------|
 | Unknown tag byte in binary mode | `error_octet_stream_out_of_sync` |
-| Incomplete chunk read | `error_read_complete_chunk_failed` |
-| EOF in binary mode | Preserves current error |
+| Incomplete chunk read, or EOF anywhere before the closing `0x00` | `error_read_complete_chunk_failed` — never followed by `error_got_incomplete_bvnr_stream`, and it ends the read even under `continue_on_error` (§13.2) |
+| An octet stream under `text_only` | `error_octet_stream_forbidden` |
 
 ---
 
@@ -4829,14 +4845,14 @@ typedef void (*bvnr_on_error_fn)(
 
 ### 13.2 Recovery Mode
 
-When `bvnr_read_flags_t.continue_on_error` is `true`, the parser enters **resync mode** after an error — any error but one inside a comment (below):
+When `bvnr_read_flags_t.continue_on_error` is `true`, the parser enters **resync mode** after an error in the text — any error but one inside a comment (below). A few errors end the read even so: a fault in an octet stream's framing (`error_octet_stream_out_of_sync`, `error_read_complete_chunk_failed`), `error_text_data_too_long`, `error_file_too_long`, a version directive refused under `strict_version` (§3.4), and a callback that returns `false`. The other limits of §12.2 — the five lengths, `max_array_items`, both nesting depths — are recovered from like any other error.
 
 1. The `on_error` callback is invoked with error details
 2. A **resync state machine** (`state_t: resync, resync_dot, resync_string, resync_string_escape, resync_comment`) skips bytes
-3. Tracking bracket `[]` and brace `{}` nesting
+3. Tracking bracket `[]` and brace `{}` nesting, each with its own counter (table below)
 4. Parsing resumes at whichever comes first: a `;` at the saved nesting depth, or the **start of the next assignment** — a `.` at the saved nesting depth followed by a byte that can begin an identifier
 5. `recovery_count` (accessible via `bvnr_reader_get_recovery_count`) is incremented immediately when an error triggers entry into resync mode
-6. The bytes consumed and discarded while recovering are added to a running total, readable with `bvnr_reader_get_skipped_bytes`. `recovery_count` says how *often* recovery ran; this says what it *cost*, and it is the only way to learn it — the skipped bytes were never parsed, so no callback mentions them. A non-zero total means the document delivered to the callbacks is not the whole document
+6. The bytes discarded while recovering — from the byte the error was raised on up to, not including, the boundary recovery resumes at (the `;`, or the `.` that begins the next key) — are added to a running total, readable with `bvnr_reader_get_skipped_bytes`. `recovery_count` says how *often* recovery ran; this says what it *cost*, and it is the only way to learn it — the skipped bytes were never parsed, so no callback mentions them. A non-zero total means the document delivered to the callbacks is not the whole document. The converse does not hold: a value rejected right before its `;` skips zero bytes, so test `recovery_count`, not this, for "something was dropped" (§18.2)
 
 Both boundaries matter, because they cover different errors. When the error is
 *inside* a statement, that statement's own `;` is the next one, so the `;` rule
@@ -4851,7 +4867,11 @@ The `.` must be followed by a byte that can begin an identifier, so a `.` inside
 skipped-over junk (`1.5`, `.5`, a `.` in binary corruption) is just another
 skipped byte. A `.` inside a bracket opened *since* recovery began opens no
 assignment either, and is skipped. Neither boundary recovers less than the other
-alone would: `;` remains a boundary in every case it was one before.
+alone would: `;` remains a boundary in every case it was one before. The other
+side of the rule: a `.` followed by an identifier byte *anywhere* in the rest of
+the broken statement is a boundary too — a reference such as `&.c`, or `x.y` —
+so parsing restarts there, usually to report a further error, which
+`recovery_count` counts.
 
 **What recovery leaves open.** On entry the reader closes — with their
 `ev_array_row_end` events — only the arrays opened *inside* the innermost open
@@ -4875,14 +4895,40 @@ of the comment is never read as document text.
 | `0x00–0xFF` (most) | Skip (consume and continue) |
 | `"` | Enter `resync_string`: skip until matching `"` |
 | `#` | Enter `resync_comment`: skip until newline |
-| `[`, `{` | Increment `resync_depth` |
-| `]`, `}` | Decrement `resync_depth`; if 0, emit array/struct close |
+| `[`, `{` | Increment its own counter — `resync_array_depth` or `resync_struct_depth` — for brackets opened since recovery began |
+| `]`, `}` | If its own counter is non-zero, decrement it and keep skipping. Otherwise it closes a container that was open before the error — an array the innermost struct owns, or that struct — emitting its end event |
 | `;` at depth 0 | Reset state, resume normal parsing |
 | `.` at depth 0 | Candidate assignment start: resume if the next byte can begin an identifier, else keep skipping |
+
+The two counters are independent: a `}` does not balance a junk `[`, so a
+statement that opens a bracket it never closes keeps recovery from resuming
+until the bracket is closed or the input ends (§13.3).
 
 ### 13.3 EOF in Resync
 
 If EOF is reached while in any resync state, `error_got_incomplete_bvnr_stream` is fired as a **second** `on_error` notification in addition to the original error that triggered resync entry. Both error codes are delivered to the caller's `on_error` callback in order: the original error first, then `error_got_incomplete_bvnr_stream` when EOF is detected.
+
+### 13.4 The Error Getters Under Recovery
+
+The error getters of §16.7 describe the error that **ended** a read, not the
+errors recovered from. A recovered error is reported through `on_error` and
+nowhere else:
+
+- **`bvnr_read` returned `false`:** the getters hold the error that stopped it.
+  Under `continue_on_error` that is one of the errors recovery does not continue
+  past (§13.2: `max_text_bytes`, `max_file_size`, an octet-stream framing error, a
+  directive refused under `strict_version`, a callback that returned `false`) or the `error_got_incomplete_bvnr_stream` of
+  §13.3, positioned at the end of the input.
+- **`bvnr_read` returned `true`:** `bvnr_reader_get_error` returns `error_none`
+  and the line, column, byte and offset getters return `0`, however many errors
+  were recovered. Whether any were, and what they cost, is what
+  `bvnr_reader_get_recovery_count` and `bvnr_reader_get_skipped_bytes` report.
+  A consumer that needs the recovered errors themselves collects them in
+  `on_error`.
+- **During the read:** inside `on_error` the getters agree with the callback's
+  arguments. After the callback returns they are unspecified until `bvnr_read`
+  returns: the position is cleared when recovery begins, and the code may still
+  hold the recovered error.
 
 ---
 
@@ -5149,7 +5195,7 @@ The unit may be written directly after the value literal instead of — or redun
 . = 42;                          # error_empty_identifier
 
 # Type violation (type annotation on the identifier, not the value)
-.x<utf8> = 42;                   # error (annotation must be after '=')
+.x<utf8> = 42;                   # error_unexpected_input_byte (annotation must be after '=')
 
 # Correct: .x = <utf8> "text";
 
@@ -5253,6 +5299,7 @@ typedef struct value_type_spec_s {
     uint32_t            base;  /* for uint/sint/float: numeral base; 0 = default (10) */
                                /* for float_fix:        Q (fractional bits)           */
                                /* for float_dec:        unused (always 0)             */
+                               /* for datetime:         epoch index (0 = unix)        */
 } value_type_spec_t;
 
 #define BVNR_MAX_UNIT_COMPONENTS     32
@@ -5306,7 +5353,7 @@ typedef struct bvnr_data_s {
     uint32_t          frac_length;  /* spec 1.1 — length of frac_data, else 0 */
     const void*       unit_source;        /* library 2.0 — the unit as the document spelled it, else NULL */
     uint32_t          unit_source_length; /* library 2.0 — length of unit_source, else 0 */
-    bool              converted;    /* a want_unit read-time conversion was applied (§ read-time conversion) */
+    bool              converted;    /* a want_unit read-time conversion was applied (read/write API §1.10) */
     bvnr_converted_t  conv;         /* the exact converted value (unit + text + rational); zeroed when converted is false */
 } bvnr_data_t;
 ```
@@ -5325,9 +5372,11 @@ typedef struct bvnr_data_s {
 #define BVN_TYPE_FLOAT_FIX(w,q) ((value_type_spec_t){ .family = vt_float_fix, .width = (w), .base = (q) })
 /* float_dec: base field is unused (always 0).                   */
 #define BVN_TYPE_FLOAT_DEC(w)   ((value_type_spec_t){ .family = vt_float_dec, .width = (w) })
-/* With explicit numeral base (uint/sint only):                   */
+/* With explicit numeral base:                                   */
 #define BVN_TYPE_UINT_BASE(w,b) ((value_type_spec_t){ .family = vt_uint, .width = (w), .base = (b) })
 #define BVN_TYPE_SINT_BASE(w,b) ((value_type_spec_t){ .family = vt_sint, .width = (w), .base = (b) })
+/* float: base 10 or 16 only (read/write API §2.14)                */
+#define BVN_TYPE_FLOAT_BASE(w,b) ((value_type_spec_t){ .family = vt_float, .width = (w), .base = (b) })
 ```
 
 ### 16.3 Unit Macros
@@ -5396,7 +5445,7 @@ typedef struct bvnr_read_flags_s {
     uint16_t  max_reference_length;   // 0 → 65535 default
     uint64_t  max_array_items;        // 0 → 2 147 483 647 internal default
     uint64_t  max_text_bytes;         // 0 → 2 147 483 647 internal default
-    uint64_t  max_file_size;          // 0 → unlimited / endless (default); 16 777 216 recommended for a cap
+    uint64_t  max_file_size;          // 0 → no total-byte cap (default; text still bounded by max_text_bytes); 16 777 216 recommended for a cap
     uint8_t   max_struct_nesting;     // 0 → 64 internal default; hard cap 255
     uint8_t   max_array_nesting;      // 0 → 64 internal default; hard cap 255
     void*     userdata;
@@ -5423,7 +5472,7 @@ void bvnr_sink_to_mem(bvnr_sink_t* s, void* buf, uint64_t cap);
 uint64_t bvnr_sink_bytes_written(const bvnr_sink_t* s);
 ```
 
-`bvnr_sink_bytes_written` queries the total bytes written to a memory sink created with `bvnr_sink_to_mem` **by the caller**; `bvnr_open_write_sink` copies the sink, so writer output never advances the caller's struct and this stays 0. For writer output use `bvnr_writer_bytes_written` (read/write API §2.4).
+`bvnr_sink_bytes_written` queries the total bytes written to a memory sink created with `bvnr_sink_to_mem` **by the caller**; `bvnr_open_write_sink` copies the sink, so writer output never advances the caller's struct and this stays 0. For writer output use `bvnr_writer_bytes_written` (read/write API §2.4, §2.10).
 
 ### 16.6 Reading
 
@@ -5437,6 +5486,15 @@ bool bvnr_open_read_mem(bvnr_reader_t* r, const void* buf, uint64_t len,
                         bvnr_read_flags_t* options);
 
 bool bvnr_read(bvnr_reader_t* r);
+
+bvnr_reader_t* bvnr_reader_create(void);   /* the reader is opaque */
+void           bvnr_reader_destroy(bvnr_reader_t* r);
+bool bvnr_reader_get_declared_version(const bvnr_reader_t* r,
+                                      uint16_t* major, uint16_t* minor); /* §3.4 */
+
+uint32_t    bvnr_version(void);            /* library version, §17 */
+const char* bvnr_version_string(void);
+void        bvnr_spec_version(uint16_t* major, uint16_t* minor);
 ```
 
 ### 16.7 Error Queries
@@ -5448,8 +5506,13 @@ uint64_t     bvnr_reader_get_error_column(const bvnr_reader_t* r);
 uint32_t     bvnr_reader_get_error_byte  (const bvnr_reader_t* r);
 uint64_t     bvnr_reader_get_error_offset(const bvnr_reader_t* r);
 uint64_t     bvnr_reader_get_recovery_count(const bvnr_reader_t* r);
+uint64_t     bvnr_reader_get_skipped_bytes(const bvnr_reader_t* r);
 const char*  bvn_error_to_string(error_code_t code);
 ```
+
+The getters describe the error that ended the read. After a read that returned
+`true` they report `error_none` and position `0`, even if errors were recovered
+under `continue_on_error` (§13.4).
 
 ### 16.8 Utility Functions
 
@@ -5492,14 +5555,17 @@ value_unit_t bvn_parse_unit_n(const uint8_t* unit, uint32_t len, bool* ok);
 
 /* Serialize a value_unit_t (possibly compound) back to a string.
    Numerator components are joined by "·", followed by "/" and
-   denominator components joined by "·".  Returns bytes written,
-   or -1 on buffer overflow. */
+   denominator components joined by "·"; when every exponent is
+   negative there is no "/" (m⁻¹·s⁻²).  Returns bytes written, or -1
+   on buffer overflow, an invalid unit, or an opaque unit with no
+   text. */
 int32_t bvn_unit_to_string(value_unit_t u, char* buf, size_t bufsize);
 
 /* Extended variant accepting bvn_unit_flags_t:
      BVN_UNIT_FLAGS_NONE  (0)      – Unicode superscript exponents, no reduction
-     BVN_UNIT_ASCII_EXP  (1 << 1) – use ^N caret notation for exponents
+     BVN_UNIT_ASCII_EXP  (1 << 1) – ^N caret exponents and "*" for "·"
      BVN_UNIT_REDUCE     (1 << 0) – reduce compound unit before serialising
+     BVN_NUM_CANONICAL   (1 << 2) – see bovnar.h
    Flags may be OR-combined.  Returns bytes written, or -1 on overflow. */
 int32_t bvn_unit_to_string_ex(value_unit_t u, char* buf, size_t bufsize,
                                bvn_unit_flags_t flags);
@@ -5581,7 +5647,8 @@ bool bvnr_write_float_dec_unit(bvnr_writer_t* w, const char* key,
                                 uint32_t width, double value, value_unit_t unit);
 
 /* ── Wide-precision float writers (bvn_float_t) ─────────────────── */
-/* vt.width must match f->_prec or be 0 (auto).                      */
+/* width: the annotation width, any legal float width; 0 = use       */
+/* f->_prec, which must then itself be a legal float width.          */
 bool bvnr_write_bvnf     (bvnr_writer_t* w, const char* key,
                            const bvn_float_t* f, uint32_t width);
 bool bvnr_write_bvnf_unit(bvnr_writer_t* w, const char* key,
@@ -5921,8 +5988,10 @@ normative keywords.
 ### 18.1 Resource Exhaustion
 
 The defaults of §12.2 are chosen for trusted pipelines, not for hostile input.
-**Document size is unbounded by default** — `max_file_size` of 0 means endless,
-which is right for a telemetry stream and wrong for an untrusted one. A consumer
+**Total input is unbounded by default** — `max_file_size` of 0 sets no total-byte
+cap, so octet-stream payload is unlimited and only the text is capped (at 2³¹ − 1
+bytes, `max_text_bytes`). That is right for a telemetry stream and wrong for an
+untrusted one. A consumer
 at a trust boundary sets every limit in §12.2 explicitly.
 
 Four constructs give an attacker a high ratio of work to input bytes: integer
@@ -5970,7 +6039,8 @@ inside a payload — line-ending normalisation above all — shifts every subseq
 length field, and the reader begins interpreting attacker-supplied payload as tag
 and length fields. The common outcome is a quick `error_octet_stream_out_of_sync`,
 but that is not guaranteed, and a chunk length read out of a corrupted field is
-an allocation request. Bound the memory committed to a single chunk independently
+an allocation request — at most 65 536 bytes per chunk (§9.2), so the hazard is
+an implementation that pre-allocates or accumulates across chunks. Bound the memory committed to a single chunk independently
 of its declared length, and carry documents containing octet streams over
 transports that do not transform content.
 
@@ -5996,9 +6066,10 @@ non-finite value arriving on an integer channel.
 nothing in the document shows the producer honoured it. The reader's range
 validation (§6.2) is the only check, and it covers the integer families and
 `float_fix` alone: a `float` or `float_dec` literal is never held to its width,
-and a special number is held to nothing (above). Bases 64 and 85 are `uint`-only for the same family
-of reason: their alphabets use `+` and `-` as digits, so permitting a signed
-value there would introduce an ambiguity the format does not have.
+and a special number is held to nothing (above). Bases 64 and 85 are `uint`-only:
+their alphabets use sign characters as digits (Base64 `+`, Ascii85 `+` and `-`),
+so permitting a signed value there would introduce an ambiguity the format does
+not have (§5.2).
 
 ### 18.7 Units Are Validated, Not Verified
 
@@ -6010,11 +6081,11 @@ claims. *It parsed* means the dimension is stated and internally consistent, not
 that it is correct.
 
 Read-time unit conversion carries a further trap: asking for a value in some
-unit is a **request, not a guarantee**. A target *list* (`want_unit`, `--unit`,
-`--si`) leaves a value it cannot convert — different dimensions, or two
-different currencies — in its *original* unit and reports no error; a
-per-field rule (`--field`, a policy rule by key path) fails with
-`error_unit_mismatch` instead. Only the first needs the check. A caller that
+unit is a **request, not a guarantee**. A target *list* (the unit policy's
+`targets`, `--unit`, `--si`) leaves a value it cannot convert — different
+dimensions, or two different currencies — in its *original* unit and reports no
+error; a per-field rule (`--field`, a policy rule by key path) and the
+`want_unit` hook fail with `error_unit_mismatch` instead. Only the first needs the check. A caller that
 assumes success then holds a number it believes is in one unit and which is in
 another, which is exactly the failure this format exists to prevent. Check
 whether the conversion occurred; do not infer it from the absence of an error.
@@ -6304,15 +6375,22 @@ The `bvn_float_t` intermediate representation is MPFR-layout-compatible (see
 | reader default array nesting | 64 | Default applied by the reader when `max_array_nesting` is 0; hard cap is 255 |
 | writer default struct nesting | 64 | Default applied by the writer when `max_struct_nesting` is 0; hard cap is 255 |
 | writer default array nesting | 64 | Default applied by the writer when `max_array_nesting` is 0; hard cap is 255 |
+| reader default max_identifier_length | 255 | Default applied by the reader when `max_identifier_length` is 0; longer is `error_identifier_too_long` |
+| reader default max_string_length | 65 535 | Default applied by the reader when `max_string_length` is 0; longer is `error_string_too_long` |
+| reader default max_number_length | 65 535 | Default applied by the reader when `max_number_length` is 0; longer is `error_number_too_long` |
+| reader default max_symbol_length | 255 | Default applied by the reader when `max_symbol_length` is 0; longer is `error_symbol_too_long` |
+| reader default max_reference_length | 65 535 | Default applied by the reader when `max_reference_length` is 0; longer is `error_reference_too_long` |
+| length-limit ceiling | 65 535 | The five `max_*_length` fields are 16-bit, so no setting raises a limit past this. The writer accepts them for symmetry and does not consult them |
 | reader default max_array_items | 2 147 483 647 | Default applied by the reader when `max_array_items` is 0 |
 | reader default max_text_bytes | 2 147 483 647 | Default applied by the reader when `max_text_bytes` is 0 |
-| reader default max_file_size | 0 (unlimited / endless) | A `max_file_size` of 0 imposes no byte-count cap; set to 16 777 216 (16 MiB) in production |
+| reader default max_file_size | 0 (no total-byte cap) | A `max_file_size` of 0 imposes no total-byte cap; the text is still bounded by `max_text_bytes`. Set to 16 777 216 (16 MiB) in production |
 | recommended file size cap | 16 777 216 | Suggested explicit value for `max_file_size` (16 MiB) |
 | `BVNR_MAX_UNIT_COMPONENTS` | 32 | Maximum number of unit components in a compound unit |
-| type-annotation body | 255 bytes | Everything between `<` and `>`; longer is `error_type_too_long` |
+| type-annotation body | 255 bytes | The bytes between `<` and `>`, whitespace beside separators not counted (§12.2); longer is `error_type_too_long` |
 | inline unit suffix | 255 bytes | Longer is `error_unit_too_long` |
 | unit exponent | −100 … 100 | `BVN_EXPONENT_MIN` … `BVN_EXPONENT_MAX`, zero excluded (§11.5) |
-| `BVN_MAX_INT_WIDTH` | 32768 | Maximum bit-width for `uint` and `sint` types. The validator and writer reject any declared width exceeding this value with `error_illegal_value_type`. |
+| unit `(…)` group nesting | 16 | Deeper is `error_unit_illegal` (§11.4) |
+| `BVN_MAX_INT_WIDTH` | 32768 | Maximum bit-width for `uint`, `sint` and `datetime`; `float` has the same ceiling (§5.2). The validator and writer reject any declared width exceeding this value with `error_illegal_value_type`. |
 
 ---
 
@@ -11613,7 +11691,7 @@ typedef struct bvnr_read_flags_s {
     bool (*on_verified)  (void *userdata, bvnr_event_t, bvnr_data_t *);
     bool   continue_on_error;
     bvnr_on_error_fn on_error;
-    uint64_t max_file_size;        /* 0 → unlimited / endless (default); set positive to cap */
+    uint64_t max_file_size;        /* 0 → no total-byte cap (default; text still bounded by max_text_bytes); set positive to cap */
     uint8_t  max_struct_nesting;   /* 0 → 64 internal default; hard cap 255 */
     uint8_t  max_array_nesting;    /* 0 → 64 internal default; hard cap 255 */
     /* ... the remaining size limits, plus strict_version, text_only (§1.13),
@@ -11635,7 +11713,7 @@ scanner consumes; an octet stream's binary payload does not count towards it. A
 input, `max_file_size` is the one that counts every byte. Both are exact at their
 boundary: a document needing N is accepted at N and refused at N-1.
 
-**Reader default limits.** When a `bvnr_read_flags_t` field is set to `0`, the reader substitutes an internal default. For the nesting fields, the default is **64** (not 255); the hard maximum is 255. For `max_array_items` and `max_text_bytes`, the default is **2 147 483 647** — permissive but finite. **`max_file_size` differs: `0` means unlimited / endless** (no byte-count cap accumulated), which is the default so endless streaming works out of the box. Setting `max_file_size` explicitly to `16777216` (16 MiB) is recommended for production.
+**Reader default limits.** When a `bvnr_read_flags_t` field is set to `0`, the reader substitutes an internal default. For the nesting fields, the default is **64** (not 255); the hard maximum is 255. For `max_array_items` and `max_text_bytes`, the default is **2 147 483 647** — permissive but finite. **`max_file_size` differs: `0` means no total-byte cap**. That is not endless: the text is still bounded by `max_text_bytes`, so an endless text stream raises that as well; only octet-stream payload runs without bound. Setting `max_file_size` explicitly to `16777216` (16 MiB) is recommended for production.
 
 ```c
 static bool on_event(void *ud, bvnr_event_t ev, bvnr_data_t *d)
@@ -11731,7 +11809,7 @@ non-ASCII character pulls them apart: in `.x = "çafé"; .y = @;` the `@` is at
 column 19 and offset 20. This matters here more than in most formats: unit
 symbols are routinely non-ASCII (`µ~m`, `°C`, `Ω`), so the two disagree often.
 
-All five error/location getters above (everything except `bvnr_reader_get_recovery_count`) are only meaningful when `bvnr_read` returned `false` (or after a recoverable error when `continue_on_error` is set). `bvnr_reader_get_error_byte` returns the raw byte value that triggered the error. `bvnr_reader_get_recovery_count` is the exception: it returns how many errors triggered entry into resync mode in `continue_on_error` mode (and so is meaningful even when `bvnr_read` ultimately returned `true`). This count is incremented at error entry, not when resync completes at `";". `bvnr_reader_get_skipped_bytes` is the same kind of thing and answers the question the count cannot: how much of the input recovery threw away. One skipped assignment and a whole discarded struct both report a single recovery, and the skipped bytes were never parsed, so nothing else in the API mentions them — a non-zero total means the document your callbacks saw is not the whole document.
+All five error/location getters above (everything except `bvnr_reader_get_recovery_count`) describe the error that **ended** the read, so they are meaningful when `bvnr_read` returned `false`, and inside an `on_error` callback, where they agree with its arguments. Errors recovered under `continue_on_error` are reported through `on_error` only: after a read that returned `true`, `bvnr_reader_get_error` is `error_none` and the position getters return `0`, however many errors were recovered (spec §13.4). `bvnr_reader_get_error_byte` returns the raw byte value that triggered the error. `bvnr_reader_get_recovery_count` is the exception: it returns how many errors triggered entry into resync mode in `continue_on_error` mode (and so is meaningful even when `bvnr_read` ultimately returned `true`). This count is incremented at error entry, not when resync completes at `";". `bvnr_reader_get_skipped_bytes` is the same kind of thing and answers the question the count cannot: how much of the input recovery threw away. One skipped assignment and a whole discarded struct both report a single recovery, and the skipped bytes were never parsed, so nothing else in the API mentions them — a non-zero total means the document your callbacks saw is not the whole document.
 
 ```c
 if (!bvnr_read(r)) {
@@ -15130,11 +15208,15 @@ Generator that collects all events from `read_mem` and yields
 
 ### 11.6 Error-state properties
 
-These properties query the C reader object after a failed parse.
+These properties query the C reader object after a failed parse. They describe
+the error that **ended** the read. An error recovered under
+`continue_on_error=True` does not appear here: after a read that succeeded,
+`error_code` is `ErrorCode.NONE` and the positions are `0`, however many errors
+were recovered, and `recovery_count` is how to tell that any were (spec §13.4).
 
 | Property | Type | Description |
 |---|---|---|
-| `error_code` | `ErrorCode` | Most recent error code |
+| `error_code` | `ErrorCode` | The error that ended the read; `NONE` after a successful one |
 | `error_line` | `int` | 1-based line number of the error |
 | `error_column` | `int` | 1-based column of the error |
 | `error_offset` | `int` | Byte offset of the error |
@@ -19324,6 +19406,9 @@ table nobody can trace.
 (*  UTF-8 classes of §12) is a BYTE CLASS defined by that comment --   *)
 (*  the role ISO 14977 gives a ? special sequence ?. It is not the     *)
 (*  empty production.                                                  *)
+(*  Updated: 2026-11-03 — "[]" derives only as the empty row: a one-  *)
+(*    element row needs a filled-elem (present-value split out of      *)
+(*    raw-value). No change to what the reader accepts.                *)
 (*  Updated: 2026-10-11 — review pass: a struct takes no annotation,  *)
 (*    utf8/bool refuse a zero width too, digit alphabets, the default  *)
 (*    Q, eight reserved words in the symbol section, 0xC2 in a         *)
@@ -19547,8 +19632,12 @@ value        = [type-annotation , ws] , ( scalar-with-unit | raw-value ) ;
 (* only from number_outro / string_outro, so no other value form takes one.    *)
 scalar-with-unit = ( number | string ) , ws-mandatory , inline-unit ;
 
-raw-value    = null-value
-             | bool-value
+raw-value    = null-value | present-value ;
+
+(* present-value: every raw-value that is not null.  Split out so a   *)
+(* one-element array row can require a non-empty element (row-content, *)
+(* §9) without restating the list.                                     *)
+present-value = bool-value
              | special-number
              | datetime-literal               (* spec 1.1 *)
              | number
@@ -20252,7 +20341,18 @@ array-row    = "[" , ws , [row-content] , ws , "]" ;
 (* row-content has at least one element position; leading / trailing /  *)
 (* consecutive commas each expand to a null-value element. An empty row  *)
 (* has width 0, a valid row width for /-dimension consistency.          *)
-row-content  = array-elem , {ws , "," , ws , array-elem} ;
+(* The productions, not this comment, settle "[]": a row of ONE element *)
+(* needs a filled-elem, so "[]" and "[ ]" cannot also derive as one     *)
+(* empty null-value. An element may be empty only beside a comma.       *)
+(* A type annotation alone fills the slot: "[<uint:8>]" is one typed    *)
+(* null, as "[<uint:8> ,]" is two elements.                              *)
+row-content  = filled-elem
+             | array-elem , ws , "," , ws , array-elem ,
+               {ws , "," , ws , array-elem} ;
+
+filled-elem  = type-annotation , ws , raw-value
+             | "null"
+             | present-value ;
 
 (* array-elem has the same structure as a top-level value, except that an  *)
 (* inline unit suffix is not permitted: it uses raw-value (no unit option), *)
@@ -20484,7 +20584,8 @@ byte         = (* any single byte 0x00–0xFF *) ;
 
   n) Error recovery (continue_on_error mode)
      When bvnr_read_flags_t.continue_on_error is set, any parse error
-     but one INSIDE A COMMENT invokes the on_error callback and then
+     in the text but one INSIDE A COMMENT invokes the on_error callback
+     and then
      enters the resync state machine (an invalid UTF-8 sequence or a
      control byte in a comment is reported and counted, and the comment
      runs on to its line end: nothing is unwound and nothing is lost).

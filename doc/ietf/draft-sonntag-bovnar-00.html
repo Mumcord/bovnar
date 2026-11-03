@@ -1231,11 +1231,11 @@ li > p:last-of-type:only-child {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">The Bovnar Format</td>
-<td class="right">October 2026</td>
+<td class="right">November 2026</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Sonntag</td>
-<td class="center">Expires 15 April 2027</td>
+<td class="center">Expires 7 May 2027</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1248,12 +1248,12 @@ li > p:last-of-type:only-child {
 <dd class="internet-draft">draft-sonntag-bovnar-00</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-10-12" class="published">12 October 2026</time>
+<time datetime="2026-11-03" class="published">3 November 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2027-04-15">15 April 2027</time></dd>
+<dd class="expires"><time datetime="2027-05-07">7 May 2027</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1308,7 +1308,7 @@ error model, and the media type registration for the format.<a href="#section-ab
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 15 April 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 7 May 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -2262,7 +2262,8 @@ major and <code>minor</code> is less than or equal to its own minor.<a href="#se
 recording it, and <span class="bcp14">MUST</span> fail only if the document subsequently uses a
 construct the consumer does not implement. A consumer <span class="bcp14">MAY</span> offer a strict
 mode that rejects an unsupported declared version at the directive
-(<code>error_unsupported_spec_version</code>). Consumers processing input from an
+(<code>error_unsupported_spec_version</code>). The rejection ends parsing even in
+recovery mode (<a href="#error-recovery" class="auto internal xref">Section 10.3</a>). Consumers processing input from an
 untrusted source <span class="bcp14">SHOULD</span> enable strict mode; see <a href="#security-version" class="auto internal xref">Section 15.4</a>.<a href="#section-5-8" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -3689,7 +3690,9 @@ carries a unit the consumer cannot reason about.<a href="#section-8.6-5.3.1" cla
 <pre>
 array        = array-row *( ws "/" ws array-row )
 array-row    = "[" ws [ row-content ] ws "]"
-row-content  = array-elem *( ws "," ws array-elem )
+row-content  = filled-elem
+             / array-elem 1*( ws "," ws array-elem )
+filled-elem  = type-ann ws [ raw-value ] / raw-value
 array-elem   = [ type-ann ws ] [ raw-value ]
 </pre><a href="#section-9.1-1" class="pilcrow">¶</a>
 </div>
@@ -3702,7 +3705,9 @@ is one 2x3 array, not two arrays.<a href="#section-9.1-3" class="pilcrow">¶</a>
 <code>error_array_row_size_mismatch</code> otherwise. Zero is a valid width, so
 <code>[]/[]</code> is two empty rows, while <code>[]/[1]</code> is an error.<a href="#section-9.1-4" class="pilcrow">¶</a></p>
 <p id="section-9.1-5">A leading, trailing, or doubled comma denotes a null element, as does the
-bare word <code>null</code>. <code>[,1,,2,]</code> has five elements.<a href="#section-9.1-5" class="pilcrow">¶</a></p>
+bare word <code>null</code>. <code>[,1,,2,]</code> has five elements. An element may be empty
+only beside a comma, so <code>[]</code> is the empty row and never one null; a type
+annotation alone is an element, so <code>[&lt;uint:8&gt;]</code> is one typed null.<a href="#section-9.1-5" class="pilcrow">¶</a></p>
 <p id="section-9.1-6">Array nesting is bounded by <code>max_array_nesting</code> and the total element
 count by <code>max_array_items</code> (<a href="#limits" class="auto internal xref">Section 10.1</a>).<a href="#section-9.1-6" class="pilcrow">¶</a></p>
 <div id="array-homogeneity">
@@ -3957,7 +3962,7 @@ everywhere.<a href="#section-10.1-4" class="pilcrow">¶</a></p>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
-                <code>uint</code> / <code>sint</code> / <code>float</code> width</td>
+                <code>uint</code> / <code>sint</code> / <code>float</code> / <code>datetime</code> width</td>
               <td class="text-left" rowspan="1" colspan="1">32768 bits</td>
               <td class="text-left" rowspan="1" colspan="1">
                 <code>error_illegal_value_type</code>
@@ -3999,10 +4004,11 @@ suffix. A well-formed annotation can exceed its cap - a compound unit of
 many long aliases, or a long foreign code (<a href="#unit-profiles" class="auto internal xref">Section 8.6</a>) - and is
 then <code>error_type_too_long</code>, so the caps are limits on valid documents and
 not only on malformed ones.<a href="#section-10.1-6" class="pilcrow">¶</a></p>
-<p id="section-10.1-7">The document-size default of <em>unlimited</em> deserves emphasis. It is chosen
-so that endless streams work without configuration, which is the right
-default for a telemetry pipeline and the wrong one for an untrusted
-input. Deployments that accept documents from an untrusted source <span class="bcp14">MUST</span>
+<p id="section-10.1-7">The document-size default of <em>unlimited</em> deserves emphasis. It sets no
+cap on the total, so octet-stream payload runs without bound; the text
+of a document is still bounded by the text-octet limit, which a consumer
+of an endless text stream raises as well. That is the right default for
+a telemetry pipeline and the wrong one for an untrusted input. Deployments that accept documents from an untrusted source <span class="bcp14">MUST</span>
 set an explicit cap; see <a href="#security-dos" class="auto internal xref">Section 15.1</a>.<a href="#section-10.1-7" class="pilcrow">¶</a></p>
 <p id="section-10.1-8">Setting a configurable limit to zero selects the default rather than
 forbidding the construct, with one exception: a document-octet limit of
@@ -4096,10 +4102,11 @@ from what the consumer received - or, the one case that drops nothing,
 an octet inside a comment was.<a href="#section-10.3.1-2.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-10.3.1-2.2">
-              <p id="section-10.3.1-2.2.1"><strong>Skipped octets</strong> is how much raw input was discarded unparsed. It
-says what recovery <em>cost in text</em>, and it is the only way to learn
-that: the skipped octets were never parsed, so no other event mentions
-them.<a href="#section-10.3.1-2.2.1" class="pilcrow">¶</a></p>
+              <p id="section-10.3.1-2.2.1"><strong>Skipped octets</strong> is how much raw input was discarded unparsed: from
+the octet the error was raised on up to, not including, the boundary
+parsing resumed at. It says what recovery <em>cost in text</em>, and it is the
+only way to learn that: the skipped octets were never parsed, so no
+other event mentions them.<a href="#section-10.3.1-2.2.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 <p id="section-10.3.1-3">A recovery can drop a value while skipping <strong>zero</strong> octets. Where a value
@@ -4794,8 +4801,9 @@ rather than for hostile input.<a href="#section-15.1-1" class="pilcrow">¶</a></
 <ul class="normal">
 <li class="normal" id="section-15.1-2.1">
             <p id="section-15.1-2.1.1"><strong>Document size is unbounded by default.</strong> A consumer accepting input
-from an untrusted source <span class="bcp14">MUST</span> set an explicit cap. Nothing else in the
-format bounds the total.<a href="#section-15.1-2.1.1" class="pilcrow">¶</a></p>
+from an untrusted source <span class="bcp14">MUST</span> set an explicit cap. Only the text is
+otherwise bounded, by the text-octet limit; octet-stream payload is
+not.<a href="#section-15.1-2.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-15.1-2.2">
             <p id="section-15.1-2.2.1"><strong>Integer widths reach 32768 bits.</strong> A single <code>&lt;uint:32768&gt;</code> value
@@ -5157,7 +5165,7 @@ may reveal more about a system than the value does.<a href="#section-15.12-2" cl
 <dd class="break"></dd>
 <dt id="RFC7405">[RFC7405]</dt>
         <dd>
-<span class="refAuthor">Kyzivat, P.</span>, <span class="refTitle">"Case-Sensitive String Support in ABNF"</span>, <span class="seriesInfo">RFC 7405</span>, <span class="seriesInfo">DOI 10.17487/RFC7405</span>, <time datetime="2014-12" class="refDate">December 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7405">https://www.rfc-editor.org/rfc/rfc7405</a>&gt;</span>. </dd>
+<span class="refAuthor">Kyzivat, P.</span>, <span class="refTitle">"Case-Sensitive String Support in ABNF"</span>, <span class="seriesInfo">STD 68</span>, <span class="seriesInfo">RFC 7405</span>, <span class="seriesInfo">DOI 10.17487/RFC7405</span>, <time datetime="2014-12" class="refDate">December 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7405">https://www.rfc-editor.org/rfc/rfc7405</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC8174">[RFC8174]</dt>
         <dd>
@@ -5391,7 +5399,9 @@ inline-char  = unit-char
 
 array        = array-row *( ws "/" ws array-row )
 array-row    = "[" ws [ row-content ] ws "]"
-row-content  = array-elem *( ws "," ws array-elem )
+row-content  = filled-elem
+             / array-elem 1*( ws "," ws array-elem )
+filled-elem  = type-ann ws [ raw-value ] / raw-value
 array-elem   = [ type-ann ws ] [ raw-value ]
 
 struct       = "{" ws *( assignment ws ) "}"

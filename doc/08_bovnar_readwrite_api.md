@@ -157,7 +157,7 @@ typedef struct bvnr_read_flags_s {
     bool (*on_verified)  (void *userdata, bvnr_event_t, bvnr_data_t *);
     bool   continue_on_error;
     bvnr_on_error_fn on_error;
-    uint64_t max_file_size;        /* 0 → unlimited / endless (default); set positive to cap */
+    uint64_t max_file_size;        /* 0 → no total-byte cap (default; text still bounded by max_text_bytes); set positive to cap */
     uint8_t  max_struct_nesting;   /* 0 → 64 internal default; hard cap 255 */
     uint8_t  max_array_nesting;    /* 0 → 64 internal default; hard cap 255 */
     /* ... the remaining size limits, plus strict_version, text_only (§1.13),
@@ -179,7 +179,7 @@ scanner consumes; an octet stream's binary payload does not count towards it. A
 input, `max_file_size` is the one that counts every byte. Both are exact at their
 boundary: a document needing N is accepted at N and refused at N-1.
 
-**Reader default limits.** When a `bvnr_read_flags_t` field is set to `0`, the reader substitutes an internal default. For the nesting fields, the default is **64** (not 255); the hard maximum is 255. For `max_array_items` and `max_text_bytes`, the default is **2 147 483 647** — permissive but finite. **`max_file_size` differs: `0` means unlimited / endless** (no byte-count cap accumulated), which is the default so endless streaming works out of the box. Setting `max_file_size` explicitly to `16777216` (16 MiB) is recommended for production.
+**Reader default limits.** When a `bvnr_read_flags_t` field is set to `0`, the reader substitutes an internal default. For the nesting fields, the default is **64** (not 255); the hard maximum is 255. For `max_array_items` and `max_text_bytes`, the default is **2 147 483 647** — permissive but finite. **`max_file_size` differs: `0` means no total-byte cap**. That is not endless: the text is still bounded by `max_text_bytes`, so an endless text stream raises that as well; only octet-stream payload runs without bound. Setting `max_file_size` explicitly to `16777216` (16 MiB) is recommended for production.
 
 ```c
 static bool on_event(void *ud, bvnr_event_t ev, bvnr_data_t *d)
@@ -275,7 +275,7 @@ non-ASCII character pulls them apart: in `.x = "çafé"; .y = @;` the `@` is at
 column 19 and offset 20. This matters here more than in most formats: unit
 symbols are routinely non-ASCII (`µ~m`, `°C`, `Ω`), so the two disagree often.
 
-All five error/location getters above (everything except `bvnr_reader_get_recovery_count`) are only meaningful when `bvnr_read` returned `false` (or after a recoverable error when `continue_on_error` is set). `bvnr_reader_get_error_byte` returns the raw byte value that triggered the error. `bvnr_reader_get_recovery_count` is the exception: it returns how many errors triggered entry into resync mode in `continue_on_error` mode (and so is meaningful even when `bvnr_read` ultimately returned `true`). This count is incremented at error entry, not when resync completes at `";". `bvnr_reader_get_skipped_bytes` is the same kind of thing and answers the question the count cannot: how much of the input recovery threw away. One skipped assignment and a whole discarded struct both report a single recovery, and the skipped bytes were never parsed, so nothing else in the API mentions them — a non-zero total means the document your callbacks saw is not the whole document.
+All five error/location getters above (everything except `bvnr_reader_get_recovery_count`) describe the error that **ended** the read, so they are meaningful when `bvnr_read` returned `false`, and inside an `on_error` callback, where they agree with its arguments. Errors recovered under `continue_on_error` are reported through `on_error` only: after a read that returned `true`, `bvnr_reader_get_error` is `error_none` and the position getters return `0`, however many errors were recovered (spec §13.4). `bvnr_reader_get_error_byte` returns the raw byte value that triggered the error. `bvnr_reader_get_recovery_count` is the exception: it returns how many errors triggered entry into resync mode in `continue_on_error` mode (and so is meaningful even when `bvnr_read` ultimately returned `true`). This count is incremented at error entry, not when resync completes at `";". `bvnr_reader_get_skipped_bytes` is the same kind of thing and answers the question the count cannot: how much of the input recovery threw away. One skipped assignment and a whole discarded struct both report a single recovery, and the skipped bytes were never parsed, so nothing else in the API mentions them — a non-zero total means the document your callbacks saw is not the whole document.
 
 ```c
 if (!bvnr_read(r)) {

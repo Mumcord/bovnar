@@ -302,11 +302,16 @@ round-trips. For sub-second values you compute on, use a finer integer carrier
 and `tai` (the offset is folded before `tai`'s leap-second lookup). A second of
 `60` is an inserted leap second: on the civil epochs it folds onto the following
 second (POSIX time has none to spend on it), but on `tai` it keeps its own value
-one below the boundary, which is what makes UTC⇄TAI injective there. The atomic
+one below the boundary, which is what makes UTC⇄TAI injective there — for the
+leap seconds the build's table records; a `:60` the table does not know
+collapses on `tai` too (spec §5.1). The atomic
 GNSS epochs (`gps`/`galileo`/`glonass`/`beidou`) reject a literal
-(`error_datetime_literal_unsupported_epoch`) — give those an integer carrier. An
-out-of-range field is `error_invalid_datetime_literal`; a literal of the wrong
-shape is a lexical error, `error_unexpected_input_byte`.
+(`error_datetime_literal_unsupported_epoch`) — give those an integer carrier.
+A literal with every separator in place but a bad field — out of range, the
+wrong width (`2026-6-15`, `+2:00`) or an empty fraction — is
+`error_invalid_datetime_literal`; one with a separator missing or wrong (no
+seconds, `+0200`, a lowercase `z`) is a lexical error,
+`error_unexpected_input_byte`.
 
 **Timestamp vs. duration — don't confuse them.** A *timestamp* (an instant) is a
 `datetime`; a *duration* (an elapsed amount) is a plain number with a time unit,
@@ -1392,15 +1397,16 @@ All limits are configurable via `bvnr_read_flags_t`. Defaults are permissive.
 | `max_reference_length` | 65535 | 65535 |
 | `max_array_items` | 0 (→ 2 147 483 647 internal default) | application-defined |
 | `max_text_bytes` | 0 (→ 2 147 483 647 internal default) | application-defined |
-| `max_file_size` | 0 (→ unlimited / endless) | `16777216` (16 MiB) |
+| `max_file_size` | 0 (→ no total-byte cap) | `16777216` (16 MiB) |
 | `max_array_nesting` | 0 (→ 64 internal default; hard cap 255) | 32 or less |
 | `max_struct_nesting` | 0 (→ 64 internal default; hard cap 255) | 32 or less |
 
 Setting a field to `0` causes the reader to substitute a finite internal
 default — **2 147 483 647** for `max_array_items`/`max_text_bytes` and **64**
 for both nesting depths. **`max_file_size` is the exception: `0` means
-unlimited / endless** (no byte-count cap), which is the default so endless
-streams work out of the box. Production deployments should set `max_file_size`
+no total-byte cap**. That is not endless: the text is still bounded by
+`max_text_bytes`, so an endless text stream raises that too; only octet-stream
+payload runs without bound. Production deployments should set `max_file_size`
 explicitly at minimum. For untrusted input, set `max_array_items`,
 `max_text_bytes`, and the nesting limits as well.
 

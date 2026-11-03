@@ -445,7 +445,10 @@ static bool bvn_enter_resync(bvnr_reader_t* p)
 		break;
 	}
 	++l->recovery_count;
-	l->resync_start_bytes  = l->text_bytes;
+	/* The byte the error was raised on is the first one discarded: it has
+	 * already been counted in text_bytes, so the skipped region starts one
+	 * earlier. bvn_resync_reset ends it before the boundary it resumes at. */
+	l->resync_start_bytes  = l->text_bytes ? l->text_bytes - 1u : 0u;
 	l->in_array_element    = false;
 	return true;
 }
@@ -1818,15 +1821,23 @@ bool bvn_action_resync_close_bracket(bvnr_reader_t* p)
  * machine is indistinguishable from having just finished a well-formed
  * assignment, so the next byte resumes normal parsing.
  */
-static bool bvn_resync_reset(bvnr_reader_t* p)
+static bool bvn_resync_reset(bvnr_reader_t* p, uint32_t boundary_bytes)
 {
 	bvnr_lexer_t* l = &p->lex;
 	bool ok = true;
-	/* Everything consumed since recovery began was discarded. Both exits — the
-	 * ';' boundary and the next-assignment boundary — come through here, so
-	 * this is the one place the cost has to be counted. */
-	if (l->text_bytes > l->resync_start_bytes)
-		l->skipped_bytes += l->text_bytes - l->resync_start_bytes;
+	/* Everything consumed since recovery began was discarded, from the byte
+	 * the error was raised on up to the boundary recovery resumes at. Both
+	 * exits — the ';' boundary and the next-assignment boundary — come through
+	 * here, so this is the one place the cost has to be counted.
+	 * boundary_bytes is how much of what was just consumed IS that boundary
+	 * and was not thrown away: the ';' (1), or the '.' and the first byte of
+	 * the next key (2). The skipped total used to include the boundary and
+	 * leave out the offending byte -- ".a = 1;@.b = 2;" reported the ".b" that
+	 * was delivered and not the "@" that was not. */
+	uint64_t end = l->text_bytes >= boundary_bytes
+		     ? l->text_bytes - boundary_bytes : 0u;
+	if (end > l->resync_start_bytes)
+		l->skipped_bytes += end - l->resync_start_bytes;
 	while (l->struct_nesting_level > l->resync_saved_struct_nesting) {
 		--l->struct_nesting_level;
 		if (!bvn_val_receive_event(p, ev_struct_end)) {
@@ -1861,7 +1872,7 @@ static bool bvn_resync_reset(bvnr_reader_t* p)
 }
 static bool bvn_resync_semicolon_reset(bvnr_reader_t* p)
 {
-	bool ok = bvn_resync_reset(p);
+	bool ok = bvn_resync_reset(p, 1u);
 	p->lex.next_state = value_outro;
 	return ok;
 }
@@ -1907,7 +1918,7 @@ bool bvn_action_resync_dot(bvnr_reader_t* p)
 bool bvn_action_resync_resume_identifier(bvnr_reader_t* p)
 {
 	bvnr_lexer_t* l = &p->lex;
-	if (!bvn_resync_reset(p))
+	if (!bvn_resync_reset(p, 2u))
 		return false;
 	l->str_len    = 0;
 	l->token_type = token_is_identifier;
@@ -2652,11 +2663,33 @@ static bool bvn_interpret_input_buffer(
 			 * were never parse failures. */
 			if (p->val.last_error == error_scanner_callback_failed)
 				return false;
+			/* strict_version is the consumer saying "do not read a document
+			 * whose version I cannot vouch for". Recovering from it went on
+			 * to read "#!bovnar 9.9" whole and return true. Under
+			 * strict_version a malformed directive is the same refusal:
+			 * the version cannot be known. */
+			if (p->val.last_error == error_unsupported_spec_version ||
+			    (l->strict_version &&
+			     p->val.last_error == error_invalid_spec_version))
+				return false;
 			if (l->continue_on_error) {
 				if (bvn_recover_in_comment(p, false))
 					continue;
+				/* The byte just rejected may be the lead byte of a valid
+				 * multi-byte character (a stray "€" between statements).
+				 * Entering resync clears the UTF-8 progress, so its
+				 * continuation bytes were then each reported as
+				 * error_invalid_utf8_byte: one stray character, three
+				 * errors and three recoveries. Keep the progress, so the
+				 * character is skipped whole. */
+				uint8_t keep_need = l->utf8_need;
+				uint8_t keep_lo   = l->utf8_lo;
+				uint8_t keep_hi   = l->utf8_hi;
 				if (!bvn_enter_resync(p))
 					return false;
+				l->utf8_need = keep_need;
+				l->utf8_lo   = keep_lo;
+				l->utf8_hi   = keep_hi;
 				/*
 				 * A semantic error (e.g. value-out-of-range) is only
 				 * detected once the value's terminating ';' has been

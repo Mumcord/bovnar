@@ -512,6 +512,238 @@ static void test_recovery_count(void)
 	bvnr_reader_destroy(r);
 }
 
+/*
+ * What the error getters report under continue_on_error (doc/03 §13.4).
+ *
+ * They describe the error that ENDED the read, not the ones recovered from.
+ * Inside on_error they agree with the callback's arguments; a read that
+ * returns true leaves error_none and every position at 0, however many errors
+ * were recovered; one that returns false leaves the error that stopped it --
+ * under recovery, the error_got_incomplete_bvnr_stream of a document that
+ * ended while resyncing.
+ */
+typedef struct {
+	bvnr_reader_t *r;
+	int            calls;
+	int            mismatches;
+	error_code_t   first;
+} getter_probe_t;
+
+static void probe_getters_in_on_error(void *ud, error_code_t err,
+				      uint64_t line, uint64_t col,
+				      uint32_t byte, uint64_t off)
+{
+	getter_probe_t *p = ud;
+	if (p->calls++ == 0)
+		p->first = err;
+	if (bvnr_reader_get_error(p->r)        != err  ||
+	    bvnr_reader_get_error_line(p->r)   != line ||
+	    bvnr_reader_get_error_column(p->r) != col  ||
+	    bvnr_reader_get_error_byte(p->r)   != byte ||
+	    bvnr_reader_get_error_offset(p->r) != off)
+		p->mismatches++;
+}
+
+static bool probe_read(const char *src, bool continue_on_error,
+		       getter_probe_t *p)
+{
+	*p = (getter_probe_t){ .r = bvnr_reader_create() };
+	if (!p->r) { FAIL("%s", "bvnr_reader_create returned NULL"); return false; }
+	bvnr_read_flags_t f = {
+		.on_error          = probe_getters_in_on_error,
+		.userdata          = p,
+		.continue_on_error = continue_on_error,
+	};
+	if (!bvnr_open_read_mem(p->r, src, strlen(src), NULL, 0, &f)) {
+		FAIL("%s", "bvnr_open_read_mem failed");
+		return false;
+	}
+	return bvnr_read(p->r);
+}
+
+static void assert_getters_clear(bvnr_reader_t *r, const char *what)
+{
+	char msg[160];
+	snprintf(msg, sizeof msg, "%s: get_error", what);
+	ASSERT_EQ_INT(bvnr_reader_get_error(r), error_none, msg);
+	snprintf(msg, sizeof msg, "%s: get_error_line", what);
+	ASSERT_EQ_UINT(bvnr_reader_get_error_line(r), 0, msg);
+	snprintf(msg, sizeof msg, "%s: get_error_column", what);
+	ASSERT_EQ_UINT(bvnr_reader_get_error_column(r), 0, msg);
+	snprintf(msg, sizeof msg, "%s: get_error_byte", what);
+	ASSERT_EQ_UINT(bvnr_reader_get_error_byte(r), 0, msg);
+	snprintf(msg, sizeof msg, "%s: get_error_offset", what);
+	ASSERT_EQ_UINT(bvnr_reader_get_error_offset(r), 0, msg);
+}
+
+static void test_error_getters_after_recovery(void)
+{
+	printf("  test_error_getters_after_recovery...\n");
+
+	/* Recovered errors of several kinds -- a stray byte, a value out of
+	 * range, an unknown unit, a bad escape, an error inside a struct, a bad
+	 * byte in a comment -- and the read still succeeds. */
+	static const char *const recovered[] = {
+		".a = 1;\n.b = @;\n.c = 2;\n",
+		".a = <uint:8> 300; .b = 1;",
+		".a = 1 zzzunit; .b = 2;",
+		".a = \"abc\\q\"; .b = 1;",
+		".a = {.x = @; .y = 2;}; .b = 1;",
+		".a = [{.x = @;}, {.x = 1;}]; .b = 2;",
+		".a = 1; # \xc3\n.b = 2;",
+		".a = @;\n.b = #;\n.c = 3;\n",
+	};
+	for (size_t i = 0; i < sizeof recovered / sizeof *recovered; i++) {
+		getter_probe_t p;
+		char what[96];
+		snprintf(what, sizeof what, "recovered[%zu]", i);
+		bool ok = probe_read(recovered[i], true, &p);
+		if (!p.r) continue;
+		ASSERT_TRUE(ok, what);
+		ASSERT_GE_UINT((uint64_t)p.calls, 1, "on_error fired");
+		ASSERT_EQ_INT(p.mismatches, 0,
+			      "inside on_error the getters match its arguments");
+		ASSERT_GE_UINT(bvnr_reader_get_recovery_count(p.r), 1,
+			       "recovery_count reports the recovered error");
+		assert_getters_clear(p.r, what);
+		bvnr_reader_destroy(p.r);
+	}
+
+	/* Recovery that runs into the end of the document: read fails, and the
+	 * getters hold the second error (doc/03 §13.3), at the end of input. */
+	{
+		const char *src = ".a = @;\n.b = 2";
+		getter_probe_t p;
+		bool ok = probe_read(src, true, &p);
+		if (p.r) {
+			ASSERT_FALSE(ok, "EOF in resync fails the read");
+			ASSERT_EQ_INT(p.calls, 2, "two on_error calls");
+			ASSERT_EQ_INT(p.first, error_unexpected_input_byte,
+				      "first: the error that began recovery");
+			ASSERT_EQ_INT(bvnr_reader_get_error(p.r),
+				      error_got_incomplete_bvnr_stream,
+				      "get_error: the error that ended the read");
+			ASSERT_EQ_UINT(bvnr_reader_get_error_line(p.r), 2,
+				       "its line");
+			ASSERT_EQ_UINT(bvnr_reader_get_error_offset(p.r),
+				       strlen(src), "its offset: end of input");
+			ASSERT_EQ_INT(p.mismatches, 0,
+				      "inside on_error the getters match its arguments");
+			bvnr_reader_destroy(p.r);
+		}
+	}
+
+	/* Without continue_on_error the first error ends the read and stays. */
+	{
+		getter_probe_t p;
+		bool ok = probe_read(".a = 1;\n.b = @;\n.c = 2;\n", false, &p);
+		if (p.r) {
+			ASSERT_FALSE(ok, "strict read fails");
+			ASSERT_EQ_INT(bvnr_reader_get_error(p.r),
+				      error_unexpected_input_byte, "strict: get_error");
+			ASSERT_EQ_UINT(bvnr_reader_get_error_line(p.r), 2,
+				       "strict: line");
+			ASSERT_EQ_UINT(bvnr_reader_get_error_column(p.r), 6,
+				       "strict: column");
+			ASSERT_EQ_UINT(bvnr_reader_get_error_offset(p.r), 13,
+				       "strict: offset");
+			bvnr_reader_destroy(p.r);
+		}
+	}
+}
+
+/*
+ * Three recovery defects found in the 2026-11-03 review of doc/03 §12-18.
+ */
+static void test_recovery_review_2026_11(void)
+{
+	printf("  test_recovery_review_2026_11...\n");
+	getter_probe_t p;
+	bool ok;
+
+	/* strict_version is a refusal, not an error to recover from: with
+	 * continue_on_error as well, "#!bovnar 9.9" used to be reported and the
+	 * rest of the document read anyway, bvnr_read returning true. */
+	static const char *const futures[] = {
+		"#!bovnar 9.9\n.a = 1;\n",
+		"#!bovnar 1.99\n.a = 1;\n",
+		"#!bovnar 1.\n.a = 1;\n",          /* malformed: version unknowable */
+	};
+	for (size_t i = 0; i < sizeof futures / sizeof *futures; i++) {
+		p = (getter_probe_t){ .r = bvnr_reader_create() };
+		if (!p.r) continue;
+		bvnr_read_flags_t f = {
+			.on_error = probe_getters_in_on_error, .userdata = &p,
+			.continue_on_error = true, .strict_version = true,
+		};
+		bvnr_open_read_mem(p.r, futures[i], strlen(futures[i]), NULL, 0, &f);
+		ok = bvnr_read(p.r);
+		ASSERT_FALSE(ok, "strict_version stops the read under continue_on_error");
+		ASSERT_EQ_INT(p.calls, 1, "strict_version: one error, nothing after it");
+		ASSERT_EQ_UINT(bvnr_reader_get_recovery_count(p.r), 0,
+			       "strict_version: no recovery");
+		error_code_t e = bvnr_reader_get_error(p.r);
+		ASSERT_TRUE(e == error_unsupported_spec_version ||
+			    e == error_invalid_spec_version,
+			    "strict_version: get_error names the version");
+		bvnr_reader_destroy(p.r);
+	}
+	/* Without strict_version a malformed directive is still recovered. */
+	ok = probe_read("#!bovnar 1.\n.a = 1;\n", true, &p);
+	if (p.r) {
+		ASSERT_TRUE(ok, "lenient: a malformed directive is recovered from");
+		bvnr_reader_destroy(p.r);
+	}
+
+	/* One stray multi-byte character is one error. Its continuation bytes
+	 * were each reported again as error_invalid_utf8_byte, because entering
+	 * recovery cleared the UTF-8 progress of the lead byte just rejected. */
+	ok = probe_read(".a = 1;\n\xe2\x82\xac\n.b = 2;\n", true, &p);
+	if (p.r) {
+		ASSERT_TRUE(ok, "stray euro sign: read succeeds");
+		ASSERT_EQ_INT(p.calls, 1, "stray euro sign: one error");
+		ASSERT_EQ_INT(p.first, error_unexpected_input_byte,
+			      "stray euro sign: the error is the lead byte's");
+		ASSERT_EQ_UINT(bvnr_reader_get_recovery_count(p.r), 1,
+			       "stray euro sign: one recovery");
+		ASSERT_EQ_UINT(bvnr_reader_get_skipped_bytes(p.r), 4,
+			       "stray euro sign: its three bytes and the newline after it");
+		bvnr_reader_destroy(p.r);
+	}
+	/* ...and inside a broken value too. */
+	ok = probe_read(".a = 1 \xc3\xa9 x; .b = 2;\n", true, &p);
+	if (p.r) {
+		ASSERT_EQ_INT(p.calls, 1, "stray e-acute in a value: one error");
+		bvnr_reader_destroy(p.r);
+	}
+
+	/* The skipped total runs from the byte the error was raised on up to,
+	 * not including, the boundary recovery resumes at. It used to leave out
+	 * the offending byte and count the boundary. */
+	static const struct { const char *src; uint64_t skipped; } sk[] = {
+		{ ".a = 1;@.b = 2;",       1 },  /* the '@'; ".b" is delivered      */
+		{ ".a = @@@;",             3 },  /* the three '@'; not the ';'      */
+		{ ".a = @@@; .b = 2;",     3 },
+		{ ".a = <uint:8> 300;",    0 },  /* rejected at its own ';' (§18.2) */
+		{ ".a = 1; @ .b = 2;",     2 },  /* '@' and the blank after it      */
+	};
+	for (size_t i = 0; i < sizeof sk / sizeof *sk; i++) {
+		ok = probe_read(sk[i].src, true, &p);
+		if (!p.r) continue;
+		char msg[96];
+		snprintf(msg, sizeof msg, "skipped bytes of %s", sk[i].src);
+		ASSERT_EQ_UINT(bvnr_reader_get_skipped_bytes(p.r), sk[i].skipped, msg);
+		bvnr_reader_destroy(p.r);
+	}
+	/* Recovery that runs into EOF counts everything from the offending byte. */
+	ok = probe_read(".a = @", true, &p);
+	if (p.r) {
+		ASSERT_EQ_UINT(bvnr_reader_get_skipped_bytes(p.r), 1,
+			       "skipped bytes: EOF in recovery counts the '@'");
+		bvnr_reader_destroy(p.r);
+	}
+}
+
 static bool cb_abort_immediately(void *ud, bvnr_event_t ev, bvnr_data_t *d)
 {
 	(void)ud; (void)ev; (void)d;
@@ -3453,6 +3685,8 @@ int main(void)
 
 	printf("\nGap 5: recovery count\n");
 	test_recovery_count();
+	test_error_getters_after_recovery();
+	test_recovery_review_2026_11();
 
 	printf("\nGap 6: callback abort\n");
 	test_callback_abort_verified();

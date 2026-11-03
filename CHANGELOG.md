@@ -65,6 +65,35 @@ reading the grown by-value structs at the wrong size.
   `bvn_dom_node_from_i64` gives `BVN_UNIT_NONE`. The node's size is pinned by a
   compile-time assertion, and a test parses the megabyte and fails past 64 MB.
 
+### Fixed — the implementation leads of the 2026-11-03 review of §12–18
+
+- **`strict_version` did not stop a read under `continue_on_error`.**
+  `#!bovnar 9.9` was reported through `on_error`, recovered from, and the rest
+  of the document read, `bvnr_read` returning true — the one document
+  `strict_version` exists to refuse. An unsupported version, and under
+  `strict_version` a malformed directive, now end the read whatever
+  `continue_on_error` says (doc/03 §3.4, §13.2).
+- **One stray multi-byte character counted as several errors.** A `€` between
+  two statements gave `error_unexpected_input_byte` for its lead byte and then
+  `error_invalid_utf8_byte` for each continuation byte: three errors, three
+  recoveries. Entering recovery cleared the UTF-8 progress of the byte it had
+  just rejected; it is kept now, and the character is skipped whole.
+- **`bvnr_reader_get_skipped_bytes` counted the wrong bytes.** It left out the
+  byte the error was raised on and counted the boundary recovery resumed at:
+  `.a = 1;@.b = 2;` reported 2 — the `.b` that was delivered — and `.a = @` at
+  end of input 0. It now counts from the offending byte up to, not including,
+  the boundary, so those report 1 and 1; a value rejected at its own `;` still
+  counts 0.
+- **A refused `bvnr_write_bvnf` left its key in the output.** With width 0 the
+  annotation width is `f->_prec`, which for a 53-bit float is no float width;
+  the key had been written before the width was checked, so the failed call
+  left `.c=` behind. The width is checked first.
+- **The writer refused keys over 255 bytes** on the belief that the reader's
+  `max_identifier_length` is a `uint8_t`. It is a `uint16_t`: 255 is the
+  default, and a reader with the limit raised reads a longer key. The writer
+  now refuses only what no reader configuration accepts, over 65 535 bytes —
+  the rule it already applied to strings and symbols.
+
 ### Fixed — a review of the specification, with three other readers
 
 The specification read in full beside the grammar and about four hundred
