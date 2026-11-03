@@ -509,6 +509,164 @@ pub fn error_name(code: c_int) -> &'static str {
     name.to_str().unwrap_or("unknown")
 }
 
+/// Borrows `len` bytes at `ptr` as a slice; NULL or zero length is empty.
+///
+/// SAFETY: a non-NULL `ptr` must point at `len` readable bytes that stay
+/// valid and unchanged for `'a`.
+unsafe fn bytes<'a>(ptr: *const c_void, len: u32) -> &'a [u8] {
+    if ptr.is_null() || len == 0 {
+        &[]
+    } else {
+        // SAFETY: guaranteed by the caller.
+        unsafe { std::slice::from_raw_parts(ptr.cast::<u8>(), len as usize) }
+    }
+}
+
+/// One reader event as the callback sees it. Borrowed: valid only for the
+/// duration of the callback.
+pub struct EventView<'a> {
+    pub event: c_int,
+    pub data: Option<&'a BvnrData>,
+    /// `data.data[..data.length]`, or empty.
+    pub raw: &'a [u8],
+}
+
+/// A Rust event handler; returning false stops the read.
+pub type Handler<'h> = &'h mut dyn FnMut(&EventView<'_>) -> bool;
+
+/// What the read trampolines reach through `userdata`.
+struct Handlers<'h> {
+    verified: Option<Handler<'h>>,
+    unverified: Option<Handler<'h>>,
+    panic: Option<Box<dyn std::any::Any + Send>>,
+}
+
+extern "C" fn on_verified_trampoline(ud: *mut c_void, ev: c_int, d: *const BvnrData) -> bool {
+    dispatch(ud, ev, d, true)
+}
+
+extern "C" fn on_unverified_trampoline(ud: *mut c_void, ev: c_int, d: *const BvnrData) -> bool {
+    dispatch(ud, ev, d, false)
+}
+
+fn dispatch(ud: *mut c_void, ev: c_int, d: *const BvnrData, verified: bool) -> bool {
+    // SAFETY: `ud` is the `Handlers` that `ReaderHandle::read_mem` keeps alive
+    // and otherwise untouched for the whole bvnr_read call.
+    let h = unsafe { &mut *ud.cast::<Handlers>() };
+    if h.panic.is_some() {
+        return false;
+    }
+    // SAFETY: the library passes NULL or a bvnr_data_t valid for this call.
+    let data = unsafe { d.as_ref() };
+    // SAFETY: data/length describe the event's bytes for this call.
+    let raw = data.map_or(&[][..], |d| unsafe { bytes(d.data, d.length) });
+    let view = EventView {
+        event: ev,
+        data,
+        raw,
+    };
+    let handler = if verified {
+        &mut h.verified
+    } else {
+        &mut h.unverified
+    };
+    let Some(f) = handler.as_mut() else {
+        return true;
+    };
+    // A panic must not unwind into C: park it and rethrow after bvnr_read.
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| f(&view))) {
+        Ok(go_on) => go_on,
+        Err(payload) => {
+            h.panic = Some(payload);
+            false
+        }
+    }
+}
+
+/// The last error a reader recorded.
+pub struct ReaderError {
+    pub code: c_int,
+    pub line: u64,
+    pub column: u64,
+    pub offset: u64,
+    pub byte: u32,
+}
+
+/// An owned `bvnr_reader_t`.
+pub struct ReaderHandle(std::ptr::NonNull<c_void>);
+
+impl ReaderHandle {
+    /// `bvnr_reader_create`; `None` when the library is out of memory.
+    pub fn new() -> Option<Self> {
+        // SAFETY: no preconditions; the result is NULL or a fresh reader.
+        std::ptr::NonNull::new(unsafe { bvnr_reader_create() }).map(Self)
+    }
+
+    /// `bvnr_open_read_mem` + `bvnr_read` over `data` with the limits in
+    /// `flags` (its userdata and callbacks are set here). Returns false when
+    /// the library reports an error; a handler panic is resumed afterwards.
+    pub fn read_mem<'h>(
+        &mut self,
+        data: &[u8],
+        mut flags: BvnrReadFlags,
+        verified: Option<Handler<'h>>,
+        unverified: Option<Handler<'h>>,
+    ) -> bool {
+        let mut handlers = Handlers {
+            verified,
+            unverified,
+            panic: None,
+        };
+        flags.on_verified = handlers
+            .verified
+            .is_some()
+            .then_some(on_verified_trampoline as EventCallbackFn);
+        flags.on_unverified = handlers
+            .unverified
+            .is_some()
+            .then_some(on_unverified_trampoline as EventCallbackFn);
+        flags.userdata = (&raw mut handlers).cast();
+        // SAFETY: the reader is live; `data`, `flags` and `handlers` outlive
+        // both calls, and nothing else touches `handlers` meanwhile.
+        let ok = unsafe {
+            bvnr_open_read_mem(
+                self.0.as_ptr(),
+                data.as_ptr().cast_mut().cast(),
+                data.len() as u64,
+                std::ptr::null_mut(),
+                0,
+                &mut flags,
+            ) && bvnr_read(self.0.as_ptr())
+        };
+        if let Some(payload) = handlers.panic.take() {
+            std::panic::resume_unwind(payload);
+        }
+        ok
+    }
+
+    /// The reader's last error and where it happened.
+    pub fn error(&self) -> ReaderError {
+        let r = self.0.as_ptr();
+        // SAFETY: the reader is live; the getters only read it.
+        unsafe {
+            ReaderError {
+                code: bvnr_reader_get_error(r),
+                line: bvnr_reader_get_error_line(r),
+                column: bvnr_reader_get_error_column(r),
+                offset: bvnr_reader_get_error_offset(r),
+                byte: bvnr_reader_get_error_byte(r),
+            }
+        }
+    }
+}
+
+impl Drop for ReaderHandle {
+    fn drop(&mut self) {
+        // SAFETY: the reader is live and dropped exactly once.
+        unsafe { bvnr_reader_destroy(self.0.as_ptr()) }
+    }
+}
+
 /// Checks every mirrored struct against the compiler's own layout, as printed
 /// by the upstream ABI manifest generator (tests/bvnr_abi_dump.c).
 #[cfg(all(test, not(target_family = "wasm")))]

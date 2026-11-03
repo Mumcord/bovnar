@@ -10,6 +10,9 @@ pub mod enums;
 pub mod error;
 #[allow(unsafe_code)]
 mod ffi;
+pub mod reader;
 
 pub use enums::{ErrorCode, Event, TokenType, ValueTypeFamily};
 pub use error::{Error, Result};
+pub use ffi::ValueTypeSpec;
+pub use reader::{EventData, EventPayload, ReadOptions, Reader};
