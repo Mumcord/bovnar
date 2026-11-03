@@ -1,0 +1,36 @@
+[package]
+name = "bovnar-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+bovnar = { path = ".." }
+
+# Not part of the bovnar crate's own build or tests: built only by cargo fuzz.
+[workspace]
+
+[[bin]]
+name = "parse"
+path = "fuzz_targets/parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_roundtrip"
+path = "fuzz_targets/json_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dom"
+path = "fuzz_targets/dom.rs"
+test = false
+doc = false
+bench = false
