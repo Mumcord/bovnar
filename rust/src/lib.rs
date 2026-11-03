@@ -431,12 +431,16 @@ pub(crate) fn decode_value(raw: &[u8], vt: ValueTypeSpec, token: Option<TokenTyp
 /// Arrays are sealed lazily: a row end leaves its array pending, and the next
 /// event decides whether a `/` continues it, an enclosing row takes it as an
 /// element, or the assignment it belongs to is complete.
-pub(crate) mod dict_parser {
+///
+/// Public but hidden, like Python's importable `_DictParser`, so the event
+/// handling can be tested with hand-built event sequences.
+#[doc(hidden)]
+pub mod dict_parser {
     use crate::{Event, EventData, Quantity, TokenType, Value, ValueTypeFamily, decode_value};
 
     #[derive(Default)]
-    struct ArrScope {
-        rows: Vec<Vec<Value>>,
+    pub struct ArrScope {
+        pub rows: Vec<Vec<Value>>,
         cur_row: Vec<Value>,
         dim_continue: bool,
         pending_seal: bool,
@@ -446,7 +450,7 @@ pub(crate) mod dict_parser {
 
     impl ArrScope {
         /// One row unwraps to a flat array; several become an array of rows.
-        fn seal(mut self) -> Value {
+        pub fn seal(mut self) -> Value {
             if self.rows.len() == 1 {
                 Value::Array(self.rows.pop().unwrap_or_default())
             } else {
