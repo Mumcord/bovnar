@@ -183,7 +183,7 @@ fn test_quantity_from_number() {
 }
 
 #[test]
-fn test_dom_to_python() {
+fn test_dom_to_native() {
     for n in big() {
         let doc = to_string(
             &Value::Struct(vec![

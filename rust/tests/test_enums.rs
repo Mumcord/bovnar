@@ -118,7 +118,7 @@ mod token_type_mirrors_c {
     }
 
     #[test]
-    fn test_no_extra_python_members() {
+    fn test_no_extra_members() {
         let c: BTreeSet<i64> = c_enum("token_type").into_values().collect();
         let rust: BTreeSet<i64> = members(TokenType::from_raw)
             .into_iter()

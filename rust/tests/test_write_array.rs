@@ -512,13 +512,13 @@ mod bool_roundtrip {
     }
 
     #[test]
-    fn test_true_roundtrips_to_python_bool() {
+    fn test_true_roundtrips_to_bool() {
         let result = rt(st(vec![("flag", v!(true))]));
         assert_eq!(field(&result, "flag"), &Value::Bool(true));
     }
 
     #[test]
-    fn test_false_roundtrips_to_python_bool() {
+    fn test_false_roundtrips_to_bool() {
         let result = rt(st(vec![("flag", v!(false))]));
         assert_eq!(field(&result, "flag"), &Value::Bool(false));
     }

@@ -357,7 +357,7 @@ fn test_as_int_str_base16() {
 }
 
 #[test]
-fn test_to_python_uint64_high_bit() {
+fn test_to_native_uint64_high_bit() {
     // Values are read by declared signedness, so a uint64 >= 2**63 does not
     // come back as a negative two's-complement number.
     let cases: [(i128, &[u8]); 3] = [
@@ -390,7 +390,7 @@ fn test_to_python_uint64_high_bit() {
 }
 
 #[test]
-fn test_to_python_sint_and_bignum() {
+fn test_to_native_sint_and_bignum() {
     let d = doc(b".x = <sint:64> -5;\n");
     assert_eq!(d.get("x").unwrap().to_value().unwrap(), int(-5));
     for want in [1i128 << 100, -(1i128 << 70)] {
@@ -400,7 +400,7 @@ fn test_to_python_sint_and_bignum() {
 }
 
 #[test]
-fn test_to_python_datetime_is_signed() {
+fn test_to_native_datetime_is_signed() {
     // datetime is a signed epoch-seconds carrier: a pre-1970 date is negative.
     let d = doc(b"#!bovnar 1.1\n.t = 1960-01-01;\n");
     assert_eq!(d.get("t").unwrap().to_value().unwrap(), int(-315619200));
