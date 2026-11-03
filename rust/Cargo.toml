@@ -1,0 +1,11 @@
+[package]
+name = "bovnar"
+version = "0.1.0"
+edition = "2024"
+description = "Thin Rust binding to the Bovnar (BVNR) C library"
+license = "MIT"
+publish = false
+build = "build.rs"
+
+[build-dependencies]
+cc = "1"
