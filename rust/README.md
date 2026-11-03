@@ -70,13 +70,13 @@ fn main() -> Result<(), bovnar::Error> {
     let dom = DomDoc::parse(b".link = { .length = 1.5 k~m; };")?;
     let length = dom.lookup("link.length").expect("present");
     assert_eq!(length.as_float(), Some(1.5));
-    assert_eq!(length.unit_str(), "k~m");
+    assert_eq!(length.unit(), bovnar::Unit::parse("k~m")?);
 
     // Streaming: one callback per event.
     let mut keys = Vec::new();
     let mut on_event = |d: &EventData<'_>| {
         if d.event == Event::AssignmentStart {
-            keys.push(d.text());
+            keys.push(String::from_utf8_lossy(d.raw).into_owned());
         }
         true
     };
