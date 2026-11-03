@@ -11,8 +11,10 @@ extern crate std;
 
 mod error;
 mod limits;
+mod types;
 mod version;
 
 pub use error::{Error, ErrorKind};
 pub use limits::Limits;
+pub use types::{TypeFamily, TypeSpec};
 pub use version::SpecVersion;
