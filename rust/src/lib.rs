@@ -11,6 +11,8 @@ pub mod enums;
 pub mod error;
 #[allow(unsafe_code)]
 mod ffi;
+mod io;
+pub mod reader;
 pub mod unit;
 pub mod units;
 
@@ -20,4 +22,5 @@ pub use enums::{
 };
 pub use error::{Error, ErrorKind, Position, Result};
 pub use ffi::ValueTypeSpec;
+pub use reader::{EventData, EventPayload, ReadOptions, Reader, UnitPolicy, UnitRule};
 pub use unit::{MAX_UNIT_COMPONENTS, Unit, UnitComponent};
