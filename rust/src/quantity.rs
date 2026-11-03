@@ -58,14 +58,18 @@ impl Quantity {
                 ));
             }
         };
+        let total = if width == 0 { 64 } else { width };
+        validate_float_width(family, total)?;
         if text.parse::<f64>().is_err() {
             return Err(Error::Argument(format!("{text:?} is not a decimal number")));
         }
-        let total = if width == 0 { 64 } else { width };
         if family == ValueTypeFamily::FloatFix && !ffi::float_str_fits_fix(text, total, base) {
             return Err(Error::Argument(format!(
                 "{text} does not fit a signed float_fix:{width},q{base}"
             )));
+        }
+        if family == ValueTypeFamily::FloatDec {
+            check_decimal_fits(text, total)?;
         }
         let vtype = ValueTypeSpec {
             family: family as i32,
@@ -110,6 +114,57 @@ impl Quantity {
     fn is_datetime(&self) -> bool {
         self.family() == Some(ValueTypeFamily::Datetime)
     }
+}
+
+/// The IEEE interchange widths, the only ones decimal and fixed-point take.
+const IEEE_WIDTHS: [u32; 5] = [16, 32, 64, 128, 256];
+
+/// Rejects a width the library would refuse, early and with a clear message:
+/// binary float takes 16 or any multiple of 32 up to 32768 (it keeps the
+/// verbatim literal at that precision); decimal and fixed-point only the IEEE
+/// interchange set.
+fn validate_float_width(family: ValueTypeFamily, width: u32) -> Result<()> {
+    let ok = match family {
+        ValueTypeFamily::Float => {
+            width == 16 || (width >= 32 && width.is_multiple_of(32) && width <= 32768)
+        }
+        _ => IEEE_WIDTHS.contains(&width),
+    };
+    if ok {
+        return Ok(());
+    }
+    Err(Error::Argument(match family {
+        ValueTypeFamily::Float => {
+            format!("binary float width must be 16 or a multiple of 32 (up to 32768), not {width}")
+        }
+        ValueTypeFamily::FloatDec => {
+            format!("float_dec width must be one of 16/32/64/128/256, not {width}")
+        }
+        _ => format!("float_fix width must be one of 16/32/64/128/256, not {width}"),
+    }))
+}
+
+/// Refuses a finite decimal literal that `float_dec:width` cannot hold: the
+/// reader does not range-check a decimal float, so `1e400` written as a
+/// decimal64 would silently materialise to infinity. Only overflow is
+/// refused; rounding away extra digits or underflowing to zero is a rounding.
+fn check_decimal_fits(text: &str, width: u32) -> Result<()> {
+    // `nan`, `inf` and `ninf` have no digits and are not a range question.
+    if !text.bytes().any(|b| b.is_ascii_digit()) {
+        return Ok(());
+    }
+    let Some(bits) = ffi::float_strtodec(text, width) else {
+        return Ok(());
+    };
+    // Combination field 11110 after the sign bit: infinity.
+    let top = bits.last().copied().unwrap_or(0);
+    if top & 0x7C == 0x78 {
+        return Err(Error::Argument(format!(
+            "{text} is out of range for float_dec:{width} (it would materialise to infinity); \
+             use a wider float_dec"
+        )));
+    }
+    Ok(())
 }
 
 #[cfg(test)]

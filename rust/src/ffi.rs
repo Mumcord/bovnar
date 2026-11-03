@@ -1595,6 +1595,30 @@ pub fn float_str_fits_fix(text: &str, total_bits: u32, frac_bits: u32) -> bool {
     unsafe { bvn_float_str_fits_fix(t.as_ptr(), 10, total_bits, frac_bits) }
 }
 
+/// `bvn_float_strtodec`: decimal `text` as the IEEE decimal interchange
+/// encoding of `width` bits (little-endian bytes), rounded once straight from
+/// the string. `None` for a width with no decimal format or a refused literal.
+pub fn float_strtodec(text: &str, width: u32) -> Option<Vec<u8>> {
+    let words: c_int = match width {
+        16 | 32 => 1,
+        64 => 2,
+        128 => 4,
+        256 => 8,
+        _ => return None,
+    };
+    let t = CString::new(text).ok()?;
+    let mut buf = [0u32; 8];
+    // SAFETY: `t` is NUL-terminated and only read; `buf` holds at least
+    // `words` words.
+    let ok = unsafe { bvn_float_strtodec(t.as_ptr(), width, buf.as_mut_ptr(), words) };
+    ok.then(|| {
+        buf.iter()
+            .flat_map(|w| w.to_le_bytes())
+            .take(width as usize / 8)
+            .collect()
+    })
+}
+
 /// A float literal in `base` (16 for a hex float) as the nearest `f64`, via
 /// the library's arbitrary-precision float at Python's working precision.
 pub fn parse_float_base(text: &str, base: u32) -> Option<f64> {
