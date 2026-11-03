@@ -310,6 +310,7 @@ map $uri $bvnr_canon_hdr {
     "/doc/11_bovnar_unit_profiles.md"    "<https://www.bovnar.io/docs/profiles/>; rel=\"canonical\"";
     "/doc/12_bovnar.ebnf"                "<https://www.bovnar.io/docs/grammar/>; rel=\"canonical\"";
     "/doc/13_bovnar_conformance.md"      "<https://www.bovnar.io/docs/conformance/>; rel=\"canonical\"";
+    "/doc/14_bovnar_rust_bindings.md"    "<https://www.bovnar.io/docs/rust/>; rel=\"canonical\"";
 }
 ```
 
@@ -600,6 +601,7 @@ map $uri $bvnr_canon_hdr {
     "/doc/11_bovnar_unit_profiles.md"    "<https://www.bovnar.io/docs/profiles/>; rel=\"canonical\"";
     "/doc/12_bovnar.ebnf"                "<https://www.bovnar.io/docs/grammar/>; rel=\"canonical\"";
     "/doc/13_bovnar_conformance.md"      "<https://www.bovnar.io/docs/conformance/>; rel=\"canonical\"";
+    "/doc/14_bovnar_rust_bindings.md"    "<https://www.bovnar.io/docs/rust/>; rel=\"canonical\"";
 }
 
 # 1) Serve the site over HTTPS on the canonical host only

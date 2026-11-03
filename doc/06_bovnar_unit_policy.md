@@ -546,6 +546,7 @@ bvnr_writer_set_unit_policy(w, &p);
 - [Unit Ambiguities](07_bovnar_unit_ambiguities.md) — how a unit token is resolved, and the pairs that look interchangeable
 - [Read/Write API](08_bovnar_readwrite_api.md) — the C declarations, the `want_unit` hook, and the read flags
 - [Python Bindings](09_bovnar_python_bindings.md) — the `UnitPolicy` dataclass and `Reader.set_unit_policy`
+- [Rust Bindings](14_bovnar_rust_bindings.md) — the `UnitPolicy` struct and `Reader::set_unit_policy`
 
 ---
 

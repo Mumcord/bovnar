@@ -220,6 +220,10 @@ DOCS = [
      "Bovnar Conformance Testing",
      "The Bovnar 470-case conformance test suite and the IUT protocol for validating "
      "third-party implementations."),
+    ("14_bovnar_rust_bindings.md", "rust", "bovnar-rust-bindings",
+     "Bovnar Rust Bindings",
+     "The Bovnar Rust crate: parse/to_string, the streaming reader and writer, the DOM, "
+     "Quantity and the exact numbers, and JSON conversion."),
 ]
 
 # filename (and .ebnf) -> clean slug, for inter-doc link rewriting.
@@ -303,6 +307,9 @@ def render_markdown(text):
         return "\n\n" + BVNR_MARK.format(len(blocks) - 1) + "\n\n"
 
     text = BVNR_FENCE.sub(stash, text)
+    # Python-Markdown's fenced_code rejects an info string such as
+    # "rust,ignore" (a rustdoc attribute) and then swallows the rest of the page.
+    text = re.sub(r"^(```[A-Za-z0-9_+-]+),[A-Za-z0-9_,-]+[ \t]*$", r"\1", text, flags=re.M)
     md = markdown.Markdown(
         extensions=["extra", "sane_lists", "tables", "fenced_code",
                     "codehilite", "toc"],

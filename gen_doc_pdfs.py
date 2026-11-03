@@ -53,6 +53,7 @@ DOCS = [
     ("11_bovnar_unit_profiles.md",   "bovnar-unit-profiles",    "Unit Profiles"),
     ("12_bovnar.ebnf",               "bovnar-grammar",          "EBNF Grammar"),
     ("13_bovnar_conformance.md",     "bovnar-conformance",      "Conformance Test Tool"),
+    ("14_bovnar_rust_bindings.md",   "bovnar-rust-bindings",    "Rust Bindings"),
 ]
 
 PYGMENTS_CSS = HtmlFormatter(style="default").get_style_defs(".codehilite")

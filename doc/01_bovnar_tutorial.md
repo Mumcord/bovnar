@@ -1081,6 +1081,7 @@ nan  inf  ninf
 - [Unit & Currency Cheat Sheet](04_bovnar_unit_cheatsheet.md) — the symbol tables, for looking one up quickly
 - [Read & Write API](08_bovnar_readwrite_api.md) — the C API sketched in the event-model section
 - [Python Bindings](09_bovnar_python_bindings.md) — the same document set, read and written from Python
+- [Rust Bindings](14_bovnar_rust_bindings.md) — the same document set, read and written from Rust
 - [FAQ](02_bovnar_faq.md) — the questions this tutorial raises next
 
 ---

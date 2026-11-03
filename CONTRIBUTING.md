@@ -51,6 +51,7 @@ The documentation covers most usage questions:
 | When is a unit rejected or converted? | [`doc/06_bovnar_unit_policy.md`](doc/06_bovnar_unit_policy.md) |
 | C API | [`doc/08_bovnar_readwrite_api.md`](doc/08_bovnar_readwrite_api.md) |
 | Python bindings | [`doc/09_bovnar_python_bindings.md`](doc/09_bovnar_python_bindings.md) |
+| Rust bindings | [`doc/14_bovnar_rust_bindings.md`](doc/14_bovnar_rust_bindings.md) |
 
 Otherwise, open an issue at <https://github.com/sothis/bovnar/issues>. Questions
 that the documentation should have answered are treated as documentation bugs.

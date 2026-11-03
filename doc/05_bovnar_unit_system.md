@@ -2833,6 +2833,7 @@ All four errors are raised during the `on_unverified` → validator phase. In `c
 - [Unit Profiles](11_bovnar_unit_profiles.md) — writing UCUM, UN/ECE, QUDT, UDUNITS, OM 2 and CF codes in a unit slot, and where the vocabularies disagree
 - [Read & Write API](08_bovnar_readwrite_api.md) — `bvn_parse_unit`, `bvn_unit_to_string`, and read-time conversion
 - [Python Bindings](09_bovnar_python_bindings.md) — the same unit model from Python, with the NumPy and pint bridges
+- [Rust Bindings](14_bovnar_rust_bindings.md) — the same unit model from Rust
 
 ---
 
