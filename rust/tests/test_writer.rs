@@ -4,15 +4,11 @@
 //! Skipped Python tests:
 //! - `TestWriterLifecycle::test_destroy_idempotent`: Rust has no `destroy`;
 //!   the handle is released exactly once when the writer is dropped.
-//! - `TestWriterLifecycle::test_to_fd`: file-descriptor entry points are not
-//!   mirrored.
 //! - `TestWriteBvni::test_wide_uint`: 2**128 - 1 does not fit the `i128`
 //!   value `write_bvni` takes.
 //! - `test_a_unit_that_cannot_be_serialised_is_refused_not_dropped`: a Rust
 //!   `Unit` can only be built by parsing a spelling, so the unspellable
 //!   compound unit the test needs cannot be constructed.
-//! - `TestWriterFlagsKeywords::test_to_file_takes_them_too`: file entry
-//!   points are not mirrored.
 //!
 //! Partly expressible: in `test_uint_out_of_range_raises_not_truncates` and
 //! `test_sint_out_of_range_raises_not_truncates` the out-of-range values
@@ -125,6 +121,22 @@ mod writer_lifecycle {
             w.write_uint("x", 42, 64, Base::DECIMAL).unwrap();
             let _ = w.bytes_written();
         });
+    }
+
+    #[test]
+    fn test_to_fd() {
+        // Python writes to an fd opened on a temporary file; Rust writes to
+        // the File.
+        let path =
+            std::env::temp_dir().join(format!("bovnar-test-writer-fd-{}.bvnr", std::process::id()));
+        let file = std::fs::File::create(&path).unwrap();
+        let mut w = Writer::to_writer(file, true).unwrap();
+        w.write_uint("y", 99, 64, Base::DECIMAL).unwrap();
+        w.finish().unwrap();
+        drop(w);
+        let content = std::fs::read(&path);
+        std::fs::remove_file(&path).unwrap();
+        assert!(has(&content.unwrap(), b"y"));
     }
 }
 
@@ -1228,6 +1240,21 @@ mod writer_flags_keywords {
     #[test]
     fn test_num_canonical_is_mirrored() {
         assert_eq!(UnitFlags::NUM_CANONICAL, 1 << 2);
+    }
+
+    #[test]
+    fn test_to_file_takes_them_too() {
+        // Python's to_file(path, ...) is to_writer_with over the created File.
+        let path =
+            std::env::temp_dir().join(format!("bovnar-test-writer-o-{}.bvnr", std::process::id()));
+        let file = std::fs::File::create(&path).unwrap();
+        let mut w = Writer::to_writer_with(file, CAP, false, 0, true).unwrap();
+        w.write_uint("a", 1, 64, Base::DECIMAL).unwrap();
+        w.finish().unwrap();
+        drop(w);
+        let content = std::fs::read(&path);
+        std::fs::remove_file(&path).unwrap();
+        assert!(content.unwrap().starts_with(b"#!bovnar "));
     }
 }
 
