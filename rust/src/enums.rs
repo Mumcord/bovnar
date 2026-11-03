@@ -254,3 +254,96 @@ impl ErrorCode {
         })
     }
 }
+
+/// Base-unit ids (`base_unit_t`), Python's `BaseUnit`: plain `i32` ids, so
+/// a unit read off the wire never fails to convert.
+pub struct BaseUnit;
+
+include!(concat!(env!("OUT_DIR"), "/generated/base_units.rs"));
+
+/// Prefix systems (`unit_prefix_system_t`).
+pub struct PrefixSystem;
+
+impl PrefixSystem {
+    pub const SI: i32 = 0;
+    pub const IEC: i32 = 1;
+}
+
+/// SI prefixes (`si_prefix_t`).
+pub struct SIPrefix;
+
+impl SIPrefix {
+    pub const NONE: i32 = 0;
+    pub const QUECTO: i32 = 1;
+    pub const RONTO: i32 = 2;
+    pub const YOCTO: i32 = 3;
+    pub const ZEPTO: i32 = 4;
+    pub const ATTO: i32 = 5;
+    pub const FEMTO: i32 = 6;
+    pub const PICO: i32 = 7;
+    pub const NANO: i32 = 8;
+    pub const MICRO: i32 = 9;
+    pub const MILLI: i32 = 10;
+    pub const CENTI: i32 = 11;
+    pub const DECI: i32 = 12;
+    pub const DECA: i32 = 13;
+    pub const HECTO: i32 = 14;
+    pub const KILO: i32 = 15;
+    pub const MEGA: i32 = 16;
+    pub const GIGA: i32 = 17;
+    pub const TERA: i32 = 18;
+    pub const PETA: i32 = 19;
+    pub const EXA: i32 = 20;
+    pub const ZETTA: i32 = 21;
+    pub const YOTTA: i32 = 22;
+    pub const RONNA: i32 = 23;
+    pub const QUETTA: i32 = 24;
+}
+
+/// IEC binary prefixes (`iec_prefix_t`).
+pub struct IECPrefix;
+
+impl IECPrefix {
+    pub const NONE: i32 = 0;
+    pub const KIBI: i32 = 1;
+    pub const MEBI: i32 = 2;
+    pub const GIBI: i32 = 3;
+    pub const TEBI: i32 = 4;
+    pub const PEBI: i32 = 5;
+    pub const EXBI: i32 = 6;
+    pub const ZEBI: i32 = 7;
+    pub const YOBI: i32 = 8;
+    pub const ROBI: i32 = 9;
+    pub const QUEBI: i32 = 10;
+}
+
+/// The smallest component exponent (`unit_exponent_t`).
+pub const EXPONENT_MIN: i32 = -100;
+/// The largest component exponent.
+pub const EXPONENT_MAX: i32 = 100;
+
+/// Named component exponents. Like Python's open `Exponent`, any integer in
+/// `EXPONENT_MIN..=EXPONENT_MAX` except 0 is a valid exponent.
+pub struct Exponent;
+
+impl Exponent {
+    pub const INVALID: i32 = 0;
+    pub const LINEAR: i32 = 1;
+    pub const SQUARE: i32 = 2;
+    pub const CUBIC: i32 = 3;
+    pub const QUARTIC: i32 = 4;
+    pub const QUINTIC: i32 = 5;
+    pub const SEXTIC: i32 = 6;
+    pub const SEPTIC: i32 = 7;
+    pub const OCTIC: i32 = 8;
+    pub const NONIC: i32 = 9;
+    pub const NEG_LINEAR: i32 = -1;
+    pub const NEG_SQUARE: i32 = -2;
+    pub const NEG_CUBIC: i32 = -3;
+    pub const NEG_QUARTIC: i32 = -4;
+    pub const NEG_QUINTIC: i32 = -5;
+    pub const NEG_SEXTIC: i32 = -6;
+    pub const NEG_SEPTIC: i32 = -7;
+    pub const NEG_OCTIC: i32 = -8;
+    pub const NEG_NONIC: i32 = -9;
+}

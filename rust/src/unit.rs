@@ -2,8 +2,60 @@
 
 use std::fmt;
 
+use crate::enums::{Exponent, PrefixSystem, SIPrefix};
 use crate::error::{Error, Result};
-use crate::ffi::{self, ValueUnit, unit_fns};
+use crate::ffi::{self, PrefixId, ValueUnit, ValueUnitComponent, ValueUnitPrefix, unit_fns};
+
+pub use crate::ffi::MAX_UNIT_COMPONENTS;
+
+/// One factor of a unit (`value_unit_component_t`): a base unit with its
+/// prefix and exponent. Python's `ValueUnitComponent`; `prefix` is the SI or
+/// IEC prefix id, as `prefix_system` says.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct UnitComponent {
+    pub base: i32,
+    pub exponent: i32,
+    pub prefix_system: i32,
+    pub prefix: i32,
+}
+
+impl UnitComponent {
+    /// `base` with an SI prefix (`SIPrefix::NONE` for none).
+    pub fn si(base: i32, prefix: i32, exponent: i32) -> Self {
+        UnitComponent {
+            base,
+            exponent,
+            prefix_system: PrefixSystem::SI,
+            prefix,
+        }
+    }
+
+    /// `base` with an IEC prefix.
+    pub fn iec(base: i32, prefix: i32, exponent: i32) -> Self {
+        UnitComponent {
+            base,
+            exponent,
+            prefix_system: PrefixSystem::IEC,
+            prefix,
+        }
+    }
+
+    fn raw(self) -> ValueUnitComponent {
+        let id = if self.prefix_system == PrefixSystem::IEC {
+            PrefixId { iec: self.prefix }
+        } else {
+            PrefixId { si: self.prefix }
+        };
+        ValueUnitComponent {
+            base: self.base,
+            exponent: self.exponent,
+            prefix: ValueUnitPrefix {
+                system: self.prefix_system,
+                id,
+            },
+        }
+    }
+}
 
 /// A physical unit: the parsed form, with the operations that belong to it.
 /// The default is the dimensionless unit (no unit at all).
@@ -21,6 +73,66 @@ impl Unit {
                 ffi::error_name(code)
             ))
         })
+    }
+
+    /// A unit of the given components (Python's `make_unit_compound`);
+    /// fails beyond [`MAX_UNIT_COMPONENTS`].
+    pub fn compound(components: &[UnitComponent]) -> Result<Self> {
+        if components.len() > MAX_UNIT_COMPONENTS {
+            return Err(Error::Argument(format!(
+                "Too many unit components: {} > {MAX_UNIT_COMPONENTS}",
+                components.len()
+            )));
+        }
+        let mut vu = ValueUnit::zeroed();
+        vu.num_components = components.len() as u32;
+        for (slot, c) in vu.components.iter_mut().zip(components) {
+            *slot = c.raw();
+        }
+        Ok(Unit(vu))
+    }
+
+    /// One SI-prefixed base unit (Python's `make_unit_si`).
+    pub fn si(base: i32, prefix: i32, exponent: i32) -> Self {
+        Self::one(UnitComponent::si(base, prefix, exponent))
+    }
+
+    /// One IEC-prefixed base unit (Python's `make_unit_iec`).
+    pub fn iec(base: i32, prefix: i32, exponent: i32) -> Self {
+        Self::one(UnitComponent::iec(base, prefix, exponent))
+    }
+
+    /// The explicit dimensionless unit: one `BaseUnit::NONE` component
+    /// (Python's `make_unit_dimensionless`). [`Unit::default`] is the empty
+    /// unit (`make_unit_none`).
+    pub fn dimensionless() -> Self {
+        Self::one(UnitComponent::si(0, SIPrefix::NONE, Exponent::LINEAR))
+    }
+
+    fn one(c: UnitComponent) -> Self {
+        let mut vu = ValueUnit::zeroed();
+        vu.num_components = 1;
+        vu.components[0] = c.raw();
+        Unit(vu)
+    }
+
+    /// The number of components as stored (`num_components`).
+    pub fn num_components(&self) -> usize {
+        self.0.num_components as usize
+    }
+
+    /// The active components (Python's `active_components()`).
+    pub fn components(&self) -> Vec<UnitComponent> {
+        let n = self.num_components().min(MAX_UNIT_COMPONENTS);
+        self.0.components[..n]
+            .iter()
+            .map(|c| UnitComponent {
+                base: c.base,
+                exponent: c.exponent,
+                prefix_system: c.prefix.system,
+                prefix: c.prefix.id_raw(),
+            })
+            .collect()
     }
 
     /// True when this carries no unit at all (the empty unit, or only

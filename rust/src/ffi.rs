@@ -43,6 +43,14 @@ pub struct ValueUnitPrefix {
     pub id: PrefixId,
 }
 
+impl ValueUnitPrefix {
+    /// The prefix id, whichever system it belongs to.
+    pub fn id_raw(&self) -> c_int {
+        // SAFETY: both union fields are a C int, so either reads the same int.
+        unsafe { self.id.si }
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct ValueUnitComponent {
