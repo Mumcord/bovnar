@@ -261,6 +261,25 @@ pub struct BaseUnit;
 
 include!(concat!(env!("OUT_DIR"), "/generated/base_units.rs"));
 
+impl BaseUnit {
+    /// The member name of `id` (`BaseUnit(id).name`), or `None` when no
+    /// member has that id.
+    pub fn name(id: i32) -> Option<&'static str> {
+        Self::MEMBERS.iter().find(|m| m.1 == id).map(|m| m.0)
+    }
+
+    /// The id of the member called `name` (`BaseUnit[name]`).
+    pub fn from_name(name: &str) -> Option<i32> {
+        Self::MEMBERS.iter().find(|m| m.0 == name).map(|m| m.1)
+    }
+}
+
+/// The size of one block of the base-unit id space. The space is sparse by
+/// design: this is not a membership test.
+pub const UNIT_BLOCK_SIZE: i32 = 10_000;
+/// The first currency id.
+pub const CURRENCY_FIRST: i32 = 900_000;
+
 /// Prefix systems (`unit_prefix_system_t`).
 pub struct PrefixSystem;
 
