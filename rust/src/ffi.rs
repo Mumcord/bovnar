@@ -1492,6 +1492,50 @@ pub fn parse_currency(code: &str) -> c_int {
     unsafe { bvn_parse_currency_str(code.as_ptr(), len) }
 }
 
+// ---------------------------------------------------------------------------
+// Numbers and datetimes.
+
+/// `bvnr_datetime_epoch_name` and `bvnr_datetime_epoch_mjd` of a datetime type.
+pub fn datetime_epoch(vt: ValueTypeSpec) -> (Option<String>, i32) {
+    // SAFETY: plain value in; the name is NULL or a static string.
+    let (name, mjd) = unsafe { (bvnr_datetime_epoch_name(vt), bvnr_datetime_epoch_mjd(vt)) };
+    // SAFETY: a non-NULL name is a static NUL-terminated string.
+    let name = (!name.is_null()).then(|| {
+        unsafe { CStr::from_ptr(name) }
+            .to_string_lossy()
+            .into_owned()
+    });
+    (name, mjd)
+}
+
+/// `bvn_float_str_fits_fix`: whether decimal `text` fits a signed fixed
+/// point of `total_bits` with `frac_bits` fractional bits.
+pub fn float_str_fits_fix(text: &str, total_bits: u32, frac_bits: u32) -> bool {
+    let Ok(t) = CString::new(text) else {
+        return false;
+    };
+    // SAFETY: `t` is NUL-terminated and only read.
+    unsafe { bvn_float_str_fits_fix(t.as_ptr(), 10, total_bits, frac_bits) }
+}
+
+/// A float literal in `base` (16 for a hex float) as the nearest `f64`, via
+/// the library's arbitrary-precision float at Python's working precision.
+pub fn parse_float_base(text: &str, base: u32) -> Option<f64> {
+    let t = CString::new(text).ok()?;
+    // SAFETY: the float is allocated, used and freed here; `t` is
+    // NUL-terminated and `out` writable.
+    unsafe {
+        let f = bvn_float_alloc(4096);
+        if f.is_null() {
+            return None;
+        }
+        let mut out = 0.0;
+        let ok = bvn_float_from_str(f, t.as_ptr(), base) && bvn_float_to_double(f, &mut out);
+        bvn_float_free(f);
+        ok.then_some(out)
+    }
+}
+
 /// Checks every mirrored struct against the compiler's own layout, as printed
 /// by the upstream ABI manifest generator (tests/bvnr_abi_dump.c).
 #[cfg(all(test, not(target_family = "wasm")))]

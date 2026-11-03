@@ -3,6 +3,9 @@
 use crate::enums::{Event, TokenType, ValueTypeFamily};
 use crate::error::{Error, Result};
 use crate::ffi::{self, BvnrWriteFlags, ValueTypeSpec};
+use crate::quantity::Quantity;
+use crate::reader::UnitPolicy;
+use crate::unit::Unit;
 
 /// Default size of the memory sink (Python's `DEFAULT_MEM_CAP`).
 pub const DEFAULT_MEM_CAP: usize = 4 * 1024 * 1024;
@@ -107,6 +110,109 @@ impl Writer {
         self.write_scalar(key, vt, &text)
     }
 
+    /// `.key = <float_fix:width,qQ> value;` — a signed fixed point with `q`
+    /// fractional bits.
+    pub fn write_float_fix(&mut self, key: &str, value: f64, width: u32, q: u32) -> Result<()> {
+        let text = format_float(value, width)?;
+        let vt = type_spec(ValueTypeFamily::FloatFix, width, q);
+        self.write_scalar(key, vt, &text)
+    }
+
+    /// `.key = <float_dec:width> value;` — an IEEE decimal float.
+    pub fn write_float_dec(&mut self, key: &str, value: f64, width: u32) -> Result<()> {
+        let text = format_float(value, width)?;
+        self.write_scalar(key, type_spec(ValueTypeFamily::FloatDec, width, 0), &text)
+    }
+
+    /// `.key = <float:width[,_16]> literal;` — a float given as its literal,
+    /// decimal (`base` 10) or hexadecimal (16), at any precision.
+    pub fn write_bvnf_base(
+        &mut self,
+        key: &str,
+        literal: &str,
+        width: u32,
+        base: u32,
+    ) -> Result<()> {
+        let vt_base = match base {
+            10 => 0,
+            16 => 16,
+            _ => {
+                return Err(Error::Argument(format!(
+                    "write_bvnf_base: base must be 10 or 16, got {base}"
+                )));
+            }
+        };
+        self.write_scalar(
+            key,
+            type_spec(ValueTypeFamily::Float, width, vt_base),
+            literal,
+        )
+    }
+
+    /// `.key = <uint|sint:width[,_base]> value;` for an integer of any width
+    /// up to 128 bits; negative values are written as sint.
+    pub fn write_bvni(&mut self, key: &str, value: i128, width: u32, base: u32) -> Result<()> {
+        let family = if value < 0 {
+            refuse_signed_high_base(base)?;
+            ValueTypeFamily::Sint
+        } else {
+            ValueTypeFamily::Uint
+        };
+        let text = format_bigint(value, base)?;
+        let vt = type_spec(family, width, if base == 10 { 0 } else { base });
+        self.write_scalar(key, vt, &text)
+    }
+
+    /// `.key = <annotation> literal;` for a typed scalar, as read by
+    /// [`crate::parse_typed`]: type, unit, unit spelling and datetime
+    /// fraction are kept. The annotation is left out where it says nothing
+    /// the literal does not.
+    pub fn write_quantity(&mut self, key: &str, q: &Quantity) -> Result<()> {
+        if let Some(src) = q.unit_source.as_deref()
+            && q.unit.is_dimensionless()
+            && !Unit::parse(src).is_ok_and(|u| u.is_dimensionless())
+        {
+            return Err(Error::Argument(format!(
+                "cannot serialise {key:?}: unit_source {src:?} does not spell this \
+                 Quantity's unit, which is no unit at all"
+            )));
+        }
+        self.assignment(key)?;
+        if needs_annotation(q) {
+            self.annotation(q.vtype, &q.unit, q.unit_source.as_deref())?;
+        }
+        self.value(q.token_type, q, false)
+    }
+
+    /// Refuses to emit a value a reader under `policy` would refuse. Only the
+    /// validation half applies: `require_unit`, `require_dimension_of` and
+    /// non-converting rules. `None` clears it.
+    pub fn set_unit_policy(&mut self, policy: Option<&UnitPolicy>) -> Result<()> {
+        if let Some(p) = policy
+            && (!p.targets.is_empty()
+                || p.normalise_si
+                || p.base != 0
+                || p.leave_inexact
+                || p.rules.iter().any(|r| r.convert))
+        {
+            return Err(Error::Argument(
+                "the writer takes only the validation half of a UnitPolicy \
+                 (require_unit / require_dimension_of, and rules with convert=false)"
+                    .into(),
+            ));
+        }
+        if self
+            .handle
+            .set_unit_policy(policy.map(UnitPolicy::spec).as_ref())
+        {
+            Ok(())
+        } else {
+            Err(Error::Argument(
+                "bvnr_writer_set_unit_policy refused the policy".into(),
+            ))
+        }
+    }
+
     /// `.key = "value";`
     pub fn write_string(&mut self, key: &str, value: &str) -> Result<()> {
         self.assignment(key)?;
@@ -139,6 +245,11 @@ impl Writer {
     /// `.key = <octet stream>;`
     pub fn write_octets(&mut self, key: &str, value: &[u8]) -> Result<()> {
         self.assignment(key)?;
+        self.octets(value)
+    }
+
+    /// An octet stream value, chunked.
+    pub(crate) fn octets(&mut self, value: &[u8]) -> Result<()> {
         let none = ValueTypeSpec::default();
         self.event(Event::OctetStreamStart, TokenType::Identifier, none, &[])?;
         for chunk in value.chunks(OCTET_CHUNK) {
@@ -202,16 +313,20 @@ impl Writer {
         self.handle.output()
     }
 
-    fn assignment(&mut self, key: &str) -> Result<()> {
+    pub(crate) fn assignment(&mut self, key: &str) -> Result<()> {
         self.emit(Event::AssignmentStart, Some(key), None, None)
     }
 
     /// An assignment of one annotated scalar literal.
     fn write_scalar(&mut self, key: &str, vt: ValueTypeSpec, text: &str) -> Result<()> {
         self.assignment(key)?;
-        self.annotation(vt)?;
+        self.annotation(vt, &Unit::default(), None)?;
         let special = matches!(text, "nan" | "inf" | "ninf");
-        let token = if vt.base != 0 && vt.base != 10 && !special {
+        let decimal_float = matches!(
+            ValueTypeFamily::from_raw(vt.family),
+            Some(ValueTypeFamily::FloatFix | ValueTypeFamily::FloatDec)
+        );
+        let token = if vt.base != 0 && vt.base != 10 && !special && !decimal_float {
             TokenType::String
         } else {
             TokenType::Number
@@ -219,25 +334,68 @@ impl Writer {
         self.event(Event::Data, token, vt, text.as_bytes())
     }
 
-    /// `<family:width[,_base]>` for the uint, sint and float families.
-    fn annotation(&mut self, vt: ValueTypeSpec) -> Result<()> {
-        self.event(Event::TypeAnnotationStart, TokenType::Type, vt, &[])?;
+    /// A type annotation: `<family:width[,_base|,qN|,epoch][,unit]>`.
+    pub(crate) fn annotation(
+        &mut self,
+        vt: ValueTypeSpec,
+        unit: &Unit,
+        unit_source: Option<&str>,
+    ) -> Result<()> {
+        use ValueTypeFamily as F;
+        let fam = ValueTypeFamily::from_raw(vt.family);
+        let none = Unit::default();
+        let param = Event::TypeAnnotationTypeFamilyParam;
+        self.data_event(
+            Event::TypeAnnotationStart,
+            TokenType::Type,
+            vt,
+            unit,
+            [b"", b"", b""],
+        )?;
         self.event(Event::TypeAnnotationTypeFamily, TokenType::Type, vt, &[])?;
-        if vt.width != 0 {
-            self.event(
-                Event::TypeAnnotationTypeFamilyParam,
-                TokenType::TypeWidth,
+        let sized = matches!(
+            fam,
+            Some(F::Uint | F::Sint | F::Float | F::FloatFix | F::FloatDec | F::Datetime)
+        );
+        if sized && vt.width != 0 {
+            self.event(param, TokenType::TypeWidth, vt, &[])?;
+        }
+        if matches!(fam, Some(F::Float | F::Sint | F::Uint)) && vt.base != 0 && vt.base != 10 {
+            self.event(param, TokenType::TypeBase, vt, &[])?;
+        }
+        if fam == Some(F::FloatFix) && vt.base != 0 {
+            self.event(param, TokenType::TypeQ, vt, &[])?;
+        }
+        if fam == Some(F::Datetime)
+            && vt.base != 0
+            && let Some(epoch) = ffi::datetime_epoch(vt).0
+        {
+            self.data_event(
+                param,
+                TokenType::Unit,
                 vt,
-                &[],
+                &none,
+                [epoch.as_bytes(), b"", b""],
             )?;
         }
-        if vt.base != 0 && vt.base != 10 {
-            self.event(
-                Event::TypeAnnotationTypeFamilyParam,
-                TokenType::TypeBase,
-                vt,
-                &[],
-            )?;
+        if unit.0.num_components > 0 && !matches!(fam, Some(F::Datetime | F::Utf8)) {
+            let text = ffi::unit_to_string_ex(&unit.0, self.handle.unit_flags()).map_err(|_| {
+                Error::Argument(
+                    "cannot serialise this unit: bvn_unit_to_string_ex refused it, and \
+                     writing the value without its unit would change what it means"
+                        .into(),
+                )
+            })?;
+            if !text.is_empty() {
+                let src = unit_source.unwrap_or("").as_bytes();
+                self.data_event(
+                    param,
+                    TokenType::Unit,
+                    vt,
+                    unit,
+                    [text.as_bytes(), b"", src],
+                )?;
+            }
         }
         self.event(
             Event::TypeAnnotationEnd,
@@ -247,7 +405,42 @@ impl Writer {
         )
     }
 
-    fn event(
+    /// The data event of a typed value. Inside an array the token becomes
+    /// its array form and the unit stays with the annotation.
+    pub(crate) fn value(&mut self, token: TokenType, q: &Quantity, in_array: bool) -> Result<()> {
+        let none = Unit::default();
+        let (token, unit) = match (in_array, token) {
+            (false, t) => (t, &q.unit),
+            (true, TokenType::String | TokenType::ArrayString) => (TokenType::ArrayString, &none),
+            (true, TokenType::Number) => (TokenType::ArrayNumber, &none),
+            (true, t) => (t, &none),
+        };
+        let raw = q.raw.as_deref().unwrap_or("").as_bytes();
+        let frac = q.frac.as_deref().unwrap_or("").as_bytes();
+        let src = if in_array {
+            &[][..]
+        } else {
+            q.unit_source.as_deref().unwrap_or("").as_bytes()
+        };
+        self.data_event(Event::Data, token, q.vtype, unit, [raw, frac, src])
+    }
+
+    /// One event with every payload field: literal, fraction, unit source.
+    pub(crate) fn data_event(
+        &mut self,
+        event: Event,
+        token: TokenType,
+        vt: ValueTypeSpec,
+        unit: &Unit,
+        parts: [&[u8]; 3],
+    ) -> Result<()> {
+        if parts.iter().any(|p| u32::try_from(p.len()).is_err()) {
+            return Err(Error::Argument("a single value cannot exceed 4 GiB".into()));
+        }
+        self.check(|h| h.write_event_full(event as i32, token as i32, vt, &unit.0, parts))
+    }
+
+    pub(crate) fn event(
         &mut self,
         event: Event,
         token: TokenType,
@@ -274,7 +467,85 @@ impl Writer {
     }
 }
 
-fn type_spec(family: ValueTypeFamily, width: u32, base: u32) -> ValueTypeSpec {
+/// A number with a literal of a numeric family.
+pub(crate) fn is_numeric(q: &Quantity) -> bool {
+    use ValueTypeFamily as F;
+    matches!(
+        q.family(),
+        Some(F::Float | F::FloatDec | F::FloatFix | F::Uint | F::Sint)
+    ) && q.raw.is_some()
+}
+
+/// Python's `_needs_annotation`: true only when the annotation carries
+/// something the bare literal would not give back.
+pub(crate) fn needs_annotation(q: &Quantity) -> bool {
+    use ValueTypeFamily as F;
+    let vt = q.vtype;
+    match ValueTypeFamily::from_raw(vt.family) {
+        None | Some(F::Plain | F::Bool | F::Illegal) => false,
+        // A bare non-negative integer reads back as uint.
+        Some(F::Sint)
+            if q.raw
+                .as_deref()
+                .is_some_and(|r| !r.trim_start().starts_with('-')) =>
+        {
+            true
+        }
+        Some(F::Datetime | F::FloatFix | F::FloatDec) => true,
+        Some(_) if !q.unit.is_dimensionless() => true,
+        Some(_) if vt.base != 0 && vt.base != 10 => true,
+        Some(_) => vt.width != 0 && vt.width != 64,
+    }
+}
+
+fn format_float(value: f64, width: u32) -> Result<String> {
+    ffi::format_f64(value, type_spec(ValueTypeFamily::Float, width, 0))
+        .ok_or_else(|| Error::Argument(format!("cannot format {value}")))
+}
+
+fn refuse_signed_high_base(base: u32) -> Result<()> {
+    if base == 64 || base == 85 {
+        return Err(Error::Argument(format!(
+            "base {base} is unsigned: its alphabet uses '+' and '-' as digits, \
+             so a signed integer cannot be written in it"
+        )));
+    }
+    Ok(())
+}
+
+/// Python's `_format_bigint`: `value` in any bovnar base (2..62, 64, 85).
+pub(crate) fn format_bigint(value: i128, base: u32) -> Result<String> {
+    const B64: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    if !(2..=62).contains(&base) && base != 64 && base != 85 {
+        return Err(Error::Argument(format!("unsupported integer base {base}")));
+    }
+    let digit = |d: u32| -> char {
+        let d8 = d as u8;
+        match (base, d) {
+            (64, _) => B64[d as usize] as char,
+            (85, _) => (b'!' + d8) as char,
+            (_, 0..=9) => (b'0' + d8) as char,
+            (_, 10..=35) => (b'a' + d8 - 10) as char,
+            _ => (b'A' + d8 - 36) as char,
+        }
+    };
+    let mut mag = value.unsigned_abs();
+    let mut digits = Vec::new();
+    loop {
+        digits.push(digit((mag % u128::from(base)) as u32));
+        mag /= u128::from(base);
+        if mag == 0 {
+            break;
+        }
+    }
+    let mut s: String = digits.iter().rev().collect();
+    if value < 0 {
+        s.insert(0, '-');
+    }
+    Ok(s)
+}
+
+pub(crate) fn type_spec(family: ValueTypeFamily, width: u32, base: u32) -> ValueTypeSpec {
     ValueTypeSpec {
         family: family as i32,
         width,
@@ -307,6 +578,50 @@ mod tests {
         assert!(out.contains("\"ff\""), "{out}");
         assert!(out.contains("-3") && out.contains("1.5"), "{out}");
         assert!(out.contains("\"x\""), "{out}");
+    }
+
+    #[test]
+    fn writes_typed_annotations() {
+        let out = written(|w| {
+            w.write_float_fix("fx", 1.5, 32, 16)?;
+            w.write_float_dec("fd", 0.1, 64)?;
+            w.write_bvni("big", -(1i128 << 100), 102, 10)?;
+            w.write_bvnf_base("hx", "1.8p1", 64, 16)?;
+            let km = Unit::parse("k~m").unwrap();
+            w.write_quantity(
+                "q",
+                &Quantity::new("2.5", type_spec(ValueTypeFamily::Float, 64, 0), km),
+            )
+        });
+        assert!(out.contains("<float_fix:32,q16>"), "{out}");
+        assert!(out.contains("<float_dec:64>"), "{out}");
+        assert!(
+            out.contains("<sint:102>-1267650600228229401496703205376"),
+            "{out}"
+        );
+        assert!(out.contains("<float:64,_16>"), "{out}");
+        assert!(out.contains("<float:64,k~m>2.5"), "{out}");
+        assert_eq!(format_bigint(255, 16).unwrap(), "ff");
+        assert_eq!(format_bigint(63, 64).unwrap(), "/");
+    }
+
+    #[test]
+    fn writer_policy_refuses_bare_numbers() {
+        let mut w = Writer::to_mem(4096, false).unwrap();
+        let strict = UnitPolicy {
+            require_unit: true,
+            ..UnitPolicy::default()
+        };
+        w.set_unit_policy(Some(&strict)).unwrap();
+        assert_eq!(
+            w.write_float("bare", 0.25, 64).unwrap_err().name(),
+            Some("unit_mismatch")
+        );
+        let converting = UnitPolicy {
+            targets: vec![("m".into(), 0)],
+            ..UnitPolicy::default()
+        };
+        assert!(w.set_unit_policy(Some(&converting)).is_err());
     }
 
     #[test]

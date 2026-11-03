@@ -12,6 +12,7 @@ pub mod enums;
 pub mod error;
 #[allow(unsafe_code)]
 mod ffi;
+pub mod quantity;
 pub mod reader;
 pub mod unit;
 pub mod units;
@@ -21,12 +22,16 @@ pub use dom::{DomDoc, DomNode, DomType};
 pub use enums::{ErrorCode, Event, TokenType, ValueTypeFamily};
 pub use error::{Error, Result};
 pub use ffi::ValueTypeSpec;
+pub use quantity::Quantity;
 pub use reader::{EventData, EventPayload, ReadOptions, Reader, UnitPolicy, UnitRule};
 pub use unit::Unit;
 pub use writer::Writer;
 
-/// A plain BVNR value, the Rust counterpart of what Python's `loads` returns
-/// and `dumps` takes. Type annotations and units are not carried.
+use writer::needs_annotation;
+
+/// A BVNR value, the Rust counterpart of what Python's `loads` returns and
+/// `dumps` takes. [`parse`] carries no annotations or units; [`parse_typed`]
+/// returns typed scalars as [`Value::Quantity`].
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Null,
@@ -42,6 +47,8 @@ pub enum Value {
     Array(Vec<Value>),
     /// A struct (or the whole document): keys in document order.
     Struct(Vec<(String, Value)>),
+    /// A typed scalar with its literal, type and unit.
+    Quantity(Box<Quantity>),
 }
 
 /// Parses a BVNR document into a [`Value::Struct`], like Python's `loads`.
@@ -51,7 +58,19 @@ pub enum Value {
 /// (duplicate keys, array homogeneity, rectangular matrices). Use
 /// [`DomDoc::parse`] for full validation.
 pub fn parse(data: &[u8]) -> Result<Value> {
-    let mut parser = dict_parser::DictParser::default();
+    parse_with(data, false)
+}
+
+/// Parses like [`parse`], but every typed scalar (number, datetime, symbol,
+/// reference) is a [`Value::Quantity`] keeping its literal, type, unit and
+/// datetime fraction, so [`to_string`] writes it back losslessly. Python's
+/// `loads(typed=True)`.
+pub fn parse_typed(data: &[u8]) -> Result<Value> {
+    parse_with(data, true)
+}
+
+fn parse_with(data: &[u8], typed: bool) -> Result<Value> {
+    let mut parser = dict_parser::DictParser::new(typed);
     let mut on_event = |d: &EventData<'_>| {
         parser.on_event(d);
         true
@@ -63,18 +82,34 @@ pub fn parse(data: &[u8]) -> Result<Value> {
 /// Serialises a [`Value::Struct`] to a BVNR document, like Python's `dumps`.
 ///
 /// Returns bytes rather than `String`: an octet stream is written raw.
-/// Arrays and integers wider than 64 bits are not supported yet and are
-/// refused with [`Error::Argument`].
+/// Everything [`parse`] and [`parse_typed`] return round-trips: arrays
+/// (multi-row ones as `/`-separated rows), integers up to 128 bits and typed
+/// quantities.
 pub fn to_string(value: &Value, pretty: bool) -> Result<Vec<u8>> {
     let Value::Struct(entries) = value else {
         return Err(Error::Argument(
             "to_string() requires a struct at the top level".into(),
         ));
     };
+    // A datetime or array-indexing reference needs spec 1.1, a profile unit
+    // spelling 1.2; without the directive the output would not read back.
+    let mut version = None;
+    walk(std::slice::from_ref(value), true, &mut |v| {
+        if let Value::Quantity(q) = v {
+            version = version.max(spec_version_needed(q));
+        }
+    });
     let mut cap = writer::DEFAULT_MEM_CAP;
     loop {
         let mut w = Writer::to_mem(cap, pretty)?;
-        match emit_entries(&mut w, entries).and_then(|_| w.finish()) {
+        let written = match version {
+            Some(minor) => w.write_version(1, minor),
+            None => Ok(()),
+        };
+        match written
+            .and_then(|_| emit_entries(&mut w, entries))
+            .and_then(|_| w.finish())
+        {
             Ok(()) => return Ok(w.get_output().to_vec()),
             Err(e) if e.code() == Some(ErrorCode::SinkBufferExhausted) && cap < 256 << 20 => {
                 cap *= 2;
@@ -98,9 +133,7 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
             } else if let Ok(s) = i64::try_from(*i) {
                 w.write_sint(key, s, 64, 10)
             } else {
-                Err(Error::Argument(format!(
-                    "cannot serialise {key:?}: integers wider than 64 bits are not supported yet"
-                )))
+                w.write_bvni(key, *i, int_width(*i), 10)
             }
         }
         Value::Float(f) => w.write_float(key, *f, 64),
@@ -111,10 +144,284 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
             emit_entries(w, entries)?;
             w.end_struct()
         }
-        Value::Array(_) => Err(Error::Argument(format!(
-            "cannot serialise {key:?}: arrays are not supported by to_string yet"
-        ))),
+        Value::Quantity(q) => w.write_quantity(key, q),
+        Value::Array(rows) => {
+            if let Some((vt, unit, src)) = shared_annotation(rows) {
+                return write_array(w, key, rows, Some(vt), Some(&unit), src.as_deref());
+            }
+            let mut annotate = false;
+            leaves(rows, &mut |v| {
+                annotate |= matches!(v, Value::Quantity(q) if needs_annotation(q))
+            });
+            if annotate {
+                w.assignment(key)?;
+                return emit_rows(w, rows, true, None);
+            }
+            write_array(w, key, rows, wide_int_annotation(rows), None, None)
+        }
     }
+}
+
+/// Bits a two's-complement (negative) or plain (non-negative) integer needs.
+fn int_width(i: i128) -> u32 {
+    if i < 0 {
+        128 - (!i).leading_zeros() + 1
+    } else {
+        128 - i.leading_zeros()
+    }
+}
+
+/// Calls `f` on every element inside `rows`, through nested arrays; with
+/// `deep`, through structs too.
+fn walk<'a>(rows: &'a [Value], deep: bool, f: &mut dyn FnMut(&'a Value)) {
+    for v in rows {
+        match v {
+            Value::Array(inner) => walk(inner, deep, f),
+            Value::Struct(entries) if deep => {
+                for (_, v) in entries {
+                    walk(std::slice::from_ref(v), deep, f);
+                }
+            }
+            v => f(v),
+        }
+    }
+}
+
+/// The leaves of an array: its elements through nested arrays.
+fn leaves<'a>(rows: &'a [Value], f: &mut dyn FnMut(&'a Value)) {
+    walk(rows, false, f);
+}
+
+/// Python's `_uses_spec_1_1` / `_uses_spec_1_2`: the minor spec version a
+/// quantity needs declared, if any.
+fn spec_version_needed(q: &Quantity) -> Option<u16> {
+    let profile_ns = q.unit_source.as_deref().is_some_and(|s| {
+        s.split_once(':').is_some_and(|(ns, _)| {
+            ns.bytes()
+                .next()
+                .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+                && ns
+                    .bytes()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+        })
+    });
+    if profile_ns || (!q.unit.is_dimensionless() && q.unit.is_profile_only()) {
+        Some(2)
+    } else if q.family() == Some(ValueTypeFamily::Datetime)
+        || (q.token_type == TokenType::Reference
+            && q.raw.as_deref().is_some_and(|r| r.contains('[')))
+    {
+        Some(1)
+    } else {
+        None
+    }
+}
+
+/// The one annotation every non-null leaf shares, when all are quantities of
+/// the same type and unit and that annotation says something.
+fn shared_annotation(rows: &[Value]) -> Option<(ValueTypeSpec, Unit, Option<String>)> {
+    let mut first: Option<&Quantity> = None;
+    let (mut all, mut needed) = (true, false);
+    leaves(rows, &mut |v| match v {
+        Value::Null => {}
+        Value::Quantity(q) if q.raw.is_none() => {}
+        Value::Quantity(q)
+            if writer::is_numeric(q) || q.family() == Some(ValueTypeFamily::Datetime) =>
+        {
+            match first {
+                Some(f)
+                    if f.vtype != q.vtype || f.unit != q.unit || f.unit_source != q.unit_source =>
+                {
+                    all = false
+                }
+                _ => {
+                    first.get_or_insert(q);
+                    needed |= needs_annotation(q);
+                }
+            }
+        }
+        _ => all = false,
+    });
+    let q = first.filter(|_| all && needed)?;
+    Some((q.vtype, q.unit, q.unit_source.clone()))
+}
+
+/// Python's `_array_int_annotation`: for an all-integer array with an
+/// element wider than 64 bits, the width that holds every element.
+fn wide_int_annotation(rows: &[Value]) -> Option<ValueTypeSpec> {
+    let (mut ints, mut other, mut neg, mut width) = (false, false, false, 0);
+    leaves(rows, &mut |v| match v {
+        Value::Int(i) => {
+            ints = true;
+            neg |= *i < 0;
+            width = width.max(int_width(*i));
+        }
+        Value::Null => {}
+        _ => other = true,
+    });
+    if !ints || other {
+        return None;
+    }
+    let width = if neg { width.max(2) } else { width };
+    let family = if neg {
+        ValueTypeFamily::Sint
+    } else {
+        ValueTypeFamily::Uint
+    };
+    (width > 64).then(|| writer::type_spec(family, width, 0))
+}
+
+/// Writes `.key = [<annotation>] rows;`, like Python's `write_array`: a flat
+/// list is one row, a rectangular list of lists is `/`-separated rows. With
+/// `vt`, the annotation (and `unit`, spelled `unit_source` if given) is
+/// written once for the whole array.
+pub fn write_array(
+    w: &mut Writer,
+    key: &str,
+    rows: &[Value],
+    vt: Option<ValueTypeSpec>,
+    unit: Option<&Unit>,
+    unit_source: Option<&str>,
+) -> Result<()> {
+    w.assignment(key)?;
+    if let Some(vt) = vt {
+        w.annotation(vt, unit.unwrap_or(&Unit::default()), unit.and(unit_source))?;
+    }
+    emit_rows(w, rows, false, vt)
+}
+
+/// Python's `_emit_rows`: a single row, and rows of unequal length, are
+/// nested rather than `/`-separated, so the shape reads back unchanged.
+fn emit_rows(
+    w: &mut Writer,
+    rows: &[Value],
+    annotate: bool,
+    vt: Option<ValueTypeSpec>,
+) -> Result<()> {
+    let row_len = |v: &Value| match v {
+        Value::Array(r) => Some(r.len()),
+        _ => None,
+    };
+    let first_len = rows.first().and_then(row_len);
+    if rows.len() > 1 && first_len.is_some() && rows.iter().all(|r| row_len(r) == first_len) {
+        for (i, row) in rows.iter().enumerate() {
+            if i > 0 {
+                w.new_array_dim()?;
+            }
+            w.begin_array_row()?;
+            if let Value::Array(elems) = row {
+                for e in elems {
+                    emit_element(w, e, annotate, vt)?;
+                }
+            }
+            w.end_array_row()?;
+        }
+        return Ok(());
+    }
+    w.begin_array_row()?;
+    for e in rows {
+        emit_element(w, e, annotate, vt)?;
+    }
+    w.end_array_row()
+}
+
+/// Python's `_emit_array_element`.
+fn emit_element(
+    w: &mut Writer,
+    elem: &Value,
+    annotate: bool,
+    vt: Option<ValueTypeSpec>,
+) -> Result<()> {
+    let none = Unit::default();
+    let data = |w: &mut Writer, token, vt, text: &[u8]| {
+        w.data_event(Event::Data, token, vt, &none, [text, b"", b""])
+    };
+    match elem {
+        Value::Quantity(q) => {
+            if annotate && writer::is_numeric(q) && q.raw.is_some() {
+                w.annotation(q.vtype, &q.unit, q.unit_source.as_deref())?;
+            }
+            w.value(q.token_type, q, true)
+        }
+        Value::Null => data(w, TokenType::NullValue, ValueTypeSpec::default(), b""),
+        Value::Bool(b) => {
+            let text: &[u8] = if *b { b"true" } else { b"false" };
+            data(w, TokenType::Bool, ValueTypeSpec::default(), text)
+        }
+        Value::Int(i) => {
+            let vt = vt.unwrap_or_else(|| {
+                let family = if *i < 0 {
+                    ValueTypeFamily::Sint
+                } else {
+                    ValueTypeFamily::Uint
+                };
+                writer::type_spec(family, int_width(*i).max(64), 10)
+            });
+            data(w, TokenType::ArrayNumber, vt, i.to_string().as_bytes())
+        }
+        Value::Float(f) => {
+            let vt = writer::type_spec(ValueTypeFamily::Float, 64, 0);
+            let text = ffi::format_f64(*f, vt)
+                .ok_or_else(|| Error::Argument(format!("cannot format {f}")))?;
+            data(w, TokenType::ArrayNumber, vt, text.as_bytes())
+        }
+        Value::String(s) => data(
+            w,
+            TokenType::ArrayString,
+            ValueTypeSpec::default(),
+            s.as_bytes(),
+        ),
+        Value::Bytes(b) => w.octets(b),
+        Value::Struct(entries) => {
+            w.emit(Event::StructStart, None, None, None)?;
+            emit_entries(w, entries)?;
+            w.emit(Event::StructEnd, None, None, None)
+        }
+        Value::Array(rows) => emit_rows(w, rows, annotate, vt),
+    }
+}
+
+/// Python's `_decode_value`: one literal as a plain value. What cannot be
+/// decoded stays its text, as in Python.
+pub(crate) fn decode_value(raw: &[u8], vt: ValueTypeSpec, token: Option<TokenType>) -> Value {
+    if raw.is_empty() {
+        return match token {
+            Some(TokenType::String | TokenType::ArrayString) => Value::String(String::new()),
+            _ => Value::Null,
+        };
+    }
+    let text = String::from_utf8_lossy(raw).into_owned();
+    match token {
+        // The validator normalises on/off to true/false.
+        Some(TokenType::Bool) => return Value::Bool(text == "true"),
+        Some(TokenType::Symbol) => return Value::String(text),
+        _ => {}
+    }
+    let base = if vt.base > 1 { vt.base } else { 10 };
+    match ValueTypeFamily::from_raw(vt.family) {
+        // Epoch seconds; `base` holds the epoch index, not a radix.
+        Some(ValueTypeFamily::Datetime) => dict_parser::int_from_base(&text, 10).map(Value::Int),
+        Some(ValueTypeFamily::Uint | ValueTypeFamily::Sint) => {
+            dict_parser::int_from_base(&text, base).map(Value::Int)
+        }
+        Some(
+            family @ (ValueTypeFamily::Float
+            | ValueTypeFamily::FloatFix
+            | ValueTypeFamily::FloatDec),
+        ) => match text.as_str() {
+            "nan" => Some(Value::Float(f64::NAN)),
+            "inf" => Some(Value::Float(f64::INFINITY)),
+            "ninf" => Some(Value::Float(f64::NEG_INFINITY)),
+            // float_fix keeps Q and float_dec nothing in `base`: both are
+            // always decimal.
+            _ if family == ValueTypeFamily::Float && base == 16 => {
+                ffi::parse_float_base(&text, 16).map(Value::Float)
+            }
+            _ => text.parse().ok().map(Value::Float),
+        },
+        _ => None,
+    }
+    .unwrap_or(Value::String(text))
 }
 
 /// The event consumer behind [`parse`], a port of Python's `_DictParser`.
@@ -123,7 +430,7 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
 /// event decides whether a `/` continues it, an enclosing row takes it as an
 /// element, or the assignment it belongs to is complete.
 mod dict_parser {
-    use crate::{Event, EventData, TokenType, Value, ValueTypeFamily, ValueTypeSpec};
+    use crate::{Event, EventData, Quantity, TokenType, Value, ValueTypeFamily, decode_value};
 
     #[derive(Default)]
     struct ArrScope {
@@ -157,15 +464,18 @@ mod dict_parser {
         current_key: Option<String>,
         in_octet: bool,
         octets: Vec<u8>,
+        /// Python's `_TypedDictParser`: typed scalars become quantities.
+        typed: bool,
     }
 
-    impl Default for DictParser {
-        fn default() -> Self {
+    impl DictParser {
+        pub fn new(typed: bool) -> Self {
             DictParser {
                 stack: vec![Scope::Doc(Vec::new())],
                 current_key: None,
                 in_octet: false,
                 octets: Vec::new(),
+                typed,
             }
         }
     }
@@ -239,7 +549,11 @@ mod dict_parser {
                 }
                 Event::Data if self.in_octet => self.octets.extend_from_slice(d.raw),
                 Event::Data => {
-                    let value = decode_value(d.raw, d.value_type, d.token_type);
+                    let value = if self.typed {
+                        typed_value(d)
+                    } else {
+                        decode_value(d.raw, d.value_type, d.token_type)
+                    };
                     self.push_value(value);
                 }
                 _ => {}
@@ -316,6 +630,28 @@ mod dict_parser {
         }
     }
 
+    /// Python's `_TypedDictParser._decode_data`.
+    fn typed_value(d: &EventData<'_>) -> Value {
+        let plain = ValueTypeFamily::from_raw(d.value_type.family) == Some(ValueTypeFamily::Plain);
+        let symbolic = matches!(d.token_type, Some(TokenType::Symbol | TokenType::Reference));
+        if plain && !symbolic {
+            return decode_value(d.raw, d.value_type, d.token_type);
+        }
+        let text = |b: &[u8]| (!b.is_empty()).then(|| String::from_utf8_lossy(b).into_owned());
+        Value::Quantity(Box::new(Quantity {
+            raw: text(d.raw),
+            vtype: d.value_type,
+            unit: if plain {
+                crate::Unit::default()
+            } else {
+                d.value_unit
+            },
+            token_type: d.token_type.unwrap_or(TokenType::Number),
+            frac: text(d.frac),
+            unit_source: text(d.unit_source),
+        }))
+    }
+
     /// Python's `_char_to_digit`: the digit value of `c` in `base`, or `None`.
     /// Bases 64 and 85 use the Base64 and Ascii85 alphabets; up to 36 letters
     /// are case-insensitive, 37..62 case-sensitive.
@@ -340,7 +676,7 @@ mod dict_parser {
 
     /// Python's `_int_from_base`: an integer in any bovnar base (2..62, 64,
     /// 85). Bases 64 and 85 are unsigned: their '+' and '-' are digits.
-    fn int_from_base(text: &str, base: u32) -> Option<i128> {
+    pub(super) fn int_from_base(text: &str, base: u32) -> Option<i128> {
         let bytes = text.as_bytes();
         let (neg, digits) = match bytes.first() {
             Some(b'+') if base != 64 && base != 85 => (false, &bytes[1..]),
@@ -358,49 +694,5 @@ mod dict_parser {
                 .checked_add(i128::from(d))?;
         }
         Some(if neg { -val } else { val })
-    }
-
-    /// Python's `_decode_value`: one literal as a plain value. What cannot be
-    /// decoded stays its text, as in Python.
-    fn decode_value(raw: &[u8], vt: ValueTypeSpec, token: Option<TokenType>) -> Value {
-        if raw.is_empty() {
-            return match token {
-                Some(TokenType::String | TokenType::ArrayString) => Value::String(String::new()),
-                _ => Value::Null,
-            };
-        }
-        let text = String::from_utf8_lossy(raw).into_owned();
-        match token {
-            // The validator normalises on/off to true/false.
-            Some(TokenType::Bool) => return Value::Bool(text == "true"),
-            Some(TokenType::Symbol) => return Value::String(text),
-            _ => {}
-        }
-        let base = if vt.base > 1 { vt.base } else { 10 };
-        match ValueTypeFamily::from_raw(vt.family) {
-            // Epoch seconds; `base` holds the epoch index, not a radix.
-            Some(ValueTypeFamily::Datetime) => int_from_base(&text, 10).map(Value::Int),
-            Some(ValueTypeFamily::Uint | ValueTypeFamily::Sint) => {
-                int_from_base(&text, base).map(Value::Int)
-            }
-            Some(
-                family @ (ValueTypeFamily::Float
-                | ValueTypeFamily::FloatFix
-                | ValueTypeFamily::FloatDec),
-            ) => {
-                match text.as_str() {
-                    "nan" => Some(Value::Float(f64::NAN)),
-                    "inf" => Some(Value::Float(f64::INFINITY)),
-                    "ninf" => Some(Value::Float(f64::NEG_INFINITY)),
-                    // A <float:W,_16> literal is a hex float; decoding it is
-                    // not ported yet, so it stays text. float_fix keeps Q and
-                    // float_dec nothing in `base`: both are always decimal.
-                    _ if family == ValueTypeFamily::Float && base == 16 => None,
-                    _ => text.parse().ok().map(Value::Float),
-                }
-            }
-            _ => None,
-        }
-        .unwrap_or(Value::String(text))
     }
 }
