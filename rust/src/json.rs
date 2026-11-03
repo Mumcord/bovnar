@@ -6,8 +6,10 @@
 //! [`to_json`] renders what JSON cannot carry the way the CLI does (units
 //! dropped, octets as hex, datetimes as epoch seconds, symbols and references
 //! as strings, integers wider than 64 bits as strings, NaN and infinities as
-//! `null`) and only refuses a datetime with sub-second digits. Unlike the CLI
-//! it does not report those losses.
+//! `null`, a float with an integral value as an integer: `1e+6` is
+//! `1000000`, which reads back as `uint`, and `-0.0` is `-0`, which reads
+//! back as `0`) and only refuses a datetime with
+//! sub-second digits. Unlike the CLI it does not report those losses.
 
 use crate::enums::{Event, TokenType, ValueTypeFamily};
 use crate::error::{Error, Result};
@@ -677,5 +679,23 @@ mod tests {
         assert!(DomDoc::parse(&from_json(&nested(255)).unwrap()).is_ok());
         let err = from_json(&nested(deepest + 1)).unwrap_err().to_string();
         assert!(err.contains("JSON nesting exceeds limit (255)"), "{err}");
+    }
+
+    /// Found by fuzzing (fuzz/fuzz_targets/json_roundtrip.rs): JSON has one
+    /// number type, so a float with an integral value comes back as an
+    /// integer, as from the CLI. The second trip must change nothing.
+    #[test]
+    fn an_integral_float_becomes_an_integer_once() {
+        let doc = from_json(r#"{"n":999999.99999999999}"#).unwrap();
+        let json = to_json(&doc).unwrap();
+        assert_eq!(strip(&json), r#"{"n":1000000}"#);
+        let json2 = to_json(&from_json(&json).unwrap()).unwrap();
+        assert_eq!(json2, json);
+        // -0.0 is written "-0", an integer, which has no sign: stable from
+        // the second trip on.
+        let json = to_json(&from_json(r#"{"n":-0.0}"#).unwrap()).unwrap();
+        let json2 = to_json(&from_json(&json).unwrap()).unwrap();
+        assert_eq!(strip(&json2), r#"{"n":0}"#);
+        assert_eq!(to_json(&from_json(&json2).unwrap()).unwrap(), json2);
     }
 }
