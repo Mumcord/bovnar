@@ -1,8 +1,6 @@
 //! Port of `python/tests/test_dom.py`.
 //!
 // Skipped Python tests:
-// - test_parse_fd: the file-descriptor entry points are not mirrored (README
-//   "Not mirrored").
 // - test_repr_contains_ptr, test_repr_contains_type: Python `repr` output.
 // - test_getitem_negative_index: Python negative indexing; `DomNode::at`
 //   takes a `usize`.
@@ -76,14 +74,25 @@ fn test_parse_bytearray() {
     assert_eq!(DomDoc::parse(&owned).unwrap().len(), 1);
 }
 
+/// `DomDoc::parse_reader` over a temporary file holding `data`.
+fn parse_via_file(name: &str, data: &[u8]) -> Result<DomDoc, Error> {
+    let path = std::env::temp_dir().join(format!("bovnar-test-{name}-{}.bvnr", std::process::id()));
+    std::fs::write(&path, data).unwrap();
+    let doc = DomDoc::parse_reader(std::fs::File::open(&path).unwrap());
+    std::fs::remove_file(&path).unwrap();
+    doc
+}
+
 #[test]
 fn test_parse_file() {
-    // Rust reads a file with std::fs and the in-memory parser.
-    let path = std::env::temp_dir().join(format!("bovnar-test-dom-{}.bvnr", std::process::id()));
-    std::fs::write(&path, SCALAR_INT).unwrap();
-    let data = std::fs::read(&path);
-    std::fs::remove_file(&path).unwrap();
-    assert_eq!(DomDoc::parse(&data.unwrap()).unwrap().len(), 1);
+    // Python's parse_file(path) is parse_reader over the opened File.
+    assert_eq!(parse_via_file("dom", SCALAR_INT).unwrap().len(), 1);
+}
+
+#[test]
+fn test_parse_fd() {
+    // Python parses an fd opened on a temporary file; Rust reads the File.
+    assert_eq!(parse_via_file("dom-fd", MULTI_KEY).unwrap().len(), 3);
 }
 
 #[test]

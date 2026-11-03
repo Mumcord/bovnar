@@ -7,8 +7,6 @@
 //   compiler rejects it), so there is no closed-reader error.
 // - test_exception_in_callback_raises: Python exception propagation through
 //   the callback; a Rust handler signals failure by returning false.
-// - test_read_fd, test_invalid_fd: the file-descriptor entry points are not
-//   mirrored (README "Not mirrored").
 // - test_non_bytes_raises: a Python type error; `read_mem` takes `&[u8]`.
 // - test_library_loads_without_attribute_error: checks the ctypes loader of
 //   the Python binding; the Rust crate links the library at build time.
@@ -281,14 +279,41 @@ fn test_false_return_raises() {
 
 // TestReadFile
 
+/// The assignment keys `read_reader` delivers for the file at `path`.
+fn keys_of_file(path: &std::path::Path) -> Result<Vec<String>, Error> {
+    let file = std::fs::File::open(path).unwrap();
+    let mut keys = Vec::new();
+    let mut cb = |d: &EventData<'_>| {
+        if d.event == Event::AssignmentStart {
+            keys.push(String::from_utf8(d.raw.to_vec()).unwrap());
+        }
+        true
+    };
+    Reader::new()
+        .unwrap()
+        .read_reader(file, &ReadOptions::default(), Some(&mut cb), None)?;
+    Ok(keys)
+}
+
 #[test]
 fn test_read_file_by_path() {
-    // Rust reads a file with std::fs and the in-memory reader.
+    // Python's read_file(path) is read_reader over the opened File.
     let path = std::env::temp_dir().join(format!("bovnar-test-reader-{}.bvnr", std::process::id()));
     std::fs::write(&path, SIMPLE_SCALAR_UINT).unwrap();
-    let data = std::fs::read(&path);
+    let keys = keys_of_file(&path);
     std::fs::remove_file(&path).unwrap();
-    assert!(keys(&data.unwrap()).contains(&"port".to_string()));
+    assert!(keys.unwrap().contains(&"port".to_string()));
+}
+
+#[test]
+fn test_read_fd() {
+    // Python reads an fd opened on a temporary file; Rust reads the File.
+    let path =
+        std::env::temp_dir().join(format!("bovnar-test-reader-fd-{}.bvnr", std::process::id()));
+    std::fs::write(&path, SIMPLE_SCALAR_UINT).unwrap();
+    let keys = keys_of_file(&path);
+    std::fs::remove_file(&path).unwrap();
+    assert!(keys.unwrap().contains(&"port".to_string()));
 }
 
 // TestNestedStructures
@@ -415,6 +440,30 @@ fn test_max_file_size_not_exceeded() {
         .unwrap()
         .read_mem(SIMPLE_SCALAR_UINT, &options, None, None)
         .unwrap();
+}
+
+// TestInvalidArguments
+
+/// An input that fails as reading an invalid fd does.
+struct InvalidFd;
+
+impl std::io::Read for InvalidFd {
+    fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+        Err(std::io::Error::other("Bad file descriptor"))
+    }
+}
+
+#[test]
+fn test_invalid_fd() {
+    // Python refuses fd -1 before reading (BovnarArgumentError). Rust has no
+    // fd to refuse, so the input fails instead; the read is refused with the
+    // code the C library gives an fd it cannot read from.
+    let err = Reader::new()
+        .unwrap()
+        .read_reader(InvalidFd, &ReadOptions::default(), None, None)
+        .unwrap_err();
+    assert!(matches!(err, Error::Io { .. }), "{err:?}");
+    assert_eq!(err.code(), Some(ErrorCode::ReadingFromSourceFd));
 }
 
 // TestTypedRoundtripFidelity

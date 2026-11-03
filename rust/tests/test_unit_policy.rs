@@ -1,9 +1,8 @@
 //! Port of `python/tests/test_unit_policy.py`: the reader-side unit policy,
 //! its DOM and writer halves, and the unit predicates it builds on.
 //!
-//! Every Python test is ported but `test_a_bad_policy_is_refused_by_parse_fd_too`:
-//! the file-descriptor entry points are not mirrored (README "Not mirrored").
-//! `Writer.write_float(..., unit_str=...)` is
+//! Every Python test is ported. `DomDoc.parse_file(path, policy)` is
+//! `DomDoc::parse_reader_with_policy` over the opened file. `Writer.write_float(..., unit_str=...)` is
 //! `Writer::write_quantity` with a float `Quantity` in that unit, and a
 //! `UnitPolicy` target given as a bare string is `(unit, 0)`.
 
@@ -474,6 +473,21 @@ fn test_rules_outrank_targets() {
     );
     assert_eq!(r[0].3.as_deref(), Some("k~m")); // the rule
     assert_eq!(r[1].3.as_deref(), Some("m")); // the target list
+}
+
+#[test]
+fn test_a_bad_policy_is_refused_by_parse_fd_too() {
+    let path =
+        std::env::temp_dir().join(format!("bovnar-test-policy-fd-{}.bvnr", std::process::id()));
+    std::fs::write(&path, b".a = 5 m;").unwrap();
+    let file = std::fs::File::open(&path).unwrap();
+    let result = DomDoc::parse_reader_with_policy(file, &policy_targets(&["nosuch"]));
+    std::fs::remove_file(&path).unwrap();
+    match result {
+        Err(Error::Argument { message: m, .. }) => assert!(m.contains("nosuch"), "{m}"),
+        Err(other) => panic!("expected an argument error, got {other:?}"),
+        Ok(_) => panic!("expected an argument error, got a document"),
+    }
 }
 
 #[test]

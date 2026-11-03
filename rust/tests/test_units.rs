@@ -6,9 +6,7 @@
 //! are `Unit::si`/`Unit::iec`/`Unit::compound`/`Unit::dimensionless`,
 //! `make_unit_none()` is `Unit::default()`, and `Writer.write_float(...,
 //! unit_str=...)` is `Writer::write_quantity` with a unit. `Reader.read_file`
-//! has no Rust counterpart (README "not mirrored": read the file with
-//! `std::fs`), so its test reads the file that way and forwards the options to
-//! `read_mem_want_unit`.
+//! is `Reader::read_reader_want_unit` over the opened file.
 
 use bovnar::enums::ValueTypeFamily;
 use bovnar::units::{
@@ -2111,13 +2109,12 @@ mod reader_want_unit {
 
     #[test]
     fn test_read_file_forwards_every_option() {
-        // No read_file in Rust: read the file with std::fs and forward the
-        // want_unit hook and strict_version to the in-memory reader.
+        // read_file is read_reader_want_unit over the opened File, which
+        // must forward the want_unit hook and strict_version.
         let path =
             std::env::temp_dir().join(format!("bovnar-test-units-{}.bvnr", std::process::id()));
         std::fs::write(&path, b".d = 5 k~m;").unwrap();
-        let doc = std::fs::read(&path).unwrap();
-        std::fs::remove_file(&path).unwrap();
+        let file = std::fs::File::open(&path).unwrap();
 
         let mut seen = Vec::new();
         let mut want = |_: &EventData<'_>| Some((si(BaseUnit::Meter), 0));
@@ -2133,8 +2130,9 @@ mod reader_want_unit {
         };
         Reader::new()
             .unwrap()
-            .read_mem_want_unit(&doc, &options, &mut want, Some(&mut on_event))
+            .read_reader_want_unit(file, &options, &mut want, Some(&mut on_event))
             .unwrap();
+        std::fs::remove_file(&path).unwrap();
         assert_eq!(seen, ["5000"]);
     }
 }
