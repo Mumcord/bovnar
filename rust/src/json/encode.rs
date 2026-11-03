@@ -160,20 +160,9 @@ impl<'t> Encoder<'t> {
         }
     }
 
-    /// The key of an assignment. The checks the C writer makes on a key
-    /// (`bvn_validate_id_for_writer`) come first, with its error codes:
-    /// past `json_key_is_valid_bvnr_id` only length and UTF-8 remain.
+    /// The key of an assignment. Past `json_key_is_valid_bvnr_id` only the
+    /// writer's own key checks (length, UTF-8) remain, with its error codes.
     fn key(&mut self, key: &[u8]) -> Result<(), JsonError> {
-        let kind = if key.len() > 255 {
-            Some(ErrorKind::IdentifierTooLong)
-        } else if !validate_utf8(key) {
-            Some(ErrorKind::InvalidArgument)
-        } else {
-            None
-        };
-        if let Some(kind) = kind {
-            return Err(JsonError::Writer(crate::Error::without_position(kind)));
-        }
         self.emit(&Event::AssignmentStart { key })
     }
 
