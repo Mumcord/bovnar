@@ -9,6 +9,9 @@ use crate::ffi;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
     /// The reader or DOM parser refused the input (`BovnarParseError`).
+    /// `line`, `column`, `offset` and `byte` locate the error for the
+    /// streaming reader; the DOM parser reports only `code` and leaves them
+    /// all 0.
     Parse {
         code: i32,
         line: u64,

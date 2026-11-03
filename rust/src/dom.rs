@@ -50,6 +50,11 @@ pub struct DomDoc {
 impl DomDoc {
     /// Parses BVNR bytes into a DOM tree; a malformed document is an
     /// [`Error::Parse`] carrying the C error code.
+    ///
+    /// The error has no position: the C DOM reports only the code
+    /// (`bvn_dom_doc_get_parse_error`), so `line`, `column`, `offset` and
+    /// `byte` are always 0. Read the document with a [`crate::Reader`] to
+    /// locate the error.
     pub fn parse(data: &[u8]) -> Result<Self> {
         Self::checked(ffi::DocHandle::parse(data))
     }
