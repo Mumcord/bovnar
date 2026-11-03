@@ -5,3 +5,5 @@
 
 #![deny(unsafe_code)]
 
+#[allow(unsafe_code)]
+mod ffi;
