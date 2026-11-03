@@ -154,6 +154,21 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
             if let Some((vt, unit, src)) = shared_annotation(rows) {
                 return write_array(w, key, rows, Some(vt), Some(&unit), src.as_deref());
             }
+            if array_has_unit(rows) {
+                // An array has one annotation and its elements are written
+                // bare. One unit over several numeric types may be written
+                // element by element; anything else would drop the units.
+                if !array_one_unit(rows) {
+                    return Err(Error::Argument(format!(
+                        "Cannot serialise {key:?}: its elements carry units but do not agree \
+                         on one type and unit, and a Bovnar array has a single annotation for \
+                         all of them. Give them a common unit, or use a struct with one field \
+                         per value."
+                    )));
+                }
+                w.assignment(key)?;
+                return emit_rows(w, rows, true, None);
+            }
             let mut annotate = false;
             leaves(rows, &mut |v| {
                 annotate |= matches!(v, Value::Quantity(q) if needs_annotation(q))
@@ -234,11 +249,7 @@ fn shared_annotation(rows: &[Value]) -> Option<(ValueTypeSpec, Unit, Option<Stri
             if writer::is_numeric(q) || q.family() == Some(ValueTypeFamily::Datetime) =>
         {
             match first {
-                Some(f)
-                    if f.vtype != q.vtype || f.unit != q.unit || f.unit_source != q.unit_source =>
-                {
-                    all = false
-                }
+                Some(f) if f.vtype != q.vtype || f.unit != q.unit => all = false,
                 _ => {
                     first.get_or_insert(q);
                     needed |= needs_annotation(q);
@@ -248,7 +259,52 @@ fn shared_annotation(rows: &[Value]) -> Option<(ValueTypeSpec, Unit, Option<Stri
         _ => all = false,
     });
     let q = first.filter(|_| all && needed)?;
-    Some((q.vtype, q.unit, q.unit_source.clone()))
+    Some((q.vtype, q.unit, array_unit_source(rows)))
+}
+
+/// Python's `_array_unit_source`: the one spelling every quantity leaf
+/// agrees on. Leaves that disagree, or carry none, get the canonical form.
+fn array_unit_source(rows: &[Value]) -> Option<String> {
+    let mut src: Option<&str> = None;
+    let mut agree = true;
+    leaves(rows, &mut |v| {
+        if let Value::Quantity(q) = v {
+            match (q.unit_source.as_deref(), src) {
+                (None, _) => agree = false,
+                (Some(s), None) => src = Some(s),
+                (Some(s), Some(first)) => agree &= s == first,
+            }
+        }
+    });
+    src.filter(|_| agree).map(str::to_owned)
+}
+
+/// Python's `_array_has_unit`: any quantity leaf carries a real unit.
+fn array_has_unit(rows: &[Value]) -> bool {
+    let mut any = false;
+    leaves(rows, &mut |v| {
+        any |= matches!(v, Value::Quantity(q) if !q.unit.is_dimensionless())
+    });
+    any
+}
+
+/// Python's `_array_one_unit`: every non-null leaf is a numeric quantity
+/// with a literal, all in the same real unit (whatever their types).
+fn array_one_unit(rows: &[Value]) -> bool {
+    let mut first: Option<Unit> = None;
+    let mut one = true;
+    leaves(rows, &mut |v| match v {
+        Value::Null => {}
+        Value::Quantity(q)
+            if q.raw.as_deref().is_some_and(|r| !r.is_empty())
+                && writer::is_numeric(q)
+                && !q.unit.is_dimensionless() =>
+        {
+            one &= *first.get_or_insert(q.unit) == q.unit;
+        }
+        _ => one = false,
+    });
+    one && first.is_some()
 }
 
 /// Python's `_array_int_annotation`: for an all-integer array with an
