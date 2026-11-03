@@ -55,8 +55,12 @@ impl DomDoc {
     }
 
     /// [`DomDoc::parse`] under a unit policy: values arrive converted, and a
-    /// document breaking the policy fails with `unit_mismatch`.
+    /// document breaking the policy fails with `unit_mismatch`. A policy the
+    /// library refuses is an [`Error::Argument`] naming the bad entry, the
+    /// same error [`crate::Reader::set_unit_policy`] gives, before anything is
+    /// parsed.
     pub fn parse_with_policy(data: &[u8], policy: &crate::reader::UnitPolicy) -> Result<Self> {
+        crate::Reader::new()?.set_unit_policy(Some(policy))?;
         Self::checked(ffi::DocHandle::parse_policy(data, &policy.spec()))
     }
 

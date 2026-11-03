@@ -1,7 +1,9 @@
 //! Port of `python/tests/test_unit_policy.py`: the reader-side unit policy,
 //! its DOM and writer halves, and the unit predicates it builds on.
 //!
-//! Every Python test is ported. `Writer.write_float(..., unit_str=...)` is
+//! Every Python test is ported but `test_a_bad_policy_is_refused_by_parse_fd_too`:
+//! the file-descriptor entry points are not mirrored (README "Not mirrored").
+//! `Writer.write_float(..., unit_str=...)` is
 //! `Writer::write_quantity` with a float `Quantity` in that unit, and a
 //! `UnitPolicy` target given as a bare string is `(unit, 0)`.
 
@@ -548,12 +550,27 @@ fn test_validation() {
 
 #[test]
 fn test_a_bad_policy_is_not_a_parse_error() {
-    let e = dom_err(DomDoc::parse_with_policy(
-        b".a = 5 m;",
-        &policy_targets(&["not_a_unit_at_all"]),
-    ));
-    assert!(matches!(e, Error::Parse { .. }));
-    assert_eq!(e.code(), Some(ErrorCode::InvalidArgument));
+    // The DOM path validates the policy as Reader::set_unit_policy does and
+    // gives the same argument error, naming the bad entry.
+    let bad = policy_targets(&["not_a_unit_at_all"]);
+    let dom_msg = match dom_err(DomDoc::parse_with_policy(b".a = 5 m;", &bad)) {
+        Error::Argument(m) => m,
+        other => panic!("expected an argument error, got {other:?}"),
+    };
+    let reader_msg = match Reader::new().unwrap().set_unit_policy(Some(&bad)) {
+        Err(Error::Argument(m)) => m,
+        other => panic!("expected an argument error, got {other:?}"),
+    };
+    assert!(dom_msg.contains("not_a_unit_at_all"), "{dom_msg}");
+    assert_eq!(dom_msg, reader_msg);
+    let rule = UnitPolicy {
+        rules: vec![UnitRule::new(".a", "zz")],
+        ..UnitPolicy::default()
+    };
+    match dom_err(DomDoc::parse_with_policy(b".a = 5 m;", &rule)) {
+        Error::Argument(m) => assert!(m.contains("\"zz\""), "{m}"),
+        other => panic!("expected an argument error, got {other:?}"),
+    }
 }
 
 #[test]
