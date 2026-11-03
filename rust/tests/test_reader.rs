@@ -472,3 +472,92 @@ fn test_loads_is_streaming_not_dom_validation() {
         );
     }
 }
+
+/// Python kept a callback's payload past the callback and read freed reader
+/// memory. In Rust an `EventData` borrows the reader, so keeping it is a
+/// compile error; what can be kept is what its accessors return. Those must
+/// give, after the reader is gone, the answers they gave inside the callback.
+#[test]
+fn test_a_kept_payload_outlives_the_reader() {
+    use bovnar::{BaseUnit, Exponent, SIPrefix, Unit};
+
+    type Seen = (
+        Vec<u8>,
+        String,
+        String,
+        String,
+        bool,
+        Option<String>,
+        Option<(String, String)>,
+        Option<String>,
+    );
+    fn accessors(d: &EventData<'_>) -> Seen {
+        let lossy = |b: &[u8]| String::from_utf8_lossy(b).into_owned();
+        (
+            d.raw.to_vec(),
+            d.text(),
+            lossy(d.frac),
+            lossy(d.unit_source),
+            d.converted,
+            (d.converted && !d.converted_text.is_empty()).then(|| lossy(d.converted_text)),
+            d.converted_rational(),
+            if d.converted {
+                d.converted_in_base(16).unwrap()
+            } else {
+                None
+            },
+        )
+    }
+
+    let mut kept = Vec::new();
+    let mut want = |d: &EventData<'_>| match d.unit_source {
+        // 1 m in miles: no finite expansion
+        b"m" => Some((
+            Unit::si(BaseUnit::MILE, SIPrefix::NONE, Exponent::LINEAR),
+            10,
+        )),
+        b"k~m" => Some((
+            Unit::si(BaseUnit::METER, SIPrefix::NONE, Exponent::LINEAR),
+            10,
+        )),
+        _ => None,
+    };
+    let mut on_event = |d: &EventData<'_>| {
+        if d.event == Event::Data && d.token_type != Some(bovnar::TokenType::Identifier) {
+            kept.push(accessors(d));
+        }
+        true
+    };
+    let mut doc = b"#!bovnar 1.2\n.d = 1 m;\n.k = 5 k~m;\n\
+        .t = 2024-01-02T03:04:05.123456Z;\n.u = 5 ucum:mL{total};\n.s = \""
+        .to_vec();
+    doc.extend_from_slice(&[b'x'; 300]);
+    doc.extend_from_slice(b"\";\n");
+    {
+        let mut r = Reader::new().unwrap();
+        r.read_mem_want_unit(
+            &doc,
+            &ReadOptions {
+                want_unit_allow_nonterminating: true,
+                ..ReadOptions::default()
+            },
+            &mut want,
+            Some(&mut on_event),
+        )
+        .unwrap();
+    }
+    // reuse the freed memory before looking again
+    let churn: Vec<Vec<u8>> = (0..2000).map(|_| vec![b'Z'; 4096]).collect();
+    drop(churn);
+
+    assert_eq!(
+        kept[0].6,
+        Some(("125".into(), "201168".into())) // 1 m / 1609.344 m
+    );
+    assert_eq!(kept[0].5, None);
+    assert_eq!(kept[1].5.as_deref(), Some("5000"));
+    assert_eq!(kept[1].7.as_deref(), Some("1388"));
+    assert_eq!(kept[2].2, "123456");
+    assert_eq!(kept[3].3, "ucum:mL{total}");
+    assert_eq!(kept[4].0, vec![b'x'; 300]);
+}
