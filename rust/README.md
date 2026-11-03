@@ -82,6 +82,11 @@ and the `Quantity` accessors built on it or on `Decimal`/`Fraction`
 file-descriptor entry points (`to_fd`, `read_fd`, ...): read the file with
 `std::fs` and use the in-memory functions.
 
+Python test files with nothing to port, for that reason:
+`test_decimal_tie_rounding.py` (both tests read the materialised decimal64
+through `Quantity.stored_value`, which is built on `BvnFloat`). Single tests
+that are not ported are listed at the top of each `tests/*.rs` port.
+
 ## License
 
 MIT, like the C library.
