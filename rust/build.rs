@@ -278,6 +278,31 @@ fn compile_library(repo: &Path, gen_dir: &Path) {
         build.define(name, on.to_string().as_str());
     }
 
+    // The warning set of upstream's CMakeLists.txt (BVNR_C_FLAGS) instead of
+    // cc's default -Wall -Wextra: upstream deliberately turns off
+    // -Wmissing-field-initializers, which the generated profile tables trip
+    // dozens of times.
+    build.warnings(false);
+    if build.get_compiler().is_like_msvc() {
+        build.flag("/W3");
+    } else {
+        for flag in [
+            "-Wall",
+            "-Wextra",
+            "-Wpedantic",
+            "-Wshadow",
+            "-Wcast-qual",
+            "-Wconversion",
+            "-Wno-missing-field-initializers",
+            "-pedantic",
+        ] {
+            build.flag(flag);
+        }
+        if target.contains("windows-gnu") {
+            build.flag("-Wno-float-conversion");
+        }
+    }
+
     if build.get_compiler().is_like_msvc() {
         build
             .flag("/std:c11")
