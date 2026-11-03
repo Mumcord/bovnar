@@ -163,7 +163,7 @@ decimal (sign, coefficient, exponent, or infinity or NaN) that compares
 numerically and prints like Python's `str()`.
 
 ```rust
-use bovnar::{Decimal, Value, parse_typed};
+use bovnar::{Decimal, Quantity, Value, parse_typed};
 
 fn main() -> Result<(), bovnar::Error> {
     let doc = parse_typed(b".p = <float_dec:64> 3.141592653589793238462643383279503;")?;
@@ -171,10 +171,10 @@ fn main() -> Result<(), bovnar::Error> {
     let Value::Quantity(p) = &fields[0].1 else { unreachable!() };
     // The literal, every digit of it...
     let literal: Decimal = "3.141592653589793238462643383279503".parse()?;
-    assert_eq!(p.decimal()?, Some(literal));
+    assert_eq!(Quantity::decimal(p)?, Some(literal));
     // ...and the value decimal64 stores: 16 digits, rounded half to even.
-    assert_eq!(p.stored_value()?.map(|d| d.to_string()), Some("3.141592653589793".into()));
-    assert_eq!(p.ieee_bits()?.len(), 8);
+    assert_eq!(Quantity::stored_value(p)?.map(|d| d.to_string()), Some("3.141592653589793".into()));
+    assert_eq!(Quantity::ieee_bits(p)?.len(), 8);
 
     // Decimal and Fraction values are written exactly, as float_dec:64.
     let half = num_rational::BigRational::new(1.into(), 2.into());
