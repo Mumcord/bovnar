@@ -30,6 +30,20 @@ The crate carries the version of the C library it wraps: `version` in
 `CMakeLists.txt`, and CI fails when the two differ. A release tag `vX.Y.Z`
 names that same version.
 
+## Publishing
+
+The crate is not on crates.io and `Cargo.toml` keeps `publish = false`: as
+it stands it cannot be packaged. `cargo publish` packs only `rust/`, while
+`build.rs` compiles `../src` and `../include` and runs the `../gen_*.py`
+generators with Python. Publishing would take:
+
+- the C sources, headers and generated tables inside the package (vendored
+  into `rust/` at package time, or the generated `.gen.h`/`.gen.c` files
+  committed so the build needs no Python);
+- `build.rs` reading them from inside the package;
+- a release step, under the same tag == version gate as the GitHub release,
+  with a crates.io token, and `publish = false` removed.
+
 ## Usage
 
 ```rust
