@@ -11,6 +11,7 @@ extern crate std;
 
 mod error;
 mod limits;
+pub(crate) mod num;
 mod types;
 mod version;
 
