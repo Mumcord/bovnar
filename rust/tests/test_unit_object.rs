@@ -380,3 +380,15 @@ fn test_repr_of_a_profile_only_unit_does_not_raise() {
     assert_eq!(comps[0].base, 200000);
     assert!(format!("{:?}", comps[0]).contains("200000"));
 }
+
+/// Upstream 2.0.0: `ucum:[iU]` is a second spelling of `ucum:[IU]` (UCUM
+/// defines `[IU]` = `1 [iU]`), resolved by `gen_profiles.py` from the
+/// `.opaque_aliases` list. Both spellings are one unit, written back as
+/// `ucum:[IU]`, and a prefix carries over.
+#[test]
+fn test_ucum_iu_spellings_are_one_unit() {
+    assert_eq!(u("ucum:[iU]"), u("ucum:[IU]"));
+    assert_eq!(u("ucum:[iU]").to_string(), "ucum:[IU]");
+    assert_eq!(u("ucum:k[iU]"), u("ucum:k[IU]"));
+    assert_ne!(u("ucum:[IU]"), u("ucum:[arb'U]"));
+}
