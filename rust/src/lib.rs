@@ -15,6 +15,7 @@ pub mod error;
 #[allow(unsafe_code)]
 mod ffi;
 mod io;
+pub mod json;
 pub mod quantity;
 pub mod reader;
 pub mod unit;
