@@ -56,7 +56,7 @@ impl DomDoc {
     /// `byte` are always 0. Read the document with a [`crate::Reader`] to
     /// locate the error.
     pub fn parse(data: &[u8]) -> Result<Self> {
-        Self::checked(ffi::DocHandle::parse(data))
+        Self::checked(data, ffi::DocHandle::parse(data))
     }
 
     /// [`DomDoc::parse`] under a unit policy: values arrive converted, and a
@@ -69,7 +69,7 @@ impl DomDoc {
         // bovnar_dom.h: a policy the library refuses is error_invalid_argument,
         // which no fault in the document produces. Only then is the reason
         // worked out, by the same probe Reader::set_unit_policy uses.
-        Self::checked(ffi::DocHandle::parse_policy(data, &policy.spec())).map_err(|e| {
+        Self::checked(data, ffi::DocHandle::parse_policy(data, &policy.spec())).map_err(|e| {
             if e.code() == Some(ErrorCode::InvalidArgument) {
                 Error::Argument(crate::reader::describe_unit_policy_refusal(policy))
             } else {
@@ -78,12 +78,16 @@ impl DomDoc {
         })
     }
 
-    fn checked(handle: Option<ffi::DocHandle>) -> Result<Self> {
-        let handle = handle.ok_or_else(|| {
-            Error::Argument(
-                "bvn_dom_parse() returned NULL (out of memory or input over 4 GiB)".into(),
-            )
-        })?;
+    /// `handle` is `None` when the input is over the C API's 4 GiB (a
+    /// `uint32_t` length) or the library could not allocate.
+    fn checked(data: &[u8], handle: Option<ffi::DocHandle>) -> Result<Self> {
+        if u32::try_from(data.len()).is_err() {
+            return Err(Error::Argument(format!(
+                "a DOM document is at most 4 GiB, got {} bytes",
+                data.len()
+            )));
+        }
+        let handle = handle.ok_or(Error::OutOfMemory("bvn_dom_parse()"))?;
         match handle.parse_error() {
             0 => Ok(DomDoc { handle }),
             code => Err(Error::Parse {

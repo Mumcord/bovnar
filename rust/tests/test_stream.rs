@@ -308,3 +308,12 @@ fn test_mux_load_names_the_demux_error() {
         "octet_stream_out_of_sync",
     );
 }
+
+/// A NUL in the key is the caller's mistake, not an allocation failure.
+#[test]
+fn test_mux_load_refuses_a_key_with_a_nul() {
+    let blob = mux_dump(&[(1, b"x".to_vec())]);
+    let err = stream::mux_load(&blob, 0, Some("m\0ux")).unwrap_err();
+    assert!(matches!(err, Error::Argument(_)), "{err:?}");
+    assert!(err.to_string().contains("NUL"), "{err}");
+}

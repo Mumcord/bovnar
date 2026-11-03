@@ -361,8 +361,7 @@ pub struct Reader {
 impl Reader {
     /// Creates a reader.
     pub fn new() -> Result<Self> {
-        let handle = ffi::ReaderHandle::new()
-            .ok_or_else(|| Error::Argument("bvnr_reader_create() returned NULL".into()))?;
+        let handle = ffi::ReaderHandle::new().ok_or(Error::OutOfMemory("bvnr_reader_create()"))?;
         Ok(Reader { handle })
     }
 

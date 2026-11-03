@@ -1857,7 +1857,8 @@ pub enum DemuxError {
     Demux(c_int),
     /// The reader refused the stream.
     Read(ReaderError),
-    OutOfMemory,
+    /// The named call could not allocate.
+    OutOfMemory(&'static str),
 }
 
 extern "C" fn on_message_trampoline(
@@ -1887,14 +1888,10 @@ pub fn demux_read(
     data: &[u8],
     mut flags: BvnrReadFlags,
     max_message: u64,
-    key: Option<&str>,
+    key: Option<&CStr>,
 ) -> Result<Vec<(u64, Vec<u8>)>, DemuxError> {
-    let key = key
-        .map(CString::new)
-        .transpose()
-        .map_err(|_| DemuxError::OutOfMemory)?;
     let mut messages: Vec<(u64, Vec<u8>)> = Vec::new();
-    let mut reader = ReaderHandle::new().ok_or(DemuxError::OutOfMemory)?;
+    let mut reader = ReaderHandle::new().ok_or(DemuxError::OutOfMemory("bvnr_reader_create()"))?;
     // SAFETY: `messages` outlives the demux, which is destroyed below.
     let dm = unsafe {
         bvnr_demux_create(
@@ -1904,13 +1901,14 @@ pub fn demux_read(
         )
     };
     if dm.is_null() {
-        return Err(DemuxError::OutOfMemory);
+        return Err(DemuxError::OutOfMemory("bvnr_demux_create()"));
     }
     // SAFETY: `dm` is live; `key` is NUL-terminated.
     if key.is_some_and(|k| !unsafe { bvnr_demux_set_key(dm, k.as_ptr()) }) {
         // SAFETY: `dm` is live and destroyed once.
         unsafe { bvnr_demux_destroy(dm) };
-        return Err(DemuxError::OutOfMemory);
+        // bovnar_stream.h: false only for a NULL demux or a failed allocation.
+        return Err(DemuxError::OutOfMemory("bvnr_demux_set_key()"));
     }
     let mut forward = |v: &EventView<'_>| {
         let d = v

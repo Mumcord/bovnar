@@ -24,14 +24,17 @@ pub enum Error {
     /// A caller-side mistake caught before reaching the library
     /// (`BovnarArgumentError`).
     Argument(String),
+    /// The library could not allocate (Python's `MemoryError`); names the
+    /// call that failed.
+    OutOfMemory(&'static str),
 }
 
 impl Error {
-    /// The raw C error code, or `None` for an argument error.
+    /// The raw C error code, or `None` for an argument or memory error.
     pub fn code_raw(&self) -> Option<i32> {
         match self {
             Error::Parse { code, .. } | Error::Write { code, .. } => Some(*code),
-            Error::Argument(_) => None,
+            Error::Argument(_) | Error::OutOfMemory(_) => None,
         }
     }
 
@@ -69,6 +72,7 @@ impl fmt::Display for Error {
                 ffi::error_name(*code)
             ),
             Error::Argument(msg) => f.write_str(msg),
+            Error::OutOfMemory(call) => write!(f, "out of memory: {call} failed"),
         }
     }
 }

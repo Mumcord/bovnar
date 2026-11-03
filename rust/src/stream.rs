@@ -113,7 +113,11 @@ pub fn mux_dump<P: AsRef<[u8]>>(messages: &[(u64, P)], key: &str) -> Result<Vec<
 /// The `(channel, payload)` messages of a multiplexed document, in order.
 /// `max_message` 0 is the default cap; `key` `None` accepts any.
 pub fn mux_load(data: &[u8], max_message: u64, key: Option<&str>) -> Result<Vec<(u64, Vec<u8>)>> {
-    ffi::demux_read(data, read_flags(), max_message, key).map_err(|e| match e {
+    let key = key
+        .map(std::ffi::CString::new)
+        .transpose()
+        .map_err(|_| Error::Argument("mux key contains a NUL byte".into()))?;
+    ffi::demux_read(data, read_flags(), max_message, key.as_deref()).map_err(|e| match e {
         DemuxError::Demux(code) => parse_error(code),
         DemuxError::Read(r) => Error::Parse {
             code: r.code,
@@ -122,7 +126,7 @@ pub fn mux_load(data: &[u8], max_message: u64, key: Option<&str>) -> Result<Vec<
             offset: r.offset,
             byte: r.byte,
         },
-        DemuxError::OutOfMemory => Error::Argument("bvnr_demux_create() failed".into()),
+        DemuxError::OutOfMemory(call) => Error::OutOfMemory(call),
     })
 }
 

@@ -62,8 +62,7 @@ impl Writer {
         unit_flags: u32,
         emit_version: bool,
     ) -> Result<Self> {
-        let handle = ffi::WriterHandle::new()
-            .ok_or_else(|| Error::Argument("bvnr_writer_create() returned NULL".into()))?;
+        let handle = ffi::WriterHandle::new().ok_or(Error::OutOfMemory("bvnr_writer_create()"))?;
         let mut w = Writer {
             handle,
             struct_depth: 0,
