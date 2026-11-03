@@ -1,5 +1,5 @@
 [workspace]
-members = ["iut"]
+members = ["iut", "diff"]
 exclude = ["fuzz"]
 
 [workspace.package]

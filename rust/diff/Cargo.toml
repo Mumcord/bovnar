@@ -1,0 +1,17 @@
+[package]
+name = "bovnar-diff"
+version = "0.0.0"
+description = "Differential tester: bovnar-rs IUT against the C reference IUT"
+publish = false
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "bovnar-diff"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = "1"
+base64 = "0.23"
