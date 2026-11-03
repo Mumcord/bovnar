@@ -7,6 +7,13 @@ This crate is a thin wrapper around the upstream C library, modelled 1:1 on the
 Python binding in `../python`. The C sources are compiled by `build.rs`; there
 is no system library to install.
 
+**It mirrors the Python binding; it is not an idiomatic Rust API.** That is a
+deliberate choice: the same names, the same entry points and the same
+behaviour as `../python`, so the two bindings stay as simple as each other and
+a change upstream maps onto both the same way. Expect Python's shapes
+(`parse`/`to_string` over a dynamic `Value`, `Reader` callbacks, `Writer`
+events) rather than serde integration, builders or typed deserialisation.
+
 ## Building
 
 Requirements: a C compiler and `python3` (the build runs the upstream table
