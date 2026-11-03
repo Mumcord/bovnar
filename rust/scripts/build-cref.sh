@@ -24,4 +24,4 @@ cmake -S "$upstream" -B "$out" \
 	-DBVNR_WITH_UCUM_PROFILE=OFF \
 	-DBVNR_WITH_CF_PROFILE=OFF
 cmake --build "$out" --parallel "$jobs" \
-	--target bvnr_static bvnr_conformance bvnr_conformance_iut
+	--target bvnr_static bvnr_conformance bvnr_conformance_iut bovnar
