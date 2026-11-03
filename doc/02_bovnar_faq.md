@@ -1547,6 +1547,7 @@ standard publication by three to five years.
 - [Unit & Currency Reference](05_bovnar_unit_system.md) — the registry behind §4
 - [Read & Write API](08_bovnar_readwrite_api.md) — the C functions named in §12
 - [Python Bindings](09_bovnar_python_bindings.md) — the package described in §13
+- [Rust Bindings](14_bovnar_rust_bindings.md) — the same API as a Rust crate
 
 ---
 

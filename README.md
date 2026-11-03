@@ -333,7 +333,8 @@ bovnar/
 │   ├── 10_bovnar_streaming.md         # Streaming, framing & multiplexing
 │   ├── 11_bovnar_unit_profiles.md     # UCUM/UNECE/QUDT/UDUNITS/OM/CF codes in a unit slot
 │   ├── 12_bovnar.ebnf                 # Formal EBNF grammar
-│   └── 13_bovnar_conformance.md       # Conformance test tool and IUT protocol
+│   ├── 13_bovnar_conformance.md       # Conformance test tool and IUT protocol
+│   └── 14_bovnar_rust_bindings.md     # Rust crate: parse/to_string, DOM, Reader/Writer, exact numbers
 ├── CMakeLists.txt
 └── CMakeLists_tests.txt
 ```
@@ -725,7 +726,7 @@ Reader().read_mem(b".velocity = <float:64,m/s> 9.81;", on_verified=on_event)
 
 Beyond `loads`/`dumps`, the package provides `dom_parse()` for random-access tree traversal, `loads(..., typed=True)` to preserve each value's exact type and unit as `Quantity` objects for lossless round-trips, and a `currency` module mirroring the C currency API.
 
-See [doc/09_bovnar_python_bindings.md](doc/09_bovnar_python_bindings.md) for the full API.
+See [doc/09_bovnar_python_bindings.md](doc/09_bovnar_python_bindings.md) for the full API. The Rust crate in `rust/` mirrors it name for name; see [doc/14_bovnar_rust_bindings.md](doc/14_bovnar_rust_bindings.md).
 
 ---
 
@@ -814,6 +815,7 @@ cd web && ./httpd.sh          # python3 -m http.server
 | [Unit Profiles](doc/11_bovnar_unit_profiles.md) | Writing UCUM, UN/ECE, QUDT, UDUNITS, OM 2 and CF codes in a Bovnar unit slot: the transliteration tables, the collisions between the namespaces, what has no representation, and the cross-vocabulary conformance suite. |
 | [Formal EBNF](doc/12_bovnar.ebnf) | Machine-readable grammar. |
 | [Conformance Test Tool](doc/13_bovnar_conformance.md) | Conformance suite (470 cases), IUT protocol for verifying third-party implementations, TAP output, and CTest integration. |
+| [Rust Bindings](doc/14_bovnar_rust_bindings.md) | The Rust crate: `parse`/`to_string` over a dynamic `Value`, `Reader`/`Writer`, the DOM, exact numbers and JSON conversion. |
 
 See [`CHANGELOG.md`](CHANGELOG.md) for what changed between versions (including the additive specs 1.1 and 1.2, and which spec each library release implements).
 

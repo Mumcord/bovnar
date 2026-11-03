@@ -346,6 +346,7 @@ your own consumer/producer at the same seam without touching the core.
 - [Specification §9 — Octet Streams](03_bovnar_spec.md#9-octet-streams-binary-mode) — the binary substrate three of these four build on
 - [Read & Write API](08_bovnar_readwrite_api.md) — the underlying event interface
 - [Python Bindings](09_bovnar_python_bindings.md) — the `bovnar.stream` module described in §5
+- [Rust Bindings](14_bovnar_rust_bindings.md) — the `bovnar::stream` module
 - `include/bovnar_stream.h` — full declarations and per-function contracts
 - `tests/bovnar_stream_test.c` — round-trip tests for all four capabilities
 - `python/bovnar/stream.py` — Python bindings; `python/tests/test_stream.py`
