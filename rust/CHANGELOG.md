@@ -27,6 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resource limits (`Limits`) for every input-dependent size.
 - `no_std` support (with `alloc`); builds for `wasm32-unknown-unknown` and
   `wasm32-wasip2`.
+- JSON conversion (`bovnar::json`): `to_bovnar`, `to_document`,
+  `from_document` and `from_bovnar` reproduce the C CLI's `bovnar convert`
+  byte for byte in both directions, with its refusals and a `Loss` report of
+  what JSON cannot carry. Iterative, bounded and `no_std`.
+- Format sniffing (`bovnar::detect`, `Format`): JSON, Bovnar or unknown from
+  the first significant bytes.
+- Differential tester for JSON conversion (`bovnar-json-diff`,
+  `scripts/json-diff.sh`), expectations captured from the C CLI, and the
+  fuzz targets `json` and `detect`.
 - Conformance IUT adapter (`iut/`), differential tester against the C
   reference (`diff/`), fuzz targets (`fuzz/`) and helper scripts.
 - CI: tests on Linux, macOS and Windows, MSRV, WebAssembly, feature

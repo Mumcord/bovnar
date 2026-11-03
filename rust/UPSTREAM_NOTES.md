@@ -133,3 +133,45 @@ None yet.
   document its reader rejects. Found by fuzzing the writer.
 - C: as described. bovnar-rs reads the same way and its writer validates
   such an integer against the inherited datetime type.
+
+### `bovnar convert` accepts JSON containers left open at the end of input
+
+- Section: README, `bovnar convert` (JSON is RFC 8259); `json_parse_array`
+  and `json_parse_object` in `src/bovnar.c`.
+- Issue: the loops run `while (**p)`, so an array or object still open when
+  the input ends right after `[`, `{` or a `,` is returned as complete.
+  `{` converts to an empty document, `{"a":{"b":1,` fails only because the
+  outer object then sees the end of input instead of `}`.
+- What C does: accepts the truncated container. bovnar-rs does the same.
+
+### `bovnar convert` reads an integer past the end of the JSON number
+
+- Section: `json_parse_value_depth` in `src/bovnar.c`.
+- Issue: the number is scanned by the RFC 8259 grammar (`0` cannot be
+  followed by digits), but converted with `strtoll`/`strtoull`, which read
+  the whole digit run. `099999999999999999999` is therefore reported as
+  "integer literal out of range" instead of a malformed number.
+- What C does: the range error wins. bovnar-rs does the same.
+
+### The shortest float text picks its last digit from 21 truncated digits
+
+- Section: `bvnf_shorten_digits` / `bvnf_to_str_dec` in
+  `src/utils/bvn_float.c` (used by `bvnr_write_float`, and so by
+  `bovnar convert` for every JSON float outside an array).
+- Issue: the decimal digits are extracted 21 deep and truncated; when the
+  shortest form needs 17 digits, the choice between the two 17-digit
+  neighbours is made from those 21 digits only, so it is not always the
+  nearer one: 2.7880911803355767e-266 is written as
+  `2.7880911803355766e-266`. Both read back as the same double. The search
+  also checks reading back at 53 bits with no exponent floor, so subnormals
+  get up to 17 digits (`5e-324` is written as `4.9406564584124654e-324`).
+- What C does: as described. bovnar-rs ports the algorithm digit for digit.
+
+### The JSON loss report counts nested arrays and nulls under an array's unit
+
+- Section: `json_loss_scan` in `src/bovnar.c`; doc/03 (an annotation before
+  a bracket array applies to its elements).
+- Issue: the unit of `<float:64,m> [[1.0], [null]]` is counted for the outer
+  array, each nested array and each null, as well as each number: five
+  "value(s) lose their unit" where the document wrote one unit.
+- What C does: as described. bovnar-rs reports the same counts.

@@ -98,6 +98,23 @@ Several documents travel over one connection with the length-prefixed record
 framing in `bovnar::stream` (`write_frame`, `FrameDecoder`, and with `std`
 `FrameReader` and `read_doc_stream`).
 
+Convert JSON to Bovnar and back, exactly as the C CLI's `bovnar convert`
+does, and sniff which of the two a buffer holds:
+
+```rust
+use bovnar::json::{self, LossKind};
+use bovnar::{detect, Format, Limits};
+
+let input = br#"{"name": "probe", "temps": [20.5, 21.0]}"#;
+assert_eq!(detect(input), Format::Json);
+let text = json::to_bovnar(input, &Limits::default())?;
+assert_eq!(text, ".name = \"probe\";\n.temps = [20.5, <float> 21];\n");
+
+let out = json::from_bovnar(b".speed = 3 m/s;\n", &Limits::default())?;
+assert_eq!(out.json, "{\n  \"speed\": 3\n}\n");
+assert_eq!(out.loss.count(LossKind::Unit), 1); // JSON has no units
+```
+
 ## Feature flags
 
 | Feature | Default | Adds |
@@ -152,6 +169,52 @@ Section references are to the upstream documentation at the pinned commit
 | Canonicalising observer | no | |
 | `unit_source` round trip | no | |
 
+| Tool feature | Supported | Notes |
+|--------------|-----------|-------|
+| JSON to Bovnar (`bovnar convert --from json`) | yes | `bovnar::json::to_bovnar`, `to_document`; byte-identical output and the same refusals |
+| Bovnar to JSON (`bovnar convert --to json`) | yes | `bovnar::json::from_document`, `from_bovnar`; byte-identical output, loss report as `json::Loss` |
+| Format detection | yes | `bovnar::detect` (not in the C CLI, which goes by file extension) |
+
+## JSON conversion
+
+`bovnar::json` reproduces `bovnar convert` of the C CLI:
+
+```rust
+pub fn to_bovnar(json: &[u8], limits: &Limits) -> Result<String, JsonError>;
+pub fn to_document(json: &[u8], limits: &Limits) -> Result<Document, JsonError>;
+pub fn from_document(doc: &Document) -> Result<Json, JsonError>; // Json { json, loss }
+pub fn from_bovnar(input: &[u8], limits: &Limits) -> Result<Json, JsonError>;
+```
+
+- **JSON to Bovnar.** The root must be an object. Objects become structs,
+  arrays become bracket arrays (nested arrays stay nested), integers
+  `<uint>` or `<sint>` (64-bit), numbers with a fraction or exponent
+  `<float>`, plus strings, booleans and null. Refused, with the CLI's
+  diagnostics: keys that are not Bovnar identifiers, control characters and
+  `\u0000` in strings, integers beyond 64 bits, floats that overflow,
+  trailing content, more than 512 nested containers, and anything the
+  Bovnar reader would refuse (duplicate keys, mixed or ragged arrays,
+  objects of differing shape in one array) as `JsonError::Unrepresentable`.
+- **Bovnar to JSON** is lossy: units, numeric types and bases, symbols and
+  references (strings), octet streams (hex strings), non-finite floats
+  (`null`), datetimes (epoch seconds), integers wider than 64 bits (decimal
+  strings) and `/` rows (nested arrays) do not survive. `Json::loss` counts
+  each kind with a first example; the CLI exits 1 exactly when it is not
+  empty. A datetime with sub-second digits is refused.
+- **Round trip.** JSON that converts comes back with the same keys in the same
+  order and the same values; float spellings are normalised (`2.0` comes
+  back as `2`).
+- **Limits.** The parser is iterative; input size follows
+  `Limits::max_input_bytes`, output is capped at eight times the input plus
+  64 KiB (the CLI's buffer), and the writer and the checking reader use the
+  nesting limits of `limits`. The CLI itself allows 255 levels of nesting,
+  the default `Limits` 64.
+
+`bovnar::detect(&[u8]) -> Format` (`Json`, `Bovnar`, `Unknown`) looks at the
+first significant byte after a BOM, whitespace and `#` comments, within a
+64 KiB prefix: `{` or `[` is JSON, `#!bovnar`, a comment or `.key` is Bovnar.
+It is a cheap guess, not a validation.
+
 ## Conformance
 
 The upstream suite has 470 cases. Run against the C reference's own
@@ -166,6 +229,13 @@ conformance runner (`bvnr_conformance --iut`) with the `bovnar-iut` adapter:
 
 CI checks this with `scripts/conformance-c.sh` and runs the differential
 tester (`scripts/diff.sh`, 20 000 inputs) against the same C build.
+
+JSON conversion is compared with the C CLI's `bovnar convert` by
+`scripts/json-diff.sh`: the upstream JSON fixtures, the edge cases in
+`tests/json/inputs`, every corpus input and upstream example, and generated
+and mutated documents in both directions agree byte for byte on output,
+exit status, error class and loss counts. `tests/json.rs` checks the same
+against expectations captured from the CLI (`tests/json/expected.json`).
 Places where the specification and the C reference disagree are listed in
 [UPSTREAM_NOTES.md](UPSTREAM_NOTES.md); bovnar-rs follows the C reference.
 
@@ -210,7 +280,8 @@ Places where the specification and the C reference disagree are listed in
   items and tree nodes. Frame payloads are capped (256 MiB by default) and
   buffers grow with the bytes that arrive, never with a declared length.
 - Fuzzing: `cargo fuzz` targets for the reader, the tree, the writer, round
-  trips and units live in `fuzz/` (`scripts/fuzz.sh`).
+  trips, units, JSON conversion and format detection live in `fuzz/`
+  (`scripts/fuzz.sh`).
 - Differential testing against the C reference: `diff/` and
   `scripts/diff.sh`.
 
@@ -234,6 +305,7 @@ Rust 1.81, as declared by `rust-version` in `Cargo.toml` and checked in CI.
 | `scripts/build-cref.sh <upstream> <build>` | build the C reference with UCUM and CF off |
 | `scripts/conformance-c.sh <build>` | run the upstream conformance suite against `bovnar-iut` |
 | `scripts/diff.sh <upstream> <build> [count] [seed]` | differential test against the C reference |
+| `scripts/json-diff.sh <upstream> <build> [count] [seed] [capture]` | differential test of JSON conversion against `bovnar convert` |
 | `python3 -I scripts/gen-tables.py <upstream> [--check]` | regenerate or check the unit tables in `src/units/gen/` |
 | `scripts/fuzz.sh <upstream> [seconds] [jobs] [target...]` | run the fuzz targets (nightly, cargo-fuzz) |
 

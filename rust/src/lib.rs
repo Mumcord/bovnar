@@ -77,6 +77,23 @@
 //! Several documents travel over one connection with the length-prefixed
 //! record framing in [`stream`].
 //!
+//! Convert JSON to Bovnar and back with the C CLI's `bovnar convert`
+//! semantics ([`json`]), and sniff which format a buffer holds
+//! ([`detect`]):
+//!
+//! ```
+//! use bovnar::{detect, json, Format, Limits};
+//!
+//! let input = br#"{"name": "probe", "samples": [1, 2, 3]}"#;
+//! assert_eq!(detect(input), Format::Json);
+//! let text = json::to_bovnar(input, &Limits::default())?;
+//! assert_eq!(text, ".name = \"probe\";\n.samples = [1, 2, 3];\n");
+//! let back = json::from_bovnar(text.as_bytes(), &Limits::default())?;
+//! assert!(back.loss.is_empty());
+//! assert_eq!(back.json, "{\n  \"name\": \"probe\",\n  \"samples\": [1, 2, 3]\n}\n");
+//! # Ok::<(), bovnar::json::JsonError>(())
+//! ```
+//!
 //! # Safety and limits
 //!
 //! - No `unsafe` code (`#![forbid(unsafe_code)]`).
