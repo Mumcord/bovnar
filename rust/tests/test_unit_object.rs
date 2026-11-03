@@ -11,9 +11,11 @@
 //!   these arguments cannot be of the wrong type.
 //! - `test_accepts_a_unit_string_for_convenience`: `Quantity::new` takes a
 //!   `Unit`, never a string.
-//! - `test_comparison_with_a_foreign_type_is_false_not_an_error`: Rust has no
-//!   separate raw `ValueUnit`; `parse_unit` returns a `Unit`, and comparing
-//!   one with any other type does not compile.
+//! - `test_comparison_with_a_foreign_type_is_false_not_an_error`: it checks
+//!   that Python's raw `ValueUnit` is never equal to a string or `None`. Rust
+//!   has no separate raw `ValueUnit`: `parse_unit` returns a `Unit`, which
+//!   compares with a string by its spelling as Python's `Unit` does, and
+//!   comparing it with `None` (or any other type) does not compile.
 //!
 //! The raw `ValueUnit` and the `Unit` object are one type in Rust, so the
 //! tests that check the two agree compare a parsed unit with `Unit::parse`.
