@@ -1,6 +1,16 @@
 //! Document streams: framing several
 //! documents into one byte stream, multiplexing binary messages over
 //! channels, and embedding one document inside another.
+//!
+//! Each function has a twin over [`std::io::Read`] (`*_reader`) or
+//! [`std::io::Write`] (`*_to`). The C library has no callback source or
+//! sink, so these go through memory: a reader twin reads its input to the
+//! end first (no total cap: these reads run with `max_file_size`
+//! [`BVNR_FILESIZE_UNLIMITED`]) and then parses it as its in-memory twin
+//! does, `max_document_size` and `max_message` included; a writer twin
+//! builds the output in memory and then writes it out and flushes. A failing
+//! reader or writer is an [`Error::Io`] with `reading_from_source_fd` or
+//! `writing_to_sink`.
 
 use std::cell::RefCell;
 
@@ -8,6 +18,7 @@ use crate::dict_parser::DictParser;
 use crate::enums::ErrorCode;
 use crate::error::{Error, Position, Result};
 use crate::ffi::{self, BvnrReadFlags, DemuxError};
+use crate::io;
 use crate::reader::{EventData, wrap};
 use crate::writer;
 use crate::{Value, to_string};
@@ -39,6 +50,11 @@ pub fn frame_documents<D: AsRef<[u8]>>(docs: &[D]) -> Result<Vec<u8>> {
     ffi::frame_documents(&docs).ok_or_else(|| Error::argument("bvnr_frame_write failed"))
 }
 
+/// [`frame_documents`] into any [`std::io::Write`].
+pub fn frame_documents_to<D: AsRef<[u8]>>(docs: &[D], out: impl std::io::Write) -> Result<()> {
+    io::write_all(out, &frame_documents(docs)?)
+}
+
 /// Serialises each value with [`to_string`] and frames the results.
 pub fn dump_documents(values: &[Value], pretty: bool) -> Result<Vec<u8>> {
     let docs = values
@@ -46,6 +62,11 @@ pub fn dump_documents(values: &[Value], pretty: bool) -> Result<Vec<u8>> {
         .map(|v| to_string(v, pretty))
         .collect::<Result<Vec<_>>>()?;
     frame_documents(&docs)
+}
+
+/// [`dump_documents`] into any [`std::io::Write`].
+pub fn dump_documents_to(values: &[Value], pretty: bool, out: impl std::io::Write) -> Result<()> {
+    io::write_all(out, &dump_documents(values, pretty)?)
 }
 
 /// Parses a framed stream, one value per document (typed like
@@ -94,6 +115,23 @@ pub fn load_documents(
     Ok(results)
 }
 
+/// [`load_documents`] over any [`std::io::Read`], such as a
+/// [`std::fs::File`]. Reads `input` to its end, so it suits a finite stream,
+/// not an endless one.
+pub fn load_documents_reader(
+    input: impl std::io::Read,
+    typed: bool,
+    continue_past_failed: bool,
+    max_document_size: u64,
+) -> Result<Vec<Option<Value>>> {
+    load_documents(
+        &io::read_capped(input, None)?,
+        typed,
+        continue_past_failed,
+        max_document_size,
+    )
+}
+
 /// Multiplexes `(channel, payload)` messages into one document under `key`
 /// (conventionally `"mux"`).
 pub fn mux_dump<P: AsRef<[u8]>>(messages: &[(u64, P)], key: &str) -> Result<Vec<u8>> {
@@ -102,6 +140,15 @@ pub fn mux_dump<P: AsRef<[u8]>>(messages: &[(u64, P)], key: &str) -> Result<Vec<
     writer::grow_write(total + msgs.len() * 64 + key.len(), false, |w| {
         w.check(|h| h.mux(key, &msgs))
     })
+}
+
+/// [`mux_dump`] into any [`std::io::Write`].
+pub fn mux_dump_to<P: AsRef<[u8]>>(
+    messages: &[(u64, P)],
+    key: &str,
+    out: impl std::io::Write,
+) -> Result<()> {
+    io::write_all(out, &mux_dump(messages, key)?)
 }
 
 /// The `(channel, payload)` messages of a multiplexed document, in order.
@@ -126,12 +173,31 @@ pub fn mux_load(data: &[u8], max_message: u64, key: Option<&str>) -> Result<Vec<
     })
 }
 
+/// [`mux_load`] over any [`std::io::Read`]. Reads `input` to its end.
+pub fn mux_load_reader(
+    input: impl std::io::Read,
+    max_message: u64,
+    key: Option<&str>,
+) -> Result<Vec<(u64, Vec<u8>)>> {
+    mux_load(&io::read_capped(input, None)?, max_message, key)
+}
+
 /// Embeds the document `inner` under `key` (conventionally `"payload"`)
 /// in a new document.
 pub fn embed_document(inner: &[u8], key: &str, pretty: bool) -> Result<Vec<u8>> {
     writer::grow_write(inner.len() + key.len(), pretty, |w| {
         w.check(|h| h.embed_document(key, inner))
     })
+}
+
+/// [`embed_document`] into any [`std::io::Write`].
+pub fn embed_document_to(
+    inner: &[u8],
+    key: &str,
+    pretty: bool,
+    out: impl std::io::Write,
+) -> Result<()> {
+    io::write_all(out, &embed_document(inner, key, pretty)?)
 }
 
 /// Parses an embedded document (the payload [`embed_document`] wrote).
@@ -167,6 +233,11 @@ pub fn parse_embedded(inner: &[u8], typed: bool) -> Result<Value> {
         });
     }
     Ok(parser.result())
+}
+
+/// [`parse_embedded`] over any [`std::io::Read`]. Reads `input` to its end.
+pub fn parse_embedded_reader(input: impl std::io::Read, typed: bool) -> Result<Value> {
+    parse_embedded(&io::read_capped(input, None)?, typed)
 }
 
 #[cfg(test)]

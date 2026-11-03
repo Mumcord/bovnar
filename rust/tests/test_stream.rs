@@ -317,3 +317,156 @@ fn test_mux_load_refuses_a_key_with_a_nul() {
     assert!(matches!(err, Error::Argument { .. }), "{err:?}");
     assert!(err.to_string().contains("NUL"), "{err}");
 }
+
+// The Read / Write twins.
+
+/// A source whose every read fails.
+struct Unreadable;
+
+impl std::io::Read for Unreadable {
+    fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::ConnectionReset,
+            "pipe closed",
+        ))
+    }
+}
+
+/// A sink that refuses every byte.
+struct Full;
+
+impl std::io::Write for Full {
+    fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::StorageFull,
+            "no space left",
+        ))
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+fn assert_io<T: std::fmt::Debug>(r: bovnar::Result<T>, code: ErrorCode) {
+    let e = r.unwrap_err();
+    assert_eq!(e.code(), Some(code), "{e:?}");
+    assert!(matches!(e, Error::Io { .. }), "{e:?}");
+}
+
+fn written(f: impl FnOnce(&mut Vec<u8>) -> bovnar::Result<()>) -> Vec<u8> {
+    let mut out = Vec::new();
+    f(&mut out).unwrap();
+    out
+}
+
+#[test]
+fn test_writer_twins_write_what_the_in_memory_functions_return() {
+    let values = [
+        obj(&[("a", Value::Int(1))]),
+        obj(&[("b", Value::Bool(true))]),
+    ];
+    let docs = [b".a = 1;".to_vec(), b".b = 2;".to_vec()];
+    let msgs = [(0u64, b"hello".to_vec()), (9, vec![0, 255])];
+    assert_eq!(
+        written(|o| stream::frame_documents_to(&docs, o)),
+        stream::frame_documents(&docs).unwrap()
+    );
+    for pretty in [false, true] {
+        assert_eq!(
+            written(|o| stream::dump_documents_to(&values, pretty, o)),
+            stream::dump_documents(&values, pretty).unwrap()
+        );
+        assert_eq!(
+            written(|o| stream::embed_document_to(&docs[0], "payload", pretty, o)),
+            stream::embed_document(&docs[0], "payload", pretty).unwrap()
+        );
+    }
+    assert_eq!(
+        written(|o| stream::mux_dump_to(&msgs, "mux", o)),
+        stream::mux_dump(&msgs, "mux").unwrap()
+    );
+}
+
+#[test]
+fn test_writer_twins_map_a_failing_writer_to_an_io_error() {
+    let docs = [b".a = 1;".to_vec()];
+    let code = ErrorCode::WritingToSink;
+    assert_io(stream::frame_documents_to(&docs, Full), code);
+    assert_io(stream::dump_documents_to(&[obj(&[])], false, Full), code);
+    assert_io(stream::mux_dump_to(&[(1, b"x")], "mux", Full), code);
+    assert_io(
+        stream::embed_document_to(&docs[0], "payload", false, Full),
+        code,
+    );
+}
+
+#[test]
+fn test_reader_twins_read_what_the_in_memory_functions_read() {
+    let values = [
+        obj(&[("a", Value::Int(1))]),
+        obj(&[("b", Value::Bool(true))]),
+    ];
+    let framed = stream::dump_documents(&values, false).unwrap();
+    let bad = stream::frame_documents(&[&b".n = 1;"[..], b".n = [1;", b".n = 3;"]).unwrap();
+    for blob in [&framed, &bad] {
+        for (typed, cont) in [(false, false), (true, false), (false, true)] {
+            assert_eq!(
+                stream::load_documents_reader(&blob[..], typed, cont, 0),
+                stream::load_documents(blob, typed, cont, 0)
+            );
+        }
+    }
+
+    let muxed = mux_dump(&[(0, b"hello".to_vec()), (7, vec![0, 255])]);
+    for key in [None, Some("mux"), Some("other")] {
+        assert_eq!(
+            stream::mux_load_reader(&muxed[..], 0, key),
+            stream::mux_load(&muxed, 0, key)
+        );
+    }
+
+    for inner in [&b".a = 1; .b = \"x\";"[..], b".a = "] {
+        for typed in [false, true] {
+            assert_eq!(
+                stream::parse_embedded_reader(inner, typed),
+                stream::parse_embedded(inner, typed)
+            );
+        }
+    }
+}
+
+#[test]
+fn test_reader_twins_map_a_failing_reader_to_an_io_error() {
+    let code = ErrorCode::ReadingFromSourceFd;
+    assert_io(
+        stream::load_documents_reader(Unreadable, false, false, 0),
+        code,
+    );
+    assert_io(stream::mux_load_reader(Unreadable, 0, None), code);
+    assert_io(stream::parse_embedded_reader(Unreadable, false), code);
+}
+
+/// The reader twins read the whole input and leave the per-document and
+/// per-message caps to the parse, so an input over a cap fails exactly as
+/// its in-memory twin does.
+#[test]
+fn test_reader_twins_refuse_input_over_the_cap_like_the_in_memory_functions() {
+    let doc = dumps(&obj(&[("a", Value::String("x".repeat(64)))]));
+    let framed = stream::frame_documents(&[&doc]).unwrap();
+    let small = doc.len() as u64 - 1;
+    let mem = stream::load_documents(&framed, false, false, small);
+    assert!(mem.is_err(), "{mem:?}");
+    assert_eq!(
+        stream::load_documents_reader(&framed[..], false, false, small),
+        mem
+    );
+    assert!(stream::load_documents_reader(&framed[..], false, false, doc.len() as u64).is_ok());
+
+    let muxed = mux_dump(&[(1, b"abcdef".to_vec())]);
+    let mem = stream::mux_load(&muxed, 3, None);
+    assert_eq!(
+        mem.as_ref().unwrap_err().code(),
+        Some(ErrorCode::ValueOutOfRange)
+    );
+    assert_eq!(stream::mux_load_reader(&muxed[..], 3, None), mem);
+}
