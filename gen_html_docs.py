@@ -220,6 +220,10 @@ DOCS = [
      "Bovnar Conformance Testing",
      "The Bovnar 470-case conformance test suite and the IUT protocol for validating "
      "third-party implementations."),
+    ("14_bovnar_rust_bindings.md", "rust", "bovnar-rust-bindings",
+     "Bovnar Rust Bindings",
+     "The Bovnar Rust crate: parse/to_string, the streaming reader and writer, the DOM, "
+     "Quantity and the exact numbers, and JSON conversion."),
 ]
 
 # filename (and .ebnf) -> clean slug, for inter-doc link rewriting.

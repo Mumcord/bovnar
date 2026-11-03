@@ -76,6 +76,7 @@ WEBDOCS=(
     "11_bovnar_unit_profiles.md"
     "12_bovnar.ebnf"
     "13_bovnar_conformance.md"
+    "14_bovnar_rust_bindings.md"
 )
 
 # Paths (relative to the web root) that must NOT be published. These are dev

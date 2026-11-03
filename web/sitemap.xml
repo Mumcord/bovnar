@@ -32,12 +32,12 @@
   </url>
   <url>
     <loc>https://www.bovnar.io/docs/cheatsheet/</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.bovnar.io/docs/units/</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
@@ -47,7 +47,7 @@
   </url>
   <url>
     <loc>https://www.bovnar.io/docs/ambiguities/</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
@@ -67,7 +67,7 @@
   </url>
   <url>
     <loc>https://www.bovnar.io/docs/profiles/</loc>
-    <lastmod>2026-10-11</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
@@ -78,6 +78,11 @@
   <url>
     <loc>https://www.bovnar.io/docs/conformance/</loc>
     <lastmod>2026-10-11</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.bovnar.io/docs/rust/</loc>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
@@ -97,12 +102,12 @@
   </url>
   <url>
     <loc>https://www.bovnar.io/doc/pdf/bovnar-cheatsheet.pdf</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.bovnar.io/doc/pdf/bovnar-unit-system.pdf</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
@@ -112,7 +117,7 @@
   </url>
   <url>
     <loc>https://www.bovnar.io/doc/pdf/bovnar-unit-ambiguities.pdf</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
@@ -132,7 +137,7 @@
   </url>
   <url>
     <loc>https://www.bovnar.io/doc/pdf/bovnar-unit-profiles.pdf</loc>
-    <lastmod>2026-10-11</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
@@ -146,18 +151,23 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.bovnar.io/doc/pdf/bovnar-rust-bindings.pdf</loc>
+    <lastmod>2026-11-03</lastmod>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.bovnar.io/index.md</loc>
-    <lastmod>2026-10-11</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.bovnar.io/de/index.md</loc>
-    <lastmod>2026-10-11</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.bovnar.io/llms.txt</loc>
-    <lastmod>2026-10-11</lastmod>
+    <lastmod>2026-11-03</lastmod>
     <priority>0.5</priority>
   </url>
   <url>

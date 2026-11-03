@@ -58,6 +58,8 @@ DOCS = [
      "The formal grammar, annotated against the reference lexer/validator."),
     ("13_bovnar_conformance.md",  "Conformance",
      "The 470-case conformance suite and the IUT protocol for third-party implementations."),
+    ("14_bovnar_rust_bindings.md", "Rust bindings",
+     "The Rust crate: parse/to_string, streaming reader/writer, DOM, Quantity and exact numbers, JSON."),
 ]
 
 # External project resources for the llms.txt "Project" section.
@@ -205,6 +207,7 @@ def build_index_md_de(sections):
             ("units", "Einheitensystem", "264 physikalische Einheiten, SI/IEC-Präfixe und 216 Währungen."),
             ("api", "C-Lese-/Schreib-API", "Die C-Reader-/Writer-/DOM-API-Referenz."),
             ("python", "Python-Bindings", "Das reine ctypes-Python-Paket."),
+            ("rust", "Rust-Bindings", "Das Rust-Crate: parse/to_string, Streaming, DOM, exakte Zahlen, JSON."),
             ("grammar", "EBNF-Grammatik", "Die formale Grammatik, kommentiert gegen die Referenzimplementierung."),
             ("faq", "FAQ", "Häufige Fragen zu Typen, Einheiten, Limits und der API."),
             ("conformance", "Konformität", "Die 470-Fall-Konformitätssuite und das IUT-Protokoll."),
