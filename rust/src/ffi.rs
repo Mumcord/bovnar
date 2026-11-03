@@ -9,7 +9,7 @@
 // does not reach every function yet.
 #![allow(dead_code)]
 
-use std::ffi::{c_char, c_int, c_void};
+use std::ffi::{CStr, CString, c_char, c_int, c_void};
 
 /// Size of the opaque `bvnr_source_t` / `bvnr_sink_t` storage.
 pub const OPAQUE_BYTES: usize = 256;
@@ -1007,6 +1007,145 @@ pub fn format_i64(value: i64, base: u32) -> Option<String> {
 pub fn format_f64(value: f64, vt: ValueTypeSpec) -> Option<String> {
     // SAFETY: as above.
     format(|buf, len| unsafe { bvn_format_double(buf, len, value, vt) })
+}
+
+// ---------------------------------------------------------------------------
+// Units: value-in, value-out helpers over `value_unit_t`.
+
+/// Runs a `bvn_unit_to_*` formatter on a `UNIT_STRING_MAX` buffer: the text,
+/// or the negative return value the library refused with.
+fn unit_text(f: impl FnOnce(*mut c_char, usize) -> i32) -> std::result::Result<String, i32> {
+    let mut buf = vec![0u8; UNIT_STRING_MAX];
+    let n = f(buf.as_mut_ptr().cast(), buf.len());
+    let len = usize::try_from(n).map_err(|_| n)?;
+    buf.truncate(len.min(UNIT_STRING_MAX));
+    String::from_utf8(buf).map_err(|_| -1)
+}
+
+/// `bvn_parse_unit_n`: `None` for text that is not a unit.
+pub fn parse_unit(text: &str) -> Option<ValueUnit> {
+    let len = u32::try_from(text.len()).ok()?;
+    let mut ok = false;
+    // SAFETY: `text` has `len` readable bytes for the call; `ok` is writable.
+    let u = unsafe { bvn_parse_unit_n(text.as_ptr(), len, &mut ok) };
+    ok.then_some(u)
+}
+
+/// `bvn_unit_error_code`: why `text` is not a unit (0 when it is one).
+pub fn unit_error_code(text: &str) -> c_int {
+    let len = u32::try_from(text.len()).unwrap_or(u32::MAX);
+    // SAFETY: `text` has at least `len` readable bytes for the call.
+    unsafe { bvn_unit_error_code(text.as_ptr(), len) }
+}
+
+/// `bvn_unit_to_string_ex` with `flags` (0 is `bvn_unit_to_string`).
+pub fn unit_to_string_ex(u: &ValueUnit, flags: u32) -> std::result::Result<String, i32> {
+    // SAFETY: the buffer has `len` writable bytes for the call.
+    unit_text(|buf, len| unsafe { bvn_unit_to_string_ex(*u, buf, len, flags) })
+}
+
+/// `bvn_unit_to_profile`: `u` as a code in vocabulary `ns`.
+pub fn unit_to_profile(ns: &str, u: &ValueUnit) -> Option<String> {
+    let ns = CString::new(ns).ok()?;
+    // SAFETY: `ns` is NUL-terminated; the buffer has `len` writable bytes.
+    unit_text(|buf, len| unsafe { bvn_unit_to_profile(ns.as_ptr(), *u, buf, len) }).ok()
+}
+
+/// `bvn_unit_to_ucum`.
+pub fn unit_to_ucum(u: &ValueUnit) -> Option<String> {
+    // SAFETY: the buffer has `len` writable bytes for the call.
+    unit_text(|buf, len| unsafe { bvn_unit_to_ucum(*u, buf, len) }).ok()
+}
+
+/// `bvn_unit_profile_name` for every index below `bvn_unit_profile_count`.
+pub fn unit_profiles() -> Vec<String> {
+    // SAFETY: no preconditions.
+    let count = unsafe { bvn_unit_profile_count() };
+    (0..count)
+        .filter_map(|i| {
+            // SAFETY: `i` is in range; the result is NULL or a static string.
+            let p = unsafe { bvn_unit_profile_name(i) };
+            // SAFETY: a non-NULL result is a static NUL-terminated string.
+            (!p.is_null()).then(|| unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned())
+        })
+        .collect()
+}
+
+/// The `value_unit_t` predicates and scalars that take units by value and
+/// touch nothing else; each is safe for any bit pattern of its arguments.
+pub mod unit_fns {
+    use super::*;
+
+    macro_rules! by_value {
+        ($($name:ident => $c:ident($($a:ident: $t:ty),*) -> $r:ty;)*) => {$(
+            #[doc = concat!("`", stringify!($c), "`.")]
+            pub fn $name($($a: $t),*) -> $r {
+                // SAFETY: plain values in, a plain value out; the library
+                // validates the unit structs it is handed.
+                unsafe { super::$c($($a),*) }
+            }
+        )*};
+    }
+
+    by_value! {
+        valid => bvn_unit_valid(u: ValueUnit) -> bool;
+        is_profile_only => bvn_unit_is_profile_only(u: ValueUnit) -> bool;
+        prefix_factor => bvn_unit_prefix_factor(u: ValueUnit) -> f64;
+        prefix_exponent => bvn_unit_prefix_exponent(u: ValueUnit) -> i32;
+        compatible => bvn_units_compatible(a: ValueUnit, b: ValueUnit) -> bool;
+        equal => bvn_unit_equal(a: ValueUnit, b: ValueUnit) -> bool;
+        convertible => bvn_units_convertible(a: ValueUnit, b: ValueUnit) -> bool;
+        exponent_to_int => bvn_exponent_to_int(e: c_int) -> i32;
+        int_to_exponent => bvn_int_to_exponent(n: i32) -> c_int;
+        prefix_unit_valid => bvn_prefix_unit_valid(p: ValueUnitPrefix, base: c_int) -> bool;
+    }
+
+    /// `bvn_unit_si_normal_form`.
+    pub fn si_normal_form(u: ValueUnit) -> Option<ValueUnit> {
+        let mut out = ValueUnit::zeroed();
+        // SAFETY: `out` is writable for the call.
+        unsafe { bvn_unit_si_normal_form(u, &mut out) }.then_some(out)
+    }
+
+    /// `bvn_unit_convert_factor`: (factor, ok, requires_affine).
+    pub fn convert_factor(a: ValueUnit, b: ValueUnit) -> (f64, bool, bool) {
+        let (mut ok, mut affine) = (false, false);
+        // SAFETY: both flags are writable for the call.
+        let f = unsafe { bvn_unit_convert_factor(a, b, &mut ok, &mut affine) };
+        (f, ok, affine)
+    }
+
+    /// `bvn_unit_convert_value`.
+    pub fn convert_value(value: f64, from: ValueUnit, to: ValueUnit) -> Option<f64> {
+        let mut out = 0.0;
+        // SAFETY: `out` is writable for the call.
+        unsafe { bvn_unit_convert_value(value, from, to, &mut out) }.then_some(out)
+    }
+
+    /// `bvn_unit_to_si_factor`: (factor, is_affine, affine_offset), or
+    /// `None` when the unit has no SI conversion.
+    pub fn to_si_factor(u: ValueUnit) -> Option<(f64, bool, f64)> {
+        let (mut affine, mut offset, mut ok) = (false, 0.0, false);
+        // SAFETY: the three outputs are writable for the call.
+        let f = unsafe { bvn_unit_to_si_factor(u, &mut affine, &mut offset, &mut ok) };
+        ok.then_some((f, affine, offset))
+    }
+
+    /// `bvn_unit_dimension_vector`: the exponents of the seven SI base
+    /// dimensions.
+    pub fn dimension_vector(u: ValueUnit) -> Option<[i32; 7]> {
+        let mut dims = [0i32; 7];
+        // SAFETY: `dims` has the seven slots the function fills.
+        unsafe { bvn_unit_dimension_vector(u, dims.as_mut_ptr()) }.then_some(dims)
+    }
+
+    /// `bvn_unit_reduce`: (unit, scale), or `None` when the scale overflows.
+    pub fn reduce(u: ValueUnit) -> Option<(ValueUnit, f64)> {
+        let (mut scale, mut overflow) = (1.0, false);
+        // SAFETY: both outputs are writable for the call.
+        let r = unsafe { bvn_unit_reduce(u, &mut scale, &mut overflow) };
+        (!overflow).then_some((r, scale))
+    }
 }
 
 /// Checks every mirrored struct against the compiler's own layout, as printed
