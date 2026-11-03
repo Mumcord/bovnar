@@ -11,7 +11,7 @@ implements; the highest spec a build understands is reported by
 numbers were the same. They part at 2.0.0, which breaks the ABI and the Python
 API and implements spec 1.2.
 
-## [2.0.0] - 2026-10-10
+## [2.0.0] - 2026-11-04
 
 **Library 2.0.0, implementing spec 1.2.** The major is for the library: the ABI
 breaks (SOVERSION 2) and so does the Python API. **The format does not break** —

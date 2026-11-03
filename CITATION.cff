@@ -22,7 +22,7 @@ authors:
 version: 2.0.0
 # The release date of version 2.0.0 (tag v2.0.0, and the CHANGELOG entry), not
 # the later date on which the Zenodo archive of it is deposited.
-date-released: "2026-10-10"
+date-released: "2026-11-04"
 license: MIT
 repository-code: "https://github.com/sothis/bovnar"
 url: "https://www.bovnar.io"

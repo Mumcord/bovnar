@@ -39,9 +39,9 @@ To pick it up on a new machine:
 
 ## Open 2026-11-03 — decisions the whole-project review left to the maintainer
 
-1. **The 2.0.0 date.** CHANGELOG, CITATION.cff (`date-released`), the JOSS
-   paper and both wiki drafts say 2.0.0 was released on 2026-10-10. It is not
-   tagged yet and carries work from 2026-11-03; set them to the tag date.
+1. **The 2.0.0 date.** Set to 2026-11-04 on 2026-11-03 in CHANGELOG,
+   CITATION.cff (`date-released`), the JOSS paper and both wiki drafts (was
+   2026-10-10). If the tag lands on another day, move them again.
 2. **Native `eq`.** `eq` is an alias of `val`, the water-analysis equivalent
    (½ mol), so native `m~eq/L` is half of `ucum:meq/L` — the clinical reading
    of meq/L for a monovalent ion. Documented now (doc/05, doc/07); whether a
