@@ -169,6 +169,15 @@ the docs, build and packaging — each finding reproduced before it was fixed.
   and the generated headers carry the SPDX header; and the README, CONTRIBUTING,
   SECURITY, doc/08, doc/09, doc/11 and the JOSS paper were corrected where they
   disagreed with the code.
+- **The specification now says what the reader does with two signs.** A
+  quoted float literal may begin with one `+` (`<float:64> "+1.5"` is 1.5),
+  as the 1.1 reader already accepted, while a quoted integer may not
+  (`error_digit_not_in_base`); doc/03 §6.3 had said both follow the bare
+  rule, which has no `+`. A `-` in front of an ISO-8601 literal
+  (`-2026-06-15`) keeps the skeleton and is `error_invalid_datetime_literal`
+  where the value ends, not the lexical error §5.1 implied; `+2026-06-15`
+  is `error_unexpected_input_byte` at the `+`. No reader change: doc/03 and
+  the IETF draft follow the code.
 
 ### Changed — a document tree costs a tenth of the memory
 

@@ -2562,6 +2562,12 @@ denoting a binary exponent, as in C99 hexadecimal floating literals.<a href="#se
 .hexmant  = &lt;float:64,_16&gt; "1.8e";     # no exponent: 'e' is a digit
 </pre><a href="#section-6.5-7" class="pilcrow">¶</a>
 </div>
+<p id="section-6.5-8">A quoted integer literal (<code>uint</code>, <code>sint</code>) takes a leading <code>-</code> and no
+<code>+</code>, as a bare one does: <code>&lt;sint:8&gt; "+1"</code> is <code>error_digit_not_in_base</code>. A
+quoted float literal (<code>float</code>, <code>float_fix</code>, <code>float_dec</code>) may in addition
+begin with a single <code>+</code>, which leaves the value unchanged:
+<code>&lt;float:64&gt; "+1.5"</code> is 1.5. The sign is the first octet inside the
+quotes and there is at most one. Producers <span class="bcp14">SHOULD NOT</span> write the <code>+</code>.<a href="#section-6.5-8" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="datetime-literals">
@@ -2588,7 +2594,11 @@ skeleton but not the grammar or the ranges - an out-of-range field, a
 field of the wrong width (<code>2026-6-15</code>), or an empty fraction - is
 <code>error_invalid_datetime_literal</code>. One that departs from the skeleton - a
 missing seconds field, an offset without its colon - is
-<code>error_unexpected_input_byte</code>.<a href="#section-6.6-3" class="pilcrow">¶</a></p>
+<code>error_unexpected_input_byte</code>. A <code>-</code> in front of a literal opens a number
+token and is not a departure from the skeleton: <code>-2026-06-15</code>, a year
+before 0000, is <code>error_invalid_datetime_literal</code>, reported where the
+value ends. A <code>+</code> in front of one is <code>error_unexpected_input_byte</code> at the
+<code>+</code>.<a href="#section-6.6-3" class="pilcrow">¶</a></p>
 <p id="section-6.6-4">A date with no time part denotes <code>00:00:00Z</code>. A date-time with no zone is
 UTC. An offset shifts the written civil time to UTC before conversion, so
 <code>12:00:00+02:00</code> is <code>10:00:00Z</code>. The <code>.fraction</code>, <code>Z</code>, and <code>±HH:MM</code> parts

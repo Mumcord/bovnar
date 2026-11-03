@@ -995,7 +995,14 @@ field of the wrong width (<code>2026-6-15</code>, <code>12:00:0Z</code>, <code>+
 fraction — is <code>error_invalid_datetime_literal</code>. One that departs from the
 skeleton (a missing seconds field, <code>+0200</code> without its colon, a lowercase <code>t</code>
 or <code>z</code>) is a lexical error, <code>error_unexpected_input_byte</code>, reported at the
-first byte that does not fit. A literal in a document that
+first byte that does not fit. A <strong>sign in front of the literal</strong> is not part of
+the skeleton, but it is not a departure from it either: a <code>-</code> opens a number
+token, and it is the second <code>-</code> that makes the token a date. So
+<code>-2026-06-15</code> — a year before <code>0000</code> — has the skeleton and is
+<code>error_invalid_datetime_literal</code>, reported where the value ends (the <code>;</code>, <code>,</code> or
+<code>]</code> after it); a signed literal without the skeleton (<code>-2026-06</code>) is the lexical
+error as above. A <code>+</code> opens no token, so <code>+2026-06-15</code> is
+<code>error_unexpected_input_byte</code> at the <code>+</code>. A literal in a document that
 declares less than 1.1 is <code>error_illegal_value_type</code>. A second of <code>60</code> is a <strong>UTC leap second</strong> and
 is accepted. What it stores depends on the epoch:</p>
 <ul>
@@ -1512,6 +1519,17 @@ Values are written as ordinary decimal literals or special numbers.</p>
 .hex_mant   = &lt;float:64,_16&gt; &quot;1.8e&quot;;     # OK: &#x27;e&#x27; is a hex digit → mantissa 1.8e₁₆
 .dec_float  = &lt;float:64&gt; 12.0;           # OK: default decimal base</code></pre></div>
 <p>The <code>p</code>/<code>P</code> exponent value is always interpreted as a decimal integer (the binary exponent bias), matching the C99 hexadecimal floating-point literal convention.</p>
+<h4 id="signs-in-quoted-string-literals">Signs in Quoted String Literals</h4>
+<p>The bare number rule (§4.6) admits a leading <code>-</code> and no <code>+</code>. A quoted <strong>integer</strong> literal (<code>uint</code>, <code>sint</code>) follows it: <code>&lt;sint:8&gt; "-1"</code> is −1, and <code>&lt;sint:8&gt; "+1"</code> is <code>error_digit_not_in_base</code>, the <code>+</code> being no digit of any base. A quoted <strong>float</strong> literal — <code>float</code> in either base, <code>float_fix</code>, <code>float_dec</code> — departs from it in one respect: it may also begin with a single <code>+</code>, which leaves the value unchanged. The 1.1 reader accepted this, and refusing it now would refuse documents 1.1 accepted, so it is part of the format:</p>
+<!-- bovnar-example: rejected -->
+
+<div class="codehilite"><pre><code class="language-bovnar">.f = &lt;float:64&gt; &quot;+1.5&quot;;            # OK: 1.5
+.h = &lt;float:64,_16&gt; &quot;+1.8p+2&quot;;     # OK: 6.0
+.q = &lt;float_fix:32,q8&gt; &quot;+1.5&quot;;     # OK
+.i = &lt;sint:8&gt; &quot;+1&quot;;                # error_digit_not_in_base
+.d = &lt;float:64&gt; &quot;++1&quot;;             # error_digit_not_in_base: one sign only
+.s = &lt;float:64&gt; &quot; +1&quot;;             # error_digit_not_in_base: the sign comes first</code></pre></div>
+<p>The sign must be the first byte inside the quotes, and there is at most one. Producers SHOULD NOT write the <code>+</code>.</p>
 <h3 id="64-special-number-semantics">6.4 Special Number Semantics</h3>
 <p><code>nan</code>, <code>inf</code>, <code>ninf</code> are accepted by any numeric type family (<code>uint</code>, <code>sint</code>, <code>float</code>, <code>float_fix</code>, <code>float_dec</code>) and in untyped context. <code>bvn_check_acc_range</code> explicitly returns <code>true</code> when <code>bvn_is_special_number_string</code> matches, bypassing all range validation regardless of the declared family. They are rejected under the non-numeric families whose token kind is incompatible with <code>token_is_number</code> — <code>utf8</code> (string-only) and <code>bool</code> (boolean-keyword-only) — both producing <code>error_type_value_mismatch</code>. (A <code>datetime</code> annotation, by contrast, accepts them: the special-string check short-circuits before the datetime carrier is parsed.)</p>
 <div class="codehilite"><pre><code class="language-bovnar">.okay_f64  = &lt;float:64&gt;  inf;

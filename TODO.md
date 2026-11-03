@@ -49,12 +49,12 @@ To pick it up on a new machine:
 3. **`ucum:[IU]` and `ucum:[iU]`** — done 2026-11-03: one opaque id, `[iU]`
    an alias of `[IU]` through `.opaque_aliases` in `ucum.bvnr` (doc/11 §3.6,
    `test_arbitrary` in `bovnar_ucum_test`). UCUM's block is 200000–200039.
-4. **Quoted float literals take a leading `+`** (`<float:64> "+1"`), quoted
-   integers do not (`digit_not_in_base`); doc/03 §6.3 says both follow the
-   bare-number rule, which has none. Refusing it would refuse documents 1.1
-   accepted.
-5. **`-2026-06-15` under `#!bovnar 1.1`** is `error_invalid_datetime_literal`
-   at the `;`, where §5.1 suggests `error_unexpected_input_byte`.
+4. **Quoted float literals take a leading `+`** — decided 2026-11-03: kept.
+   doc/03 §6.3 ("Signs in Quoted String Literals") and the IETF draft say a
+   quoted float may begin with one `+` and a quoted integer may not.
+5. **`-2026-06-15` under `#!bovnar 1.1`** — decided 2026-11-03: the reader's
+   `error_invalid_datetime_literal` where the value ends stays; doc/03 §5.1
+   and the IETF draft now say a leading `-` keeps the skeleton.
 6. **Profile coverage.** After the eight mapped in this round,
    `check_profile_factors.py` still lists 53 refusals an existing native
    expression would cover. They are coverage to review, not errors.

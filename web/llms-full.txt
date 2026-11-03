@@ -3554,7 +3554,14 @@ field of the wrong width (`2026-6-15`, `12:00:0Z`, `+2:00`) or an empty
 fraction — is `error_invalid_datetime_literal`. One that departs from the
 skeleton (a missing seconds field, `+0200` without its colon, a lowercase `t`
 or `z`) is a lexical error, `error_unexpected_input_byte`, reported at the
-first byte that does not fit. A literal in a document that
+first byte that does not fit. A **sign in front of the literal** is not part of
+the skeleton, but it is not a departure from it either: a `-` opens a number
+token, and it is the second `-` that makes the token a date. So
+`-2026-06-15` — a year before `0000` — has the skeleton and is
+`error_invalid_datetime_literal`, reported where the value ends (the `;`, `,` or
+`]` after it); a signed literal without the skeleton (`-2026-06`) is the lexical
+error as above. A `+` opens no token, so `+2026-06-15` is
+`error_unexpected_input_byte` at the `+`. A literal in a document that
 declares less than 1.1 is `error_illegal_value_type`. A second of `60` is a **UTC leap second** and
 is accepted. What it stores depends on the epoch:
 
@@ -4020,6 +4027,22 @@ Bare number literals use `e`/`E` as the exponent separator (§4.6) — in a base
 ```
 
 The `p`/`P` exponent value is always interpreted as a decimal integer (the binary exponent bias), matching the C99 hexadecimal floating-point literal convention.
+
+#### Signs in Quoted String Literals
+
+The bare number rule (§4.6) admits a leading `-` and no `+`. A quoted **integer** literal (`uint`, `sint`) follows it: `<sint:8> "-1"` is −1, and `<sint:8> "+1"` is `error_digit_not_in_base`, the `+` being no digit of any base. A quoted **float** literal — `float` in either base, `float_fix`, `float_dec` — departs from it in one respect: it may also begin with a single `+`, which leaves the value unchanged. The 1.1 reader accepted this, and refusing it now would refuse documents 1.1 accepted, so it is part of the format:
+
+<!-- bovnar-example: rejected -->
+```bovnar
+.f = <float:64> "+1.5";            # OK: 1.5
+.h = <float:64,_16> "+1.8p+2";     # OK: 6.0
+.q = <float_fix:32,q8> "+1.5";     # OK
+.i = <sint:8> "+1";                # error_digit_not_in_base
+.d = <float:64> "++1";             # error_digit_not_in_base: one sign only
+.s = <float:64> " +1";             # error_digit_not_in_base: the sign comes first
+```
+
+The sign must be the first byte inside the quotes, and there is at most one. Producers SHOULD NOT write the `+`.
 
 ### 6.4 Special Number Semantics
 

@@ -830,6 +830,13 @@ denoting a binary exponent, as in C99 hexadecimal floating literals.
 .hexmant  = <float:64,_16> "1.8e";     # no exponent: 'e' is a digit
 ~~~
 
+A quoted integer literal (`uint`, `sint`) takes a leading `-` and no
+`+`, as a bare one does: `<sint:8> "+1"` is `error_digit_not_in_base`. A
+quoted float literal (`float`, `float_fix`, `float_dec`) may in addition
+begin with a single `+`, which leaves the value unchanged:
+`<float:64> "+1.5"` is 1.5. The sign is the first octet inside the
+quotes and there is at most one. Producers SHOULD NOT write the `+`.
+
 ## Datetime Literals {#datetime-literals}
 
 A version 1.1 document may write a `datetime` value as a literal in the
@@ -851,7 +858,11 @@ skeleton but not the grammar or the ranges - an out-of-range field, a
 field of the wrong width (`2026-6-15`), or an empty fraction - is
 `error_invalid_datetime_literal`. One that departs from the skeleton - a
 missing seconds field, an offset without its colon - is
-`error_unexpected_input_byte`.
+`error_unexpected_input_byte`. A `-` in front of a literal opens a number
+token and is not a departure from the skeleton: `-2026-06-15`, a year
+before 0000, is `error_invalid_datetime_literal`, reported where the
+value ends. A `+` in front of one is `error_unexpected_input_byte` at the
+`+`.
 
 A date with no time part denotes `00:00:00Z`. A date-time with no zone is
 UTC. An offset shifts the written civil time to UTC before conversion, so
