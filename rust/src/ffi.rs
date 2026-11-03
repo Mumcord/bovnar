@@ -1825,6 +1825,256 @@ pub fn parse_float_base(text: &str, base: u32) -> Option<f64> {
     }
 }
 
+/// An owned `bvn_float_t` from `bvn_float_alloc`, freed when dropped: the
+/// handle behind [`crate::BvnFloat`]. No struct layout is mirrored; the C
+/// library owns the representation.
+pub struct FloatHandle {
+    ptr: std::ptr::NonNull<c_void>,
+    prec: u32,
+}
+
+// SAFETY: the float is plain heap memory owned by this handle alone; the
+// library keeps no thread-local state for it. Not Sync: `&self` methods pass
+// the pointer to C, which must not race a `&mut self` call.
+unsafe impl Send for FloatHandle {}
+
+impl Drop for FloatHandle {
+    fn drop(&mut self) {
+        // SAFETY: the float is live and freed exactly once.
+        unsafe { bvn_float_free(self.ptr.as_ptr()) }
+    }
+}
+
+/// `bytes` (little-endian) as `N` little-endian 32-bit words, zero-padded.
+fn le_words<const N: usize>(bytes: &[u8]) -> [u32; N] {
+    let mut words = [0u32; N];
+    for (i, b) in bytes.iter().take(N * 4).enumerate() {
+        words[i / 4] |= u32::from(*b) << (8 * (i % 4));
+    }
+    words
+}
+
+/// `bytes` (little-endian) as an integer of up to 8 bytes, zero-padded.
+fn le_u64(bytes: &[u8]) -> u64 {
+    let mut buf = [0u8; 8];
+    let n = bytes.len().min(8);
+    buf[..n].copy_from_slice(&bytes[..n]);
+    u64::from_le_bytes(buf)
+}
+
+fn words_le_bytes(words: &[u32]) -> Vec<u8> {
+    words.iter().flat_map(|w| w.to_le_bytes()).collect()
+}
+
+impl FloatHandle {
+    /// `bvn_float_alloc(prec)`: a float of `prec` significand bits, or
+    /// `None` when the allocation failed.
+    pub fn alloc(prec: u32) -> Option<Self> {
+        // SAFETY: plain allocation; NULL is handled.
+        let ptr = unsafe { bvn_float_alloc(prec) };
+        std::ptr::NonNull::new(ptr).map(|ptr| FloatHandle { ptr, prec })
+    }
+
+    fn ptr(&self) -> *mut c_void {
+        self.ptr.as_ptr()
+    }
+
+    /// The precision the float was allocated with.
+    pub fn prec(&self) -> u32 {
+        self.prec
+    }
+
+    /// `bvn_float_from_str`: whether `text` parsed in `base`. Text with a NUL
+    /// byte is refused.
+    pub fn set_str(&mut self, text: &str, base: u32) -> bool {
+        let Ok(t) = CString::new(text) else {
+            return false;
+        };
+        // SAFETY: the float is live and exclusively borrowed; `t` is
+        // NUL-terminated and only read.
+        unsafe { bvn_float_from_str(self.ptr(), t.as_ptr(), base) }
+    }
+
+    pub fn is_nan(&self) -> bool {
+        // SAFETY: the float is live; the call only reads it.
+        unsafe { bvn_float_is_nan(self.ptr()) }
+    }
+
+    pub fn is_inf(&self) -> bool {
+        // SAFETY: as in `is_nan`.
+        unsafe { bvn_float_is_inf(self.ptr()) }
+    }
+
+    pub fn is_zero(&self) -> bool {
+        // SAFETY: as in `is_nan`.
+        unsafe { bvn_float_is_zero(self.ptr()) }
+    }
+
+    pub fn is_neg(&self) -> bool {
+        // SAFETY: as in `is_nan`.
+        unsafe { bvn_float_is_neg(self.ptr()) }
+    }
+
+    /// `bvn_float_to_str` in `base`, into a buffer of
+    /// `bvn_float_str_bufsize(prec, base)` bytes; `None` if it did not fit.
+    pub fn to_str(&self, base: u32) -> Option<String> {
+        // SAFETY: pure size computation.
+        let n = unsafe { bvn_float_str_bufsize(self.prec, base) };
+        let mut buf = vec![0u8; n.max(1)];
+        // SAFETY: the float is live; `buf` holds `buf.len()` writable bytes.
+        let wrote =
+            unsafe { bvn_float_to_str(self.ptr(), buf.as_mut_ptr().cast(), buf.len(), base) };
+        let wrote = usize::try_from(wrote).ok()?;
+        buf.truncate(wrote);
+        String::from_utf8(buf).ok()
+    }
+
+    /// `bvn_float_to_double`.
+    pub fn to_double(&self) -> f64 {
+        let mut out = 0.0;
+        // SAFETY: the float is live; `out` is writable.
+        unsafe { bvn_float_to_double(self.ptr(), &mut out) };
+        out
+    }
+
+    /// `bvn_float_to_bin{width}`: the IEEE binary interchange bytes,
+    /// little-endian; `None` for a width with no binary format.
+    pub fn to_bin(&self, width: u32) -> Option<Vec<u8>> {
+        let f = self.ptr();
+        // SAFETY: the float is live; each output holds what its call writes
+        // (one integer, or 4 or 8 words).
+        unsafe {
+            Some(match width {
+                16 => {
+                    let mut o = 0u16;
+                    bvn_float_to_bin16(f, &mut o);
+                    o.to_le_bytes().to_vec()
+                }
+                32 => {
+                    let mut o = 0u32;
+                    bvn_float_to_bin32(f, &mut o);
+                    o.to_le_bytes().to_vec()
+                }
+                64 => {
+                    let mut o = 0u64;
+                    bvn_float_to_bin64(f, &mut o);
+                    o.to_le_bytes().to_vec()
+                }
+                128 => {
+                    let mut o = [0u32; 4];
+                    bvn_float_to_bin128(f, o.as_mut_ptr());
+                    words_le_bytes(&o)
+                }
+                256 => {
+                    let mut o = [0u32; 8];
+                    bvn_float_to_bin256(f, o.as_mut_ptr());
+                    words_le_bytes(&o)
+                }
+                _ => return None,
+            })
+        }
+    }
+
+    /// `bvn_float_from_bin{width}` of the little-endian `bytes` (zero-padded
+    /// to the width): whether the library accepted them; `None` for a width
+    /// with no binary format.
+    pub fn set_bin(&mut self, width: u32, bytes: &[u8]) -> Option<bool> {
+        let f = self.ptr();
+        // SAFETY: the float is live and exclusively borrowed; the word arrays
+        // hold the 4 or 8 words the calls read.
+        unsafe {
+            Some(match width {
+                16 => bvn_float_from_bin16(f, le_u64(bytes) as u16),
+                32 => bvn_float_from_bin32(f, le_u64(bytes) as u32),
+                64 => bvn_float_from_bin64(f, le_u64(bytes)),
+                128 => bvn_float_from_bin128(f, le_words::<4>(bytes).as_mut_ptr()),
+                256 => bvn_float_from_bin256(f, le_words::<8>(bytes).as_mut_ptr()),
+                _ => return None,
+            })
+        }
+    }
+
+    /// `bvn_float_to_dec{width}`: the IEEE decimal interchange bytes,
+    /// little-endian; `None` for a width with no decimal format.
+    pub fn to_dec(&self, width: u32) -> Option<Vec<u8>> {
+        let f = self.ptr();
+        // SAFETY: as in `to_bin`.
+        unsafe {
+            Some(match width {
+                16 => {
+                    let mut o = 0u16;
+                    bvn_float_to_dec16(f, &mut o);
+                    o.to_le_bytes().to_vec()
+                }
+                32 => {
+                    let mut o = 0u32;
+                    bvn_float_to_dec32(f, &mut o);
+                    o.to_le_bytes().to_vec()
+                }
+                64 => {
+                    let mut o = 0u64;
+                    bvn_float_to_dec64(f, &mut o);
+                    o.to_le_bytes().to_vec()
+                }
+                128 => {
+                    let mut o = [0u32; 4];
+                    bvn_float_to_dec128(f, o.as_mut_ptr());
+                    words_le_bytes(&o)
+                }
+                256 => {
+                    let mut o = [0u32; 8];
+                    bvn_float_to_dec256(f, o.as_mut_ptr());
+                    words_le_bytes(&o)
+                }
+                _ => return None,
+            })
+        }
+    }
+
+    /// `bvn_float_from_dec{width}` of the little-endian `bytes`, as
+    /// [`FloatHandle::set_bin`].
+    pub fn set_dec(&mut self, width: u32, bytes: &[u8]) -> Option<bool> {
+        let f = self.ptr();
+        // SAFETY: as in `set_bin`.
+        unsafe {
+            Some(match width {
+                16 => bvn_float_from_dec16(f, le_u64(bytes) as u16),
+                32 => bvn_float_from_dec32(f, le_u64(bytes) as u32),
+                64 => bvn_float_from_dec64(f, le_u64(bytes)),
+                128 => bvn_float_from_dec128(f, le_words::<4>(bytes).as_mut_ptr()),
+                256 => bvn_float_from_dec256(f, le_words::<8>(bytes).as_mut_ptr()),
+                _ => return None,
+            })
+        }
+    }
+
+    /// `bvn_float_to_fix{total_bits}`: the signed Q-format datum as
+    /// little-endian two's-complement bytes; `None` for a width with no
+    /// fixed-point format.
+    pub fn to_fix(&self, total_bits: u32, frac_bits: u32) -> Option<Vec<u8>> {
+        let f = self.ptr();
+        // SAFETY: as in `to_bin`.
+        unsafe {
+            Some(match total_bits {
+                16 => bvn_float_to_fix16(f, frac_bits).to_le_bytes().to_vec(),
+                32 => bvn_float_to_fix32(f, frac_bits).to_le_bytes().to_vec(),
+                64 => bvn_float_to_fix64(f, frac_bits).to_le_bytes().to_vec(),
+                128 => {
+                    let mut o = [0u32; 4];
+                    bvn_float_to_fix128(f, frac_bits, o.as_mut_ptr());
+                    words_le_bytes(&o)
+                }
+                256 => {
+                    let mut o = [0u32; 8];
+                    bvn_float_to_fix256(f, frac_bits, o.as_mut_ptr());
+                    words_le_bytes(&o)
+                }
+                _ => return None,
+            })
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Streams: framing, multiplexing, embedding.
 
