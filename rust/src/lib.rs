@@ -19,6 +19,7 @@ mod types;
 pub mod units;
 mod value;
 mod version;
+mod writer;
 
 pub use error::{Error, ErrorKind};
 pub use event::{Event, TokenKind, TypeAnnotation};
@@ -29,3 +30,6 @@ pub use version::SpecVersion;
 
 pub use dom::{parse, parse_with, parse_with_options};
 pub use value::{Annotation, Array, Document, Kind, Number, Struct, Value};
+#[cfg(feature = "std")]
+pub use writer::IoSink;
+pub use writer::{to_string, to_string_compact, to_vec, to_vec_compact, FmtSink, Sink, Writer};
