@@ -23,6 +23,13 @@ For `wasm32-wasip2`, point `WASI_SDK_PATH` at a wasi-sdk:
 WASI_SDK_PATH=/opt/wasi-sdk cargo build --target wasm32-wasip2
 ```
 
+## Versioning
+
+The crate carries the version of the C library it wraps: `version` in
+`Cargo.toml` is the `project(bovnar VERSION x.y.z)` of the top-level
+`CMakeLists.txt`, and CI fails when the two differ. A release tag `vX.Y.Z`
+names that same version.
+
 ## Usage
 
 ```rust

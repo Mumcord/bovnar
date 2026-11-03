@@ -1,6 +1,6 @@
 [package]
 name = "bovnar"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2024"
 description = "Thin Rust binding to the Bovnar (BVNR) C library"
 license = "MIT"
