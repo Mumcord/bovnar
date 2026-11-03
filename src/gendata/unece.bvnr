@@ -886,8 +886,8 @@
   #
   # Three neighbours in the same sweep stay refused, and their reasons now say
   # why rather than repeating the decade line: M48 and MIK are square miles
-  # whose only claimant contradicts itself or does not exist, and P30's
-  # claimant is labelled Lambert while stating the apostilb.
+  # whose only claimant, MI2, contradicts itself, and P30's claimant LA is
+  # labelled Lambert while stating the apostilb (qudt:LA is refused for it).
   { .code = "208";   .bovnar = "miUS^2";          },   # square mile, US statute — QUDT MI_US2, ucumCode [mi_us]2
   { .code = "BUI";   .bovnar = "bsh_uk";          },   # bushel (UK) — QUDT BU_UK, ucumCode [bu_br]
   { .code = "D42";   .bovnar = "yr_trop";         },   # tropical year — QUDT YR_TROPICAL, ucumCode a_t

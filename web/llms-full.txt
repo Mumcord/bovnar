@@ -16236,7 +16236,7 @@ admitted after that pass, which is why they sit after it rather than beside thei
 |---|---|---|---|---|
 | `ucum:` | UCUM — Unified Code for Units of Measure | expression | 206 mapped + 41 arbitrary, **all 312 UCUM defines** | [2](#2-syntax)–[10](#10-cost-risk-and-what-is-left-out) |
 | `unece:` | UN/ECE Recommendation 20 and 21 | flat | 1302 + 25 opaque | [11](#11-the-unece-profile) |
-| `qudt:` | QUDT unit local names | flat | 2244, **all 2803 QUDT defines** | [12](#12-the-qudt-profiles) |
+| `qudt:` | QUDT unit local names | flat | 2243, **all 2803 QUDT defines** | [12](#12-the-qudt-profiles) |
 | `qudt-qk:` | QUDT quantity kinds | flat | 908, **all 1164 QUDT defines** | [12.3](#123-quantity-kinds-qudt-qk) |
 | `udunits:` | UDUNITS-2, the CF/netCDF units syntax | expression | 768 (its regular plurals included), **all 580 UDUNITS defines** | [13](#13-the-udunits-profile) |
 | `om:` | OM 2 — Ontology of units of Measure | flat | 1336 + 124 refused, **every unit individual OM states** | [16](#16-the-om-2-profile) |
@@ -17957,7 +17957,7 @@ One hand-edited data file per namespace in `src/gendata/`, in the same shape as 
 |---|---|
 | `ucum.bvnr` | 20 prefixes, 206 mapped, 40 opaque, 1 opaque alias, 65 unsupported |
 | `unece.bvnr` | 1302 mapped, 25 opaque, 152 unsupported |
-| `qudt.bvnr` | 2244 mapped, 564 unsupported |
+| `qudt.bvnr` | 2243 mapped, 565 unsupported |
 | `qudt-qk.bvnr` | 908 mapped, 257 unsupported |
 | `udunits.bvnr` | 41 prefixes, 768 mapped, 98 unsupported |
 | `om.bvnr` | 1336 mapped, 124 unsupported |
@@ -18664,12 +18664,12 @@ that are equal in SI and different in meaning, and `C94`/`M46` is the pair that 
 
 ## 12. The QUDT profiles
 
-> `qudt:` — QUDT unit local names (2244 mapped, 564 unsupported — every one of the 2803 local
+> `qudt:` — QUDT unit local names (2243 mapped, 565 unsupported — every one of the 2803 local
 > names QUDT defines, plus five refusals for names it does not: `USD`, `EUR` and three `DECIBEL_*`).
 > `qudt-qk:` — QUDT quantity kinds (908 mapped, 257 unsupported — every one of the 1164 kinds,
 > plus a refusal for `LogarithmicRatio`, which QUDT 3.1.0 does not define).
 > Data files `src/gendata/qudt.bvnr` and `src/gendata/qudt-qk.bvnr`;
-> pinned by `tests/bovnar_qudt_test.c` (216 assertions).
+> pinned by `tests/bovnar_qudt_test.c` (217 assertions).
 
 ### 12.1 Why this vocabulary
 

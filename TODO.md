@@ -58,9 +58,9 @@ To pick it up on a new machine:
 6. **Profile coverage** — done 2026-11-03: of the 53, eleven map, 42 stay
    refused with a reason each in `REVIEWED_STALE` (check_profile_factors.py),
    and `qudt-qk:CostPerEnergy`/`CostPerPower` are refused (they dropped the
-   currency). The sweep lists 0. Left open: `qudt:LA` maps to the apostilb,
-   following QUDT's multiplier against its own label and ucumCode (Lambert,
-   `Lmb`); `unece:P30` is refused for the same contradiction.
+   currency). The sweep lists 0. `qudt:LA`, which followed QUDT's apostilb
+   multiplier against its own label and ucumCode (Lambert, `Lmb`), is refused
+   like `unece:P30`.
 
 ## Closed 2026-11-03 — the open items of the 2026-10-12 spec review
 

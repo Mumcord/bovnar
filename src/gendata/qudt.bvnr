@@ -79,7 +79,6 @@
   { .code = "C_Stat";                    .bovnar = "statC"; },
   { .code = "OHM_Stat";                  .bovnar = "statΩ"; },
   { .code = "H_Stat";                    .bovnar = "statH"; },
-  { .code = "LA";                        .bovnar = "apostilb"; },
   { .code = "PERM_US";                   .bovnar = "perm_0C"; },
   { .code = "PERM_Metric";               .bovnar = "perm_m"; },
   { .code = "E";                         .bovnar = "e"; },
@@ -2965,6 +2964,12 @@
   # a boiler rating under a shaft-power name and following the name would
   # contradict the only value QUDT states. Refusing is the third answer, and
   # the one that costs a producer an error message instead of a factor of 13.
+  # The same shape again. LA is labelled "Lambert" with ucumCode Lmb, and
+  # states 0.31830988618 cd/m^2 -- 1/pi, the APOSTILB. The lambert is 1e4/pi,
+  # four decades away. It used to follow the number, which carried every
+  # lambert as an apostilb; unece:P30, whose only claimant is this row, was
+  # already refused for it. Write ucum:Lmb or the native Lmb for a lambert.
+  { .code = "LA";                          .why = "QUDT contradicts itself: the label (Lambert) and ucumCode (Lmb) say the lambert, 1e4/pi cd/m^2, while the multiplier (0.3183098862) is the apostilb, 1/pi -- four decades apart"; },
   { .code = "HP_Brake";                    .why = "QUDT states 9809.5 W, its own HP_Boiler value, for a name that means the mechanical horsepower it also carries as HP; the code and the multiplier disagree by a factor of 13"; },
   { .code = "MI2";                         .why = "QUDT's multiplier (2589997.766) is 2.7e-7 from the survey square mile and 3.7e-6 from the international one; the name does not say which"; },
   { .code = "MIL";                         .why = "no native unit of this dimension is a decade away from QUDT's multiplier (0.000490873852)"; },

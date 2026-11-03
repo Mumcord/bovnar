@@ -534,7 +534,7 @@ REVIEWED_STALE = {
     ("qudt", "IU-PER-MilliGM"):
         "an international unit is assay-defined, not an amount of substance",
     **{("qudt", c): _R_CONTRADICTS for c in (
-        "HP_Brake", "MI2", "MicroM-PER-MilliL")},
+        "HP_Brake", "LA", "MI2", "MicroM-PER-MilliL")},
     **{("unece", c): _R_CONTRADICTS for c in ("M48", "MIK", "P30")},
     **{(ns, c): _R_LOG_RATE for ns, c in (
         ("qudt", "NAT-PER-SEC"), ("unece", "Q19"),

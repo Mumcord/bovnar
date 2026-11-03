@@ -309,6 +309,11 @@ static void test_quantity_kinds(void)
 
 	/* And one QUDT unit: a percent per decakelvin is 0.001 K^-1. */
 	chk_factor("qudt:PERCENT-PER-DecaK", 1e-3);
+
+	/* LA is labelled Lambert (ucumCode Lmb) but states the apostilb's 1/pi:
+	 * four decades apart, so it is refused like unece:P30 rather than read
+	 * as either. */
+	chk_error("qudt:LA", error_unit_profile_unsupported);
 }
 
 static void test_kind_agrees_with_unit(void)

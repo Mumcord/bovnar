@@ -144,6 +144,12 @@ the docs, build and packaging — each finding reproduced before it was fixed.
   0.30 J⁻¹; every applicable unit QUDT lists for them is a currency
   compound, which `CostPerArea`, `CostPerMass` and the `CCY_*` units were
   already refused for. They are refused now.
+- **`qudt:LA` read a lambert as an apostilb.** QUDT labels it Lambert with
+  ucumCode `Lmb` but states 0.3183098862 cd/m², the apostilb's 1/π; the
+  lambert is 10⁴/π. It followed the number and is refused now, as
+  `unece:P30` (whose only claimant it is) already was. Write `ucum:Lmb` or the
+  native `Lmb`. The apostilb has no QUDT spelling as a result, since QUDT
+  defines none.
 - **The 53 refusals an existing native unit would cover, read one by one.**
   Eleven map now: `qudt-qk:AreaBitDensity` (b/m²), `VolumetricBitDensity`
   (b/m³), `ParticleCurrentDensity` (m⁻²·s⁻¹), `PhotonLuminance`
