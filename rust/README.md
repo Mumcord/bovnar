@@ -3,18 +3,13 @@
 Rust bindings for **Bovnar (BVNR)** — a typed, unit-aware serialisation format
 with a C99 reference implementation.
 
-This crate is a thin wrapper around the upstream C library, modelled 1:1 on the
-Python binding in `../python`. The C sources are compiled by `build.rs`; there
-is no system library to install.
+This crate is a thin wrapper around the upstream C library. The C sources are
+compiled by `build.rs`; there is no system library to install.
 
-**It mirrors the Python binding; it is not an idiomatic Rust API.** That is a
-deliberate choice: the same names, the same entry points and the same
-behaviour as `../python`, so the two bindings stay as simple as each other and
-a change upstream maps onto both the same way. Expect Python's shapes
-(`parse`/`to_string` over a dynamic `Value`, `Reader` callbacks, `Writer`
-events) rather than serde integration, builders or typed deserialisation.
-Where Rust's types can say more than Python's at no cost to that mirror, they
-do: the C enums are Rust enums, and errors carry the library's error kind.
+The API stays close to the C library: `parse`/`to_string` over a dynamic
+`Value`, a DOM, `Reader` callbacks and `Writer` events, rather than serde
+integration, builders or typed deserialisation. The C enums are Rust enums,
+and errors carry the library's error kind.
 
 ## Versioning
 
@@ -30,8 +25,8 @@ Requirements: Rust 1.88 or later, a C compiler, and `python3` on `PATH` (the
 build runs the upstream table generators, exactly as CMake does).
 
 The crate depends on `num-bigint`, `num-rational`, `num-integer` and
-`num-traits` for exact numbers: Python's `int`, `Fraction` and the
-coefficient of its `Decimal`.
+`num-traits` for exact numbers: wide integers, exact fractions and the
+coefficient of `Decimal`.
 
 ```bash
 cargo build
@@ -63,7 +58,7 @@ The examples below are compiled and run as doctests (`cargo test --doc`).
 use bovnar::{DomDoc, Event, EventData, ReadOptions, Reader, Value, parse};
 
 fn main() -> Result<(), bovnar::Error> {
-    // Python's loads(): a plain Value tree.
+    // A plain Value tree.
     let doc = parse(b".host = \"api.example.com\"; .port = <uint:16> 443;")?;
     let Value::Struct(fields) = doc else { unreachable!() };
     assert_eq!(fields[1], ("port".to_string(), Value::Int(443)));
@@ -99,7 +94,7 @@ fn main() -> Result<(), bovnar::Error> {
 use bovnar::{Base, Value, Writer, to_string};
 
 fn main() -> Result<(), bovnar::Error> {
-    // Python's dumps(): a Value tree to a document.
+    // A Value tree to a document.
     let out = to_string(&Value::Struct(vec![("port".into(), Value::Int(443))]), false)?;
     assert_eq!(bovnar::parse(&out)?, bovnar::parse(b".port = 443;")?);
 
@@ -119,8 +114,8 @@ fn main() -> Result<(), bovnar::Error> {
 
 ### Files and I/O streams
 
-Python's `read_fd`, `parse_fd` and `to_fd` take any `std::io::Read` or
-`std::io::Write` here: a `File`, a pipe, a socket, a `Cursor`.
+The I/O entry points take any `std::io::Read` or `std::io::Write`: a `File`,
+a pipe, a socket, a `Cursor`.
 
 ```rust
 use std::io::Cursor;
@@ -156,11 +151,11 @@ fn main() -> Result<(), bovnar::Error> {
 ### Exact numbers
 
 `Quantity::decimal`, `fraction`, `fixed_point`, `stored_value` and
-`ieee_bits` read a float at the precision its format carries, as Python's
-properties of the same names do. Python's `Fraction` is
-`num_rational::BigRational`; its `Decimal` is `bovnar::Decimal`, an exact
-decimal (sign, coefficient, exponent, or infinity or NaN) that compares
-numerically and prints like Python's `str()`.
+`ieee_bits` read a float at the precision its format carries. Exact fractions
+are `num_rational::BigRational`; exact decimals are `bovnar::Decimal` (sign,
+coefficient, exponent, or infinity or NaN), which compares numerically and
+prints with the to-scientific-string conversion of General Decimal
+Arithmetic.
 
 ```rust
 use bovnar::{Decimal, Quantity, Value, parse_typed};
@@ -186,8 +181,8 @@ fn main() -> Result<(), bovnar::Error> {
 
 ### Enums
 
-The C enums are Rust enums named like Python's `enums.py` members, in
-CamelCase (`BaseUnit.METER` is `BaseUnit::Meter`). Raw C values convert with
+The C enums are Rust enums whose variants are the C enumerators in
+CamelCase, without their prefix (`bu_meter` is `BaseUnit::Meter`). Raw C values convert with
 `TryFrom<i32>`, which refuses an unknown value, and back with `i32::from`.
 `Exponent` and `Base` are open ranges, so they are checked newtypes with the
 common values named.
@@ -209,8 +204,8 @@ fn main() -> Result<(), bovnar::Error> {
 
 ### Errors
 
-`Error` mirrors Python's exception classes (`Parse`, `Write`, `Argument`,
-and `OutOfMemory` for `MemoryError`). `kind()` gives the library's error
+`Error` has a variant per kind of failure (`Parse`, `Write`, `Argument`,
+`OutOfMemory`, `Io`). `kind()` gives the library's error
 name as an `ErrorKind` wherever it reported one, `position()` where the
 input was refused.
 
@@ -231,9 +226,8 @@ match Unit::parse("furlong per fortnight") {
 
 ## API overview
 
-- **Plain values:** `parse` (Python's `loads`), `parse_typed`
-  (`loads(typed=True)`, keeping types and units in `Quantity`), `to_string`
-  (`dumps`) and `write_array` over the dynamic `Value`.
+- **Plain values:** `parse`, `parse_typed` (keeping types and units in
+  `Quantity`), `to_string` and `write_array` over the dynamic `Value`.
 - **DOM:** `DomDoc::parse` / `parse_with_policy`, then `get`, `lookup`
   (dotted paths), `entries` and `DomNode` accessors; `to_value` fails rather
   than inventing a value for a node it cannot read.
@@ -241,13 +235,13 @@ match Unit::parse("furlong per fortnight") {
   `UnitPolicy`) and `Writer` (typed `write_*` calls, structs, arrays and raw
   `emit`). The writer's arguments are typed: `Base` (the bases bovnar has an
   alphabet for, 2..62, 64, 85; `Base::DECIMAL`, `Base::HEX`), `Signedness`
-  (`Signed`, `Unsigned`, `Auto` for Python's `signed=True/False/None`) and
-  `EmitSpec` (Python's `emit` keyword arguments, with a table in its docs).
-- **Files and I/O streams:** Python's file-descriptor entry points take any
-  `std::io::Read` / `std::io::Write` instead: `Reader::read_reader` and
-  `read_reader_want_unit` (`read_fd`), `DomDoc::parse_reader` and
-  `parse_reader_with_policy` (`parse_fd`), `Writer::to_writer` and
-  `to_writer_with` (`to_fd`). The C library takes no callback source or
+  (`Signed`, `Unsigned`, `Auto`) and `EmitSpec` (the options of `emit`, with
+  a table in its docs).
+- **Files and I/O streams:** `Reader::read_reader` and
+  `read_reader_want_unit`, `DomDoc::parse_reader` and
+  `parse_reader_with_policy`, `Writer::to_writer` and `to_writer_with` take
+  any `std::io::Read` / `std::io::Write`; a path is read or written through
+  an opened `std::fs::File`. The C library takes no callback source or
   sink, so they go through memory: the input is read in full (to one byte
   past `max_file_size` when it is set, and at most 256 MiB for the DOM, the
   cap of `bvn_dom_parse_fd`), and the writer's document is written out by
@@ -255,39 +249,36 @@ match Unit::parse("furlong per fortnight") {
   `to_writer_with` sets another. A failing reader or writer is an
   `Error::Io` with the code the C fd source or sink gives
   (`reading_from_source_fd`, `writing_to_sink`). No file descriptor is
-  involved, so they work the same on Windows. Python's `loads`, `dumps`
-  and the stream helpers have no fd form, so neither do `parse`,
-  `to_string` and `stream`.
+  involved, so they work the same on Windows. `parse`, `to_string` and
+  `stream` work on memory only.
 - **Exact numbers:** the `Quantity` accessors `decimal`, `fraction`,
-  `fixed_point`, `stored_value` and `ieee_bits`; `Decimal` (Python's
-  `Decimal`) and `BigRational` (its `Fraction`), also as the `Value`
-  variants `Decimal` and `Fraction`, which `to_string` writes as
-  `float_dec:64` like `dumps`; `Quantity::from_number` taking an
+  `fixed_point`, `stored_value` and `ieee_bits`; `Decimal` and
+  `BigRational`, also as the `Value` variants `Decimal` and `Fraction`,
+  which `to_string` writes as `float_dec:64`; `Quantity::from_number` taking an
   `ExactNumber` (a literal, `Decimal`, `BigRational`, `BigInt` or `f64`).
-  `BvnFloat` and the `bvnfloat` module (`_bvnfloat.py`) reach the library's
+  `BvnFloat` and the `bvnfloat` module reach the library's
   arbitrary-precision float: the IEEE binary and decimal interchange
   encodings and the fixed-point datum, plus the exact materialisers used
-  past the C parser's exponent cap. One deliberate difference: the
-  `stored_value` of a `float_fix` is exact, where Python divides in its
-  28-digit default context and rounds a wide datum (the same goes for the
-  literal of a terminating `Fraction`).
+  past the C parser's exponent cap. The `stored_value` of a `float_fix` is
+  exact, however wide its datum (as is the literal of a terminating
+  fraction).
 - **Units:** `Unit`, `UnitComponent` (a `BaseUnit`, an `Exponent` and a
   `Prefix`), the `units` and `currency` modules.
 - **Enums:** `Event`, `TokenType`, `ValueTypeFamily`, `ErrorCode`,
-  `BaseUnit`, `PrefixSystem`, `SIPrefix`, `IECPrefix`, named like Python's
-  members in CamelCase, with `TryFrom<i32>` (an unknown value is an
-  `UnknownValue` error) and `From<_> for i32`. `BaseUnit` also covers the unit
-  profiles' opaque ids (`UcumIu` for `ucum:[IU]`), which Python's leaves out.
+  `BaseUnit`, `PrefixSystem`, `SIPrefix`, `IECPrefix`, with the C
+  enumerators in CamelCase, `TryFrom<i32>` (an unknown value is an `UnknownValue` error) and
+  `From<_> for i32`. `BaseUnit` also covers the unit profiles' opaque ids
+  (`UcumIu` for `ucum:[IU]`).
   `Exponent` and `Base` are open ranges, so they are checked newtypes.
-- **Errors:** `Error` mirrors Python's exception classes: `Parse`, `Write`,
-  `Argument` and `OutOfMemory` (`MemoryError`), plus `Io` for a failing
+- **Errors:** `Error` has the variants `Parse`, `Write`, `Argument` and
+  `OutOfMemory`, plus `Io` for a failing
   `std::io::Read` / `Write`. `kind()` is the library's
   error name as an `ErrorKind` wherever it reported one (an unparsable unit
   or a refused policy included), `name()` its C spelling, and `position()`
   the line, column and offset where the input was refused. A `DomDoc::parse`
   error has no position: the C DOM reports only the code, so read the
   document with `Reader` to locate it.
-- **JSON:** `json::from_json`, `json::to_json` and `json::detect`, mirroring
+- **JSON:** `json::from_json`, `json::to_json` and `json::detect`, matching
   the CLI's `bovnar convert`. JSON has one number type, so two values change
   on the way back, as with the CLI: a float with an integral value becomes an
   integer (`1e+6` is written `1000000` and reads back as `uint`), and `-0.0`
@@ -302,12 +293,13 @@ match Unit::parse("furlong per fortnight") {
 
 ## Tests
 
-- `cargo test` runs the Rust tests: 33 of Python's 38 test files are ported
-  one to one, one `tests/*.rs` file each with the Python test names; the ABI
-  check (`test_abi.py`) is three unit tests of the same names in
-  `src/ffi.rs`, because the mirrored structs are private. Tests that could
-  not be ported are listed at the top of each port, with the reason, and
-  summed up under "Not mirrored" below.
+- `cargo test` runs the unit tests in `src/` and the integration tests in
+  `tests/`, one file per area (reader, writer, DOM, units, currencies, exact
+  floats, datetimes, streams, round trips and more). The ABI checks, which
+  compare the private FFI structs with the C compiler's layout, are unit
+  tests in `src/ffi.rs`. Integers wider than `i128` are tested through
+  `Quantity`: the exact literal under a `uint` / `sint` annotation, read back
+  exactly with `parse_typed` or `DomNode::as_int_str`.
 - `test_writers_agree` compares `to_string` with the C CLI's `pretty-print`,
   so it is `#[ignore]`d unless the CLI is built at `<repo>/build/bovnar`:
   `cmake -B build . && cmake --build build --target bovnar`, then
@@ -337,8 +329,8 @@ C library's: a version check (crate version = `CMakeLists.txt` version),
 fmt, clippy `-D warnings` and the tests on Linux x64 (with the CLI for
 `test_writers_agree`), Linux aarch64, macOS, Windows MSVC x64 and Windows
 MinGW64, a build and test on Rust 1.88, and a `wasm32-wasip2` build with
-wasi-sdk. The release job does not wait for them, so the C archives and the
-PyPI release never depend on the Rust jobs.
+wasi-sdk. The release job does not wait for them, so the C release archives
+never depend on the Rust jobs.
 
 The crate is **not published to crates.io**, and `Cargo.toml` keeps
 `publish = false`: as it stands it cannot be packaged. `cargo publish` packs
@@ -351,54 +343,6 @@ only `rust/`, while `build.rs` compiles `../src` and `../include` and runs the
 - `build.rs` reading them from inside the package;
 - a release step, under the same tag == version gate as the GitHub release,
   with a crates.io token, and `publish = false` removed.
-
-## Layout
-
-| Rust            | Python          |
-|-----------------|-----------------|
-| `src/ffi.rs`    | `_ffi.py`, `structs.py` (the only `unsafe` code) |
-| `src/reader.rs` | `reader.py`     |
-| `src/writer.rs` | `writer.py`     |
-| `src/dom.rs`    | `dom.py`        |
-| `src/enums.rs`  | `enums.py`      |
-| `src/error.rs`  | `exceptions.py` |
-| `src/unit.rs`   | `unit.py`       |
-| `src/units.rs`  | `units.py` and the unit functions of `__init__.py` |
-| `src/quantity.rs` | `quantity.py` |
-| `src/bvnfloat.rs` | `_bvnfloat.py` |
-| `src/decimal.rs` | Python's `decimal.Decimal` (the exact value only) |
-| `src/currency.rs` | `currency.py` (read from the C catalogue) |
-| `src/stream.rs` | `stream.py`     |
-| `src/json.rs`   | none (mirrors the CLI's `bovnar convert` JSON <-> BVNR) |
-| `src/lib.rs`    | `__init__.py` (`parse`/`parse_typed`/`to_string` = `loads`/`loads(typed=True)`/`dumps`, `write_array`) |
-
-## Not mirrored
-
-Raw file descriptors are not mirrored: the fd entry points are
-`std::io::Read` / `std::io::Write` ones (see "Files and I/O streams" above),
-and the path ones (`read_file`, `parse_file`, `to_file`) are those over an
-opened `std::fs::File`.
-
-1240 of Python's tests are ported; the 49 left out are:
-
-- The ctypes mirrors (24, `test_structs`): sizes, zero-initialised raw
-  structs, the prefix-id union, `repr`, the opaque blobs and the
-  `make_data_*` helpers, all of which are private here. Their layout is
-  checked against the C compiler by the `test_abi` tests in `src/ffi.rs`.
-- Python typing, dunder and object behaviour Rust rules out at compile time
-  (24): a wrong argument type (`Unit(42)`, a non-`str` key, a non-`bytes`
-  input, a non-`ValueTypeSpec` type, `int` where `str` is expected,
-  `10**5000` passed to `write_uint`'s `u64`), `repr`, negative indexing,
-  `with` / `close` / `destroy` lifecycles, a frozen dataclass, a
-  property called as a method, a one-shot generator argument, buffer types
-  (`bytearray`, `memoryview`), the ctypes library loader and garbage
-  collection of a half-built object.
-- CPython's `int_max_str_digits` (1): the private `_bigint` helpers that
-  work around it; Rust has no such limit.
-
-Integers wider than `i128` (`Value::Int`) are ported through `Quantity`:
-the exact literal under a `uint` / `sint` annotation, read back exactly with
-`parse_typed` or `DomNode::as_int_str`.
 
 ## License
 
