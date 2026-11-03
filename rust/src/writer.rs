@@ -453,7 +453,10 @@ impl Writer {
         self.check(|h| h.write_event(event as i32, token as i32, vt, data))
     }
 
-    fn check(&mut self, call: impl FnOnce(&mut ffi::WriterHandle) -> bool) -> Result<()> {
+    pub(crate) fn check(
+        &mut self,
+        call: impl FnOnce(&mut ffi::WriterHandle) -> bool,
+    ) -> Result<()> {
         if call(&mut self.handle) {
             Ok(())
         } else {

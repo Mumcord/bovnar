@@ -14,6 +14,7 @@ pub mod error;
 mod ffi;
 pub mod quantity;
 pub mod reader;
+pub mod stream;
 pub mod unit;
 pub mod units;
 pub mod writer;
@@ -429,7 +430,7 @@ pub(crate) fn decode_value(raw: &[u8], vt: ValueTypeSpec, token: Option<TokenTyp
 /// Arrays are sealed lazily: a row end leaves its array pending, and the next
 /// event decides whether a `/` continues it, an enclosing row takes it as an
 /// element, or the assignment it belongs to is complete.
-mod dict_parser {
+pub(crate) mod dict_parser {
     use crate::{Event, EventData, Quantity, TokenType, Value, ValueTypeFamily, decode_value};
 
     #[derive(Default)]

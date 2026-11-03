@@ -1240,6 +1240,41 @@ impl WriterHandle {
         with_policy(policy, |p| unsafe { bvnr_writer_set_unit_policy(w, p) })
     }
 
+    /// `bvnr_mux_begin`, then `bvnr_mux_send` for each message, then
+    /// `bvnr_mux_end`: a multiplexed stream under `key`.
+    pub fn mux(&mut self, key: &str, messages: &[(u64, &[u8])]) -> bool {
+        let Ok(key) = CString::new(key) else {
+            return false;
+        };
+        let w = self.ptr.as_ptr();
+        // SAFETY: the writer is live; `key` and every payload are valid for
+        // their call and only read.
+        unsafe {
+            bvnr_mux_begin(w, key.as_ptr())
+                && messages.iter().all(|(ch, data)| {
+                    bvnr_mux_send(w, *ch, data.as_ptr().cast_mut().cast(), data.len() as u64)
+                })
+                && bvnr_mux_end(w)
+        }
+    }
+
+    /// `bvnr_embed_document`: `doc` as a canonical embedded document under `key`.
+    pub fn embed_document(&mut self, key: &str, doc: &[u8]) -> bool {
+        let Ok(key) = CString::new(key) else {
+            return false;
+        };
+        // SAFETY: the writer is live; `key` and `doc` are only read during
+        // the call.
+        unsafe {
+            bvnr_embed_document(
+                self.ptr.as_ptr(),
+                key.as_ptr(),
+                doc.as_ptr().cast_mut().cast(),
+                doc.len() as u64,
+            )
+        }
+    }
+
     /// `bvnr_writer_unit_flags`.
     pub fn unit_flags(&self) -> u32 {
         // SAFETY: the writer is live.
@@ -1533,6 +1568,173 @@ pub fn parse_float_base(text: &str, base: u32) -> Option<f64> {
         let ok = bvn_float_from_str(f, t.as_ptr(), base) && bvn_float_to_double(f, &mut out);
         bvn_float_free(f);
         ok.then_some(out)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Streams: framing, multiplexing, embedding.
+
+/// `bvnr_sink_to_mem` + `bvnr_frame_write` for each document: the framed
+/// concatenation, 12 header bytes per document.
+pub fn frame_documents(docs: &[&[u8]]) -> Option<Vec<u8>> {
+    let total: usize = docs.iter().map(|d| 12 + d.len()).sum();
+    let mut out = vec![0u8; total.max(1)];
+    let mut sink = BvnrSink {
+        opaque: [0; OPAQUE_BYTES / 8],
+    };
+    // SAFETY: `out` has `total` writable bytes and outlives `sink`; every
+    // document is only read during its call.
+    let ok = unsafe {
+        bvnr_sink_to_mem(&mut sink, out.as_mut_ptr().cast(), total as u64);
+        docs.iter()
+            .all(|d| bvnr_frame_write(&mut sink, d.as_ptr().cast_mut().cast(), d.len() as u64))
+    };
+    out.truncate(total);
+    ok.then_some(out)
+}
+
+/// `bvnr_doc_stream_read` over `data`: `h.verified` sees each document's
+/// events and `h.on_document` each document's end. Returns (ok, count).
+pub fn doc_stream_read(
+    data: &[u8],
+    mut flags: BvnrReadFlags,
+    continue_past_failed: bool,
+    max_document_size: u64,
+    h: &mut Handlers<'_>,
+) -> (bool, u64) {
+    h.install(&mut flags);
+    let mut opts = BvnrDocStreamOpts {
+        flags: &mut flags,
+        userdata: flags.userdata,
+        on_document: Some(on_document_trampoline as OnDocumentFn),
+        continue_past_failed,
+        max_document_size,
+    };
+    let mut src = BvnrSource {
+        opaque: [0; OPAQUE_BYTES / 8],
+    };
+    let mut count = 0;
+    // SAFETY: `data`, `flags`, `opts` and `h` outlive both calls, and nothing
+    // else touches `h` meanwhile; the source only reads `data`.
+    let ok = unsafe {
+        bvnr_source_from_mem(&mut src, data.as_ptr().cast_mut().cast(), data.len() as u64);
+        bvnr_doc_stream_read(&mut src, &mut opts, &mut count)
+    };
+    h.resume();
+    (ok, count)
+}
+
+extern "C" fn on_document_trampoline(ud: *mut c_void, index: u64, ok: bool, err: c_int) -> bool {
+    // SAFETY: `ud` is the installed `Handlers`.
+    let h = unsafe { handlers(ud) };
+    h.guard(false, |h| {
+        h.on_document.as_mut().is_none_or(|f| f(index, ok, err))
+    })
+}
+
+/// `bvnr_parse_embedded`: `h.verified` sees the inner document's events and
+/// `h.first_error` records why it failed.
+pub fn parse_embedded(inner: &[u8], mut flags: BvnrReadFlags, h: &mut Handlers<'_>) -> bool {
+    h.install(&mut flags);
+    // SAFETY: `inner`, `flags` and `h` outlive the call; `inner` is only read.
+    let ok = unsafe {
+        bvnr_parse_embedded(
+            inner.as_ptr().cast_mut().cast(),
+            inner.len() as u64,
+            &mut flags,
+        )
+    };
+    h.resume();
+    ok
+}
+
+/// Why [`demux_read`] failed.
+pub enum DemuxError {
+    /// The demultiplexer lost sync (`bvnr_demux_error`).
+    Demux(c_int),
+    /// The reader refused the stream.
+    Read(ReaderError),
+    OutOfMemory,
+}
+
+extern "C" fn on_message_trampoline(
+    ud: *mut c_void,
+    ch: u64,
+    data: *const c_void,
+    len: u64,
+) -> bool {
+    // SAFETY: `ud` is the message vector `demux_read` keeps alive, and
+    // `data` holds `len` bytes for the call.
+    let (out, payload) = unsafe {
+        let len = usize::try_from(len).unwrap_or(0);
+        let payload = if data.is_null() || len == 0 {
+            Vec::new()
+        } else {
+            std::slice::from_raw_parts(data.cast::<u8>(), len).to_vec()
+        };
+        (&mut *ud.cast::<Vec<(u64, Vec<u8>)>>(), payload)
+    };
+    out.push((ch, payload));
+    true
+}
+
+/// A reader feeding `bvnr_demux_on_event`: the messages of a multiplexed
+/// stream, in order.
+pub fn demux_read(
+    data: &[u8],
+    mut flags: BvnrReadFlags,
+    max_message: u64,
+    key: Option<&str>,
+) -> Result<Vec<(u64, Vec<u8>)>, DemuxError> {
+    let key = key
+        .map(CString::new)
+        .transpose()
+        .map_err(|_| DemuxError::OutOfMemory)?;
+    let mut messages: Vec<(u64, Vec<u8>)> = Vec::new();
+    let mut reader = ReaderHandle::new().ok_or(DemuxError::OutOfMemory)?;
+    // SAFETY: `messages` outlives the demux, which is destroyed below.
+    let dm = unsafe {
+        bvnr_demux_create(
+            on_message_trampoline,
+            (&raw mut messages).cast(),
+            max_message,
+        )
+    };
+    if dm.is_null() {
+        return Err(DemuxError::OutOfMemory);
+    }
+    // SAFETY: `dm` is live; `key` is NUL-terminated.
+    if key.is_some_and(|k| !unsafe { bvnr_demux_set_key(dm, k.as_ptr()) }) {
+        // SAFETY: `dm` is live and destroyed once.
+        unsafe { bvnr_demux_destroy(dm) };
+        return Err(DemuxError::OutOfMemory);
+    }
+    let mut forward = |v: &EventView<'_>| {
+        let d = v
+            .data
+            .map_or(std::ptr::null_mut(), |d| (d as *const BvnrData).cast_mut());
+        // SAFETY: `dm` is live; `d` is the event's data, valid for the call
+        // and only read by the demux.
+        unsafe { bvnr_demux_on_event(dm, v.event, d) }
+    };
+    let mut h = Handlers {
+        verified: Some(&mut forward),
+        ..Handlers::default()
+    };
+    flags.max_file_size = 0;
+    let ok = reader.read_mem(data, flags, &mut h);
+    // SAFETY: `dm` is live; it is destroyed exactly once, after its last use.
+    let derr = unsafe {
+        let e = bvnr_demux_error(dm);
+        bvnr_demux_destroy(dm);
+        e
+    };
+    if derr != 0 {
+        Err(DemuxError::Demux(derr))
+    } else if !ok {
+        Err(DemuxError::Read(reader.error()))
+    } else {
+        Ok(messages)
     }
 }
 
