@@ -183,7 +183,7 @@ def check_codes(p):
     lists would resolve by whichever table the C side happens to search first,
     which is not a decision this data should be making implicitly."""
     seen = {}
-    for listname in ("mapped", "opaque", "unsupported"):
+    for listname in ("mapped", "opaque", "opaque_aliases", "unsupported"):
         for rec in p.list(listname):
             code = rec["code"]
             if code in seen:
@@ -216,7 +216,7 @@ def check_codes_reachable(p):
     catches whatever this shape rule does not."""
     if p.grammar == "flat":
         return
-    for listname in ("mapped", "opaque"):
+    for listname in ("mapped", "opaque", "opaque_aliases"):
         for rec in p.list(listname):
             code = rec["code"]
             if code and code[-1].isdigit() and not code[0].isdigit():
@@ -226,6 +226,31 @@ def check_codes_reachable(p):
                        "could never be read. Move it to .unsupported with a why,"
                        " or spell the unit some other way."
                        % (code, code.rstrip("0123456789")))
+
+
+def opaque_targets(p):
+    """code -> opaque row, for resolving .opaque_aliases."""
+    return {a["code"]: a for a in p.list("opaque")}
+
+
+def check_opaque_aliases(p):
+    """A second spelling of one of this profile's OWN opaque units.
+
+    The alias takes the target's id, so the two compare equal -- the reason the
+    list exists -- and it takes the target's prefix rule, because the prefix
+    policy is a row per id and one id cannot carry two rules. An alias may not
+    name another alias: the chain would have to be resolved somewhere, and a
+    one-step rule leaves nothing to resolve."""
+    targets = opaque_targets(p)
+    for a in p.list("opaque_aliases"):
+        if a.get("of") not in targets:
+            die(p, "opaque alias %r names %r, which is not a code in this "
+                   "profile's .opaque" % (a.get("code"), a.get("of")))
+        extra = set(a) - {"code", "of"}
+        if extra:
+            die(p, "opaque alias %r has %s; an alias has only .code and .of -- "
+                   "its id, name and prefix rule are the target's"
+                   % (a["code"], ", ".join(sorted("." + k for k in extra))))
 
 
 def check_prefixes(p):
@@ -355,8 +380,11 @@ def check_profile_string_bound(p):
     pfx_max = max((byte_len(x["code"]) for x in p.list("prefixes")), default=0)
     # An atom only takes a prefix if the profile marks it metric, so the worst
     # case is the longest metric code plus a prefix, against the longest overall.
+    targets = opaque_targets(p)
     codes = [(byte_len(r["code"]), bool(r.get("metric", False)))
              for r in list(p.list("mapped")) + list(p.list("opaque"))]
+    codes += [(byte_len(a["code"]), bool(targets[a["of"]].get("metric", False)))
+              for a in p.list("opaque_aliases")]
     code_max = max(
         (n + (pfx_max if metric else 0) for n, metric in codes), default=0)
     ns = len(p.ns) + 1                   # "ucum:"
@@ -445,7 +473,8 @@ def gen_prefix_table(p):
 
 def gen_atom_table(p):
     """One table for both kinds. A mapped code carries its native target text
-    and bu_none; an opaque code carries a NULL target and its own base id.
+    and bu_none; an opaque code carries a NULL target and its own base id, and
+    an opaque alias the target's base id and metric flag.
     Keeping them in one length-sorted table is what makes the longest-suffix
     match correct across both -- two tables would need the matcher to try each
     and compare lengths, which is the same thing done worse."""
@@ -456,6 +485,11 @@ def gen_atom_table(p):
     for a in p.list("opaque"):
         rows.append((a["code"], "NULL", "bu_" + a["name"],
                      "true" if a.get("metric", False) else "false"))
+    targets = opaque_targets(p)
+    for a in p.list("opaque_aliases"):
+        t = targets[a["of"]]
+        rows.append((a["code"], "NULL", "bu_" + t["name"],
+                     "true" if t.get("metric", False) else "false"))
     rows.sort(key=lambda r: (-byte_len(r[0]), r[0]))
     out = [BANNER % ("src/gendata/" + p.data)]
     for code, target, base, metric in rows:
@@ -721,6 +755,7 @@ def main(argv):
         p.doc = load(os.path.join(gendata, p.data))
         check_codes(p)
         check_codes_reachable(p)
+        check_opaque_aliases(p)
         check_prefixes(p)
 
     units, pfx, allpfx, iec = native_registry()
@@ -759,11 +794,13 @@ def main(argv):
         rev, nrev = gen_reverse_table(p, units, pfx, iec)
         bvnr_data.write_if_changed(base + "reverse.gen.inc", rev)
         nop = len(p.list("opaque"))
+        nal = len(p.list("opaque_aliases"))
         summary.append(
-            "  %-8s %s  %3d mapped, %2d opaque%s, %2d unsupported, "
+            "  %-8s %s  %3d mapped, %2d opaque%s%s, %2d unsupported, "
             "%2d prefixes, %3d reverse; longest %d/%d"
             % (p.ns, p.grammar, len(p.list("mapped")), nop,
                (" (%d..%d)" % (p.opaque_first, p.opaque_last)) if nop else "",
+               (" + %d alias%s" % (nal, "" if nal == 1 else "es")) if nal else "",
                len(p.list("unsupported")), len(p.list("prefixes")), nrev,
                worst, cap))
 

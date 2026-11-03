@@ -382,6 +382,30 @@ static void test_arbitrary(void)
 	/* UCUM's metric flag is enforced: [IU] takes prefixes, [arb'U] does not. */
 	chk_str("ucum:k[IU]", "ucum:k[IU]");
 	chk_error("ucum:k[arb'U]", error_unit_illegal);
+
+	/* The one exception UCUM states: [IU] is defined as 1 [iU]. Both spellings
+	 * read as one opaque unit, so they compare equal, convert by factor 1 and
+	 * write back as [IU]; [iU] keeps [IU]'s prefix rule. Nothing else moves:
+	 * [iU] is still not [PFU]. */
+	value_unit_t iu_i = U("ucum:[iU]");
+	ASSERT_TRUE(bvn_unit_equal(iu_i, iu), "[iU] is [IU]");
+	ASSERT_TRUE(bvn_unit_is_profile_only(iu_i), "[iU] has no native spelling");
+	ASSERT_FALSE(bvn_unit_equal(iu_i, pfu), "[iU] is NOT [PFU]");
+	cok = true;
+	f = bvn_unit_convert_factor(iu_i, iu, &cok, &aff2);
+	ASSERT_TRUE(cok && fabs(f - 1.0) < 1e-15, "[iU] -> [IU] is identity");
+	cok = true;
+	f = bvn_unit_convert_factor(U("ucum:[iU]/L"), U("ucum:[IU]/mL"),
+	                            &cok, &aff2);
+	ASSERT_TRUE(cok && fabs(f - 0.001) < 1e-15,
+	            "[iU]/L -> [IU]/mL is exactly 1/1000");
+	cok = true;
+	(void)bvn_unit_convert_factor(iu_i, pfu, &cok, &aff2);
+	ASSERT_FALSE(cok, "[iU] does not convert to [PFU]");
+	chk_str("ucum:[iU]", "ucum:[IU]");
+	chk_str("ucum:k[iU]", "ucum:k[IU]");
+	ASSERT_TRUE(bvn_unit_equal(U("ucum:m[iU]/mL"), U("ucum:m[IU]/mL")),
+	            "m[iU]/mL is m[IU]/mL");
 }
 
 /* ── round trip ─────────────────────────────────────────────────────────── */

@@ -779,12 +779,15 @@ does not appear to need. A named refusal is better than either.</p>
 <p>UCUM's arbitrary units — <code>[IU]</code>, <code>[arb'U]</code>, <code>[PFU]</code>, <code>[CFU]</code>, and the rest of that table — are
 assay-defined. UCUM's own rule is that they are commensurable with nothing, including each other —
 with one exception UCUM states itself: <code>[IU]</code> is defined as <code>1 [iU]</code>, the international unit in
-two spellings. Bovnar carries them as <strong>two</strong> opaque units that do not compare equal, so
-<code>ucum:[IU]</code> and <code>ucum:[iU]</code> cannot be converted into one another; write one spelling throughout.
-They are also the single largest reason a real clinical code fails to map (§6.4).</p>
+two spellings. Bovnar carries that pair as <strong>one</strong> opaque unit: <code>ucum:[iU]</code> reads as <code>ucum:[IU]</code>,
+the two compare equal, <code>[iU]/L</code> converts to <code>[IU]/mL</code> like any other volume change, and both are
+written back as <code>ucum:[IU]</code>. They are also the single largest reason a real clinical code fails to
+map (§6.4).</p>
 <p>The profile admits all <strong>41</strong> of them, as a contiguous run at the bottom of UCUM's own block of the
-<code>value_base_unit_t</code> id space (§7.1), one id per UCUM arbitrary atom. Consequences, all of which fall
-out of the existing machinery:</p>
+<code>value_base_unit_t</code> id space (§7.1): <strong>40</strong> ids, one per UCUM arbitrary atom, with <code>[iU]</code> listed in
+<code>.opaque_aliases</code> as a second spelling of <code>[IU]</code>'s id rather than an id of its own. An alias takes
+its target's prefix rule, so <code>k[iU]</code> reads as <code>k[IU]</code>. Consequences, all of which fall out of the
+existing machinery:</p>
 <ul>
 <li>they are <strong>profile-only</strong>: no native alias, reachable only through <code>ucum:</code>, and serialised back
   in profile notation (§5.1). Nothing about the native notation changes;</li>
@@ -803,7 +806,8 @@ is an ordinary mapped atom (<code>ucum:U</code> → <code>µ~mol/min</code>), no
 <p>The critical thing this is <strong>not</strong>: a single shared "opaque" base unit. Collapsing <code>[IU]</code> and
 <code>[PFU]</code> onto one id would make them compare equal, which is the silent-wrongness this format
 exists to refuse. One id each is the only honest encoding, and the ids come from UCUM's table
-rather than from anyone's judgement.</p>
+rather than from anyone's judgement — including the one shared id, which is UCUM's own
+<code>[IU]</code> = <code>1 [iU]</code> and the only alias <code>.opaque_aliases</code> admits.</p>
 <h3 id="37-special-units">3.7 Special units</h3>
 <p>UCUM classes as <em>special</em> the units defined by a function rather than a factor: the temperature
 scales, the logarithmic ratios, the prism dioptre, the homeopathic potencies. Bovnar has native
@@ -2697,9 +2701,9 @@ profile that grew a row renumbered every profile below it — and the whole run 
 native unit was added. Separate blocks end both. Each is bracketed so §7.2 can test membership with
 two comparisons, and the pair also tells the writer which namespace owns a given id. As shipped, in
 <code>include/bovnar_profiles.gen.h</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="cp">#define BVN_PROFILE_UCUM_OPAQUE_FIRST  200000   </span><span class="cm">/* 41 arbitrary atoms */</span>
-<span class="cp">#define BVN_PROFILE_UCUM_OPAQUE_LAST   200040</span>
-<span class="cp">#define BVN_PROFILE_UCUM_OPAQUE_COUNT      41</span>
+<div class="codehilite"><pre><span></span><code><span class="cp">#define BVN_PROFILE_UCUM_OPAQUE_FIRST  200000   </span><span class="cm">/* 41 arbitrary atoms, [iU] = [IU] */</span>
+<span class="cp">#define BVN_PROFILE_UCUM_OPAQUE_LAST   200039</span>
+<span class="cp">#define BVN_PROFILE_UCUM_OPAQUE_COUNT      40</span>
 <span class="cp">#define BVN_PROFILE_UNECE_OPAQUE_FIRST 300000   </span><span class="cm">/* 5 counts + 20 packages */</span>
 <span class="cp">#define BVN_PROFILE_UNECE_OPAQUE_LAST  300024</span>
 <span class="cp">#define BVN_PROFILE_UNECE_OPAQUE_COUNT     25</span>
@@ -2969,7 +2973,7 @@ that went in spelled <code>qudt:M-PER-SEC</code> comes out spelled <code>qudt:M-
 <tbody>
 <tr>
 <td><code>ucum.bvnr</code></td>
-<td>20 prefixes, 206 mapped, 41 opaque, 65 unsupported</td>
+<td>20 prefixes, 206 mapped, 40 opaque, 1 opaque alias, 65 unsupported</td>
 </tr>
 <tr>
 <td><code>unece.bvnr</code></td>
@@ -2997,10 +3001,11 @@ that went in spelled <code>qudt:M-PER-SEC</code> comes out spelled <code>qudt:M-
 </tr>
 </tbody>
 </table>
-<p>Four list kinds, and a code belongs to exactly one of them: the vocabulary's prefix spellings with
+<p>Five list kinds, and a code belongs to exactly one of them: the vocabulary's prefix spellings with
 their decades (expression profiles only — a flat profile has no prefix mechanism), the codes that
 translate (with their native target expression and the vocabulary's metric flag), the opaque codes
-(with no target at all), and the codes that are known but refused (with the reason).
+(with no target at all), the opaque aliases (a second code for one of the opaque codes, sharing its
+id — only <code>ucum:[iU]</code>), and the codes that are known but refused (with the reason).
 <code>gen_profiles.py</code> generates the C lookup tables on every build, wired into CMake next to the other
 generators; the generated files are never edited.</p>
 <p>The native target is stored as <strong>source text</strong>, not as a pre-baked <code>value_unit_t</code>, and the C side
@@ -3716,7 +3721,7 @@ every writer entry point.</p>
 Recommendation 21, <em>Codes for Passengers, Types of Cargo, Packages and Packaging Materials</em>.
 Data file <code>src/gendata/unece.bvnr</code> (1299 mapped, 25 opaque, 155 unsupported — every Rec 20 code
 QUDT's cross-reference reaches, which is not the same as every Rec 20 code; §11.1);
-pinned by <code>tests/bovnar_unece_test.c</code> (557 assertions).</p>
+pinned by <code>tests/bovnar_unece_test.c</code> (551 assertions).</p>
 </blockquote>
 <h3 id="111-why-this-vocabulary">11.1 Why this vocabulary</h3>
 <p>Rec 20 is, by message volume, the most widely deployed unit code list of the five: it is the unit

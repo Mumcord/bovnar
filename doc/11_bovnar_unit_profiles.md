@@ -618,13 +618,16 @@ does not appear to need. A named refusal is better than either.
 UCUM's arbitrary units — `[IU]`, `[arb'U]`, `[PFU]`, `[CFU]`, and the rest of that table — are
 assay-defined. UCUM's own rule is that they are commensurable with nothing, including each other —
 with one exception UCUM states itself: `[IU]` is defined as `1 [iU]`, the international unit in
-two spellings. Bovnar carries them as **two** opaque units that do not compare equal, so
-`ucum:[IU]` and `ucum:[iU]` cannot be converted into one another; write one spelling throughout.
-They are also the single largest reason a real clinical code fails to map (§6.4).
+two spellings. Bovnar carries that pair as **one** opaque unit: `ucum:[iU]` reads as `ucum:[IU]`,
+the two compare equal, `[iU]/L` converts to `[IU]/mL` like any other volume change, and both are
+written back as `ucum:[IU]`. They are also the single largest reason a real clinical code fails to
+map (§6.4).
 
 The profile admits all **41** of them, as a contiguous run at the bottom of UCUM's own block of the
-`value_base_unit_t` id space (§7.1), one id per UCUM arbitrary atom. Consequences, all of which fall
-out of the existing machinery:
+`value_base_unit_t` id space (§7.1): **40** ids, one per UCUM arbitrary atom, with `[iU]` listed in
+`.opaque_aliases` as a second spelling of `[IU]`'s id rather than an id of its own. An alias takes
+its target's prefix rule, so `k[iU]` reads as `k[IU]`. Consequences, all of which fall out of the
+existing machinery:
 
 - they are **profile-only**: no native alias, reachable only through `ucum:`, and serialised back
   in profile notation (§5.1). Nothing about the native notation changes;
@@ -644,7 +647,8 @@ is an ordinary mapped atom (`ucum:U` → `µ~mol/min`), not an arbitrary one. On
 The critical thing this is **not**: a single shared "opaque" base unit. Collapsing `[IU]` and
 `[PFU]` onto one id would make them compare equal, which is the silent-wrongness this format
 exists to refuse. One id each is the only honest encoding, and the ids come from UCUM's table
-rather than from anyone's judgement.
+rather than from anyone's judgement — including the one shared id, which is UCUM's own
+`[IU]` = `1 [iU]` and the only alias `.opaque_aliases` admits.
 
 ### 3.7 Special units
 
@@ -1458,9 +1462,9 @@ two comparisons, and the pair also tells the writer which namespace owns a given
 `include/bovnar_profiles.gen.h`:
 
 ```c
-#define BVN_PROFILE_UCUM_OPAQUE_FIRST  200000   /* 41 arbitrary atoms */
-#define BVN_PROFILE_UCUM_OPAQUE_LAST   200040
-#define BVN_PROFILE_UCUM_OPAQUE_COUNT      41
+#define BVN_PROFILE_UCUM_OPAQUE_FIRST  200000   /* 41 arbitrary atoms, [iU] = [IU] */
+#define BVN_PROFILE_UCUM_OPAQUE_LAST   200039
+#define BVN_PROFILE_UCUM_OPAQUE_COUNT      40
 #define BVN_PROFILE_UNECE_OPAQUE_FIRST 300000   /* 5 counts + 20 packages */
 #define BVN_PROFILE_UNECE_OPAQUE_LAST  300024
 #define BVN_PROFILE_UNECE_OPAQUE_COUNT     25
@@ -1728,7 +1732,7 @@ One hand-edited data file per namespace in `src/gendata/`, in the same shape as 
 
 | File | Lists |
 |---|---|
-| `ucum.bvnr` | 20 prefixes, 206 mapped, 41 opaque, 65 unsupported |
+| `ucum.bvnr` | 20 prefixes, 206 mapped, 40 opaque, 1 opaque alias, 65 unsupported |
 | `unece.bvnr` | 1299 mapped, 25 opaque, 155 unsupported |
 | `qudt.bvnr` | 2243 mapped, 565 unsupported |
 | `qudt-qk.bvnr` | 903 mapped, 262 unsupported |
@@ -1736,10 +1740,11 @@ One hand-edited data file per namespace in `src/gendata/`, in the same shape as 
 | `om.bvnr` | 1336 mapped, 124 unsupported |
 | `cf.bvnr` | 4454 mapped, 617 unsupported |
 
-Four list kinds, and a code belongs to exactly one of them: the vocabulary's prefix spellings with
+Five list kinds, and a code belongs to exactly one of them: the vocabulary's prefix spellings with
 their decades (expression profiles only — a flat profile has no prefix mechanism), the codes that
 translate (with their native target expression and the vocabulary's metric flag), the opaque codes
-(with no target at all), and the codes that are known but refused (with the reason).
+(with no target at all), the opaque aliases (a second code for one of the opaque codes, sharing its
+id — only `ucum:[iU]`), and the codes that are known but refused (with the reason).
 `gen_profiles.py` generates the C lookup tables on every build, wired into CMake next to the other
 generators; the generated files are never edited.
 
@@ -2294,7 +2299,7 @@ every writer entry point.
 > Recommendation 21, *Codes for Passengers, Types of Cargo, Packages and Packaging Materials*.
 > Data file `src/gendata/unece.bvnr` (1299 mapped, 25 opaque, 155 unsupported — every Rec 20 code
 > QUDT's cross-reference reaches, which is not the same as every Rec 20 code; §11.1);
-> pinned by `tests/bovnar_unece_test.c` (557 assertions).
+> pinned by `tests/bovnar_unece_test.c` (551 assertions).
 
 ### 11.1 Why this vocabulary
 

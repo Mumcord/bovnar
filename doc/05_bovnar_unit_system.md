@@ -2077,7 +2077,7 @@ typedef enum value_base_unit_e {
 /* Not a member of the enum, and NOT a bound on it: the number of rows in the
  * dense tables the library indexes by bvni_unit_slot(). The id space is
  * sparse, so it has no "one past the end". */
-/* #define BVN_UNIT_SLOT_COUNT 331 */
+/* #define BVN_UNIT_SLOT_COUNT 330 */
 ```
 
 #### `unit_exponent_t`

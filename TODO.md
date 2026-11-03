@@ -46,9 +46,9 @@ To pick it up on a new machine:
    water-analysis equivalent (½ mol), so native `meq/L` is half of
    `ucum:meq/L`. Stated as settled in doc/05, with the clinical trap in doc/07,
    the profile note in doc/11 and the FAQ; pinned in `bovnar_ucum_test`.
-3. **`ucum:[IU]` and `ucum:[iU]`** are two opaque units that do not compare
-   equal, though UCUM defines `[IU]` = `1 [iU]`. Making them one needs the
-   generator to alias an opaque unit; documented in doc/11 §3.6.
+3. **`ucum:[IU]` and `ucum:[iU]`** — done 2026-11-03: one opaque id, `[iU]`
+   an alias of `[IU]` through `.opaque_aliases` in `ucum.bvnr` (doc/11 §3.6,
+   `test_arbitrary` in `bovnar_ucum_test`). UCUM's block is 200000–200039.
 4. **Quoted float literals take a leading `+`** (`<float:64> "+1"`), quoted
    integers do not (`digit_not_in_base`); doc/03 §6.3 says both follow the
    bare-number rule, which has none. Refusing it would refuse documents 1.1

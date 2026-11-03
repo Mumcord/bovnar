@@ -129,9 +129,16 @@ the docs, build and packaging — each finding reproduced before it was fixed.
   each checked against its publisher.
 - doc/05 said there is no generic `eq` alias, and doc/04 that `eq` is `val`;
   `eq` is `val`, the water-analysis equivalent of half a mole, and doc/05 and
-  doc/07 now say how that differs from `ucum:eq`. UCUM's `[IU]` = `[iU]` is
-  recorded as a limitation (doc/11 §3.6). QUDT defines 2803 units and 1164
+  doc/07 now say how that differs from `ucum:eq`. QUDT defines 2803 units and 1164
   quantity kinds, not 2808 and 1165.
+- **`ucum:[iU]` and `ucum:[IU]` are one unit**, as UCUM defines them
+  (`[IU]` = `1 [iU]`). They were two opaque ids that compared unequal and
+  could not be converted. `[iU]` is now a second spelling of `[IU]`'s id —
+  equal, factor 1, `k[iU]` reads as `k[IU]`, and it is written back as
+  `ucum:[IU]` — through a new `.opaque_aliases` list in `ucum.bvnr` that
+  `gen_profiles.py` resolves. UCUM's opaque block is 40 ids, 200000–200039;
+  `bu_ucum_iu_i` is gone and the 39 UCUM ids after it are one lower. Every
+  other pair of arbitrary units stays incommensurable (doc/11 §3.6).
 
 **Bindings.**
 

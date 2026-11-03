@@ -56,12 +56,15 @@ def counts(repo):
     pfx = load("prefixes.bvnr")
     profiles = ("ucum", "unece", "qudt", "qudt-qk", "udunits", "om", "cf")
     mapped = refused = 0
-    opaque = {}
+    opaque, aliases = {}, {}
     for ns in profiles:
         d = load(ns + ".bvnr")
-        mapped += len(d.get("mapped", [])) + len(d.get("opaque", []))
+        # Codes, so an opaque alias counts; ids (opaque[]) do not include it.
+        mapped += (len(d.get("mapped", [])) + len(d.get("opaque", []))
+                   + len(d.get("opaque_aliases", [])))
         refused += len(d.get("unsupported", []))
         opaque[ns] = len(d.get("opaque", []))
+        aliases[ns] = len(d.get("opaque_aliases", []))
     _ = profiles
     # The id-space BOUNDS, not just the totals. A block's last id is a function
     # of how many rows the block holds, so "100000–100179 (180)" in doc/04 and
@@ -111,6 +114,8 @@ def counts(repo):
         "native_last": native_last,
         "native_last_name": "bu_" + units[-1]["name"],
         "ucum_opaque": opaque["ucum"],
+        # UCUM's arbitrary CODES: one id each, except [iU], which is [IU]'s.
+        "ucum_arbitrary": opaque["ucum"] + aliases["ucum"],
         "ucum_opaque_last": 200000 + opaque["ucum"] - 1,
         "unece_opaque": opaque["unece"],
         "unece_opaque_last": 300000 + opaque["unece"] - 1,
@@ -170,7 +175,7 @@ CLAIMS = [
     # doc/11 §6.4's class table heads its first row "Arbitrary units (41)" --
     # UCUM's opaque list, which grew with the rest and said 32 for as long as
     # every other profile count in that document was wrong.
-    (r"Arbitrary units \((\d+)\)",                              "ucum_opaque"),
+    (r"Arbitrary units \((\d+)\)",                              "ucum_arbitrary"),
     # The exponent bound, wherever a sentence states it as the CURRENT range.
     # Anchored on phrasings that assert rather than recall: "±9 the format can
     # spell" is a claim, "used to stop at ±9" is history and must stay.
@@ -239,6 +244,8 @@ def _add_profile_keys(repo, want):
     counts = profile_counts(repo)
     if "ucum" in counts:
         want["ucum_opaque"] = counts["ucum"]["opaque"]
+        want["ucum_arbitrary"] = (counts["ucum"]["opaque"]
+                                  + counts["ucum"]["opaque_aliases"])
     return want
 
 
@@ -281,8 +288,9 @@ def profile_counts(repo):
         with open(path, "rb") as f:
             data = bvnr_data.load(f.read())
         n = {k: len(data.get(k, [])) for k in
-             ("mapped", "opaque", "unsupported", "prefixes")}
-        n["total"] = n["mapped"] + n["opaque"] + n["unsupported"]
+             ("mapped", "opaque", "opaque_aliases", "unsupported", "prefixes")}
+        n["total"] = (n["mapped"] + n["opaque"] + n["opaque_aliases"]
+                      + n["unsupported"])
         out[vocab] = n
     return out
 
@@ -315,9 +323,11 @@ def check_profile_tables(repo, counts):
         if vocab not in counts:
             continue
         line = text.count("\n", 0, m.start()) + 1
-        for stated, kind in re.findall(r"(\d+)\s+(prefixes|mapped|opaque|"
+        # "opaque alias" before "opaque", or "1 opaque alias" reads as 1 opaque.
+        for stated, kind in re.findall(r"(\d+)\s+(prefixes|mapped|"
+                                       r"opaque alias(?:es)?|opaque|"
                                        r"unsupported)", body):
-            key = kind
+            key = "opaque_aliases" if kind.startswith("opaque alias") else kind
             checked += 1
             if int(stated) != counts[vocab][key]:
                 problems.append("doc/11_bovnar_unit_profiles.md:%d: says %s "
@@ -331,9 +341,12 @@ def check_profile_tables(repo, counts):
         if vocab not in counts:
             continue
         line = text.count("\n", 0, m.start()) + 1
-        for stated, kind in re.findall(r"(\d+)\s+(prefixes|mapped|opaque|"
+        for stated, kind in re.findall(r"(\d+)\s+(prefixes|mapped|"
+                                       r"opaque alias(?:es)?|opaque|"
                                        r"unsupported|refused)", body):
-            key = "unsupported" if kind == "refused" else kind
+            key = {"refused": "unsupported"}.get(kind, kind)
+            if kind.startswith("opaque alias"):
+                key = "opaque_aliases"
             checked += 1
             if int(stated) != counts[vocab][key]:
                 problems.append("doc/11_bovnar_unit_profiles.md:%d: says %s "

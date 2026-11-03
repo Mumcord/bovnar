@@ -1870,7 +1870,7 @@ only invite the bounds check it can no longer support. Use `UNIT_NATIVE_FIRST`
 > **The profiles' opaque units are not in this enum.** The C
 > `value_base_unit_t` also has a block per profile for the profile-only units,
 > and as shipped only two of them have members — UCUM's arbitrary atoms
-> (200000–200040) and UN/ECE's package and count codes (300000–300024),
+> (200000–200039) and UN/ECE's package and count codes (300000–300024),
 > doc/11 §7.1 — and
 > `BaseUnit` deliberately omits them, because they have no native spelling for a
 > Python name to mirror. A unit carrying one is still fully usable: `parse_unit`, `unit_to_str`,

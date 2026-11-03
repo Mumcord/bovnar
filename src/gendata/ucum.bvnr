@@ -495,8 +495,8 @@
 
 # ── UCUM arbitrary units ────────────────────────────────────────────────────
 # Assay-defined; commensurable with nothing, including each other -- except
-# that UCUM defines [IU] as 1 [iU]. Here they are two opaque ids that do not
-# compare equal (doc/11 section 3.6 says so). These occupy
+# that UCUM defines [IU] as 1 [iU]. That pair is one opaque id: [IU] is the row
+# here and [iU] is in .opaque_aliases below (doc/11 section 3.6). These occupy
 # the shared opaque block, which continues the value_base_unit_t enumeration
 # after the last native unit. gen_profiles.py assigns the ids in registry order,
 # so this list is APPEND-ONLY: inserting a row renumbers every opaque unit below
@@ -510,7 +510,6 @@
 # and serialises back as "ucum:<code>".
 .opaque = [
   { .name = "ucum_iu";        .code = "[IU]";        .metric = true;  },
-  { .name = "ucum_iu_i";      .code = "[iU]";        .metric = true;  },
   { .name = "ucum_arb_u";     .code = "[arb'U]";     .metric = false; },
   { .name = "ucum_usp_u";     .code = "[USP'U]";     .metric = false; },
   { .name = "ucum_gpl_u";     .code = "[GPL'U]";     .metric = false; },
@@ -559,6 +558,17 @@
   { .name = "ucum_kp_m";      .code = "[kp_M]";      .metric = false; },
   { .name = "ucum_kp_q";      .code = "[kp_Q]";      .metric = false; },
   { .name = "ucum_ir";        .code = "[IR]";        .metric = false; },
+];
+
+# ── Second spellings of an arbitrary unit ───────────────────────────────────
+# A code here reads as the opaque unit whose code is .of: same id, so the two
+# compare equal and convert with factor 1, and the unit is written back with
+# the .of spelling. It takes no id and no enumerator of its own, and its prefix
+# rule is the target's. Only UCUM's own definitions belong here: [IU] is
+# defined as 1 [iU], the international unit written two ways. Any other pair of
+# arbitrary units stays incommensurable (doc/11 section 3.6).
+.opaque_aliases = [
+  { .code = "[iU]"; .of = "[IU]"; },
 ];
 
 # ── Atoms UCUM defines that have no native representation ───────────────────

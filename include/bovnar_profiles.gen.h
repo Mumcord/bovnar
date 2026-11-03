@@ -5,46 +5,45 @@
  * covered by the MIT grant; see THIRD_PARTY_NOTICES.md. */
 	/* ucum */
 	bu_ucum_iu          = 200000,
-	bu_ucum_iu_i        = 200001,
-	bu_ucum_arb_u       = 200002,
-	bu_ucum_usp_u       = 200003,
-	bu_ucum_gpl_u       = 200004,
-	bu_ucum_mpl_u       = 200005,
-	bu_ucum_apl_u       = 200006,
-	bu_ucum_beth_u      = 200007,
-	bu_ucum_anti_xa_u   = 200008,
-	bu_ucum_todd_u      = 200009,
-	bu_ucum_dye_u       = 200010,
-	bu_ucum_smgy_u      = 200011,
-	bu_ucum_bdsk_u      = 200012,
-	bu_ucum_ka_u        = 200013,
-	bu_ucum_knk_u       = 200014,
-	bu_ucum_mclg_u      = 200015,
-	bu_ucum_tb_u        = 200016,
-	bu_ucum_ccid_50     = 200017,
-	bu_ucum_tcid_50     = 200018,
-	bu_ucum_eid_50      = 200019,
-	bu_ucum_pfu         = 200020,
-	bu_ucum_ffu         = 200021,
-	bu_ucum_cfu         = 200022,
-	bu_ucum_bau         = 200023,
-	bu_ucum_au_allerg   = 200024,
-	bu_ucum_amb_a_1_u   = 200025,
-	bu_ucum_pnu         = 200026,
-	bu_ucum_lf          = 200027,
-	bu_ucum_d_ag_u      = 200028,
-	bu_ucum_feu         = 200029,
-	bu_ucum_elu         = 200030,
-	bu_ucum_eu          = 200031,
-	bu_ucum_hp_x        = 200032,
-	bu_ucum_hp_c        = 200033,
-	bu_ucum_hp_m        = 200034,
-	bu_ucum_hp_q        = 200035,
-	bu_ucum_kp_x        = 200036,
-	bu_ucum_kp_c        = 200037,
-	bu_ucum_kp_m        = 200038,
-	bu_ucum_kp_q        = 200039,
-	bu_ucum_ir          = 200040,
+	bu_ucum_arb_u       = 200001,
+	bu_ucum_usp_u       = 200002,
+	bu_ucum_gpl_u       = 200003,
+	bu_ucum_mpl_u       = 200004,
+	bu_ucum_apl_u       = 200005,
+	bu_ucum_beth_u      = 200006,
+	bu_ucum_anti_xa_u   = 200007,
+	bu_ucum_todd_u      = 200008,
+	bu_ucum_dye_u       = 200009,
+	bu_ucum_smgy_u      = 200010,
+	bu_ucum_bdsk_u      = 200011,
+	bu_ucum_ka_u        = 200012,
+	bu_ucum_knk_u       = 200013,
+	bu_ucum_mclg_u      = 200014,
+	bu_ucum_tb_u        = 200015,
+	bu_ucum_ccid_50     = 200016,
+	bu_ucum_tcid_50     = 200017,
+	bu_ucum_eid_50      = 200018,
+	bu_ucum_pfu         = 200019,
+	bu_ucum_ffu         = 200020,
+	bu_ucum_cfu         = 200021,
+	bu_ucum_bau         = 200022,
+	bu_ucum_au_allerg   = 200023,
+	bu_ucum_amb_a_1_u   = 200024,
+	bu_ucum_pnu         = 200025,
+	bu_ucum_lf          = 200026,
+	bu_ucum_d_ag_u      = 200027,
+	bu_ucum_feu         = 200028,
+	bu_ucum_elu         = 200029,
+	bu_ucum_eu          = 200030,
+	bu_ucum_hp_x        = 200031,
+	bu_ucum_hp_c        = 200032,
+	bu_ucum_hp_m        = 200033,
+	bu_ucum_hp_q        = 200034,
+	bu_ucum_kp_x        = 200035,
+	bu_ucum_kp_c        = 200036,
+	bu_ucum_kp_m        = 200037,
+	bu_ucum_kp_q        = 200038,
+	bu_ucum_ir          = 200039,
 	/* unece */
 	bu_unece_one        = 300000,
 	bu_unece_piece      = 300001,
@@ -90,50 +89,50 @@
  *   BVN_UNIT_SLOT_COUNT   how many rows those tables have in total: bu_none,
  *                         then the native units, then these. */
 #define BVN_PROFILE_UCUM_OPAQUE_FIRST 200000
-#define BVN_PROFILE_UCUM_OPAQUE_LAST  200040
-#define BVN_PROFILE_UCUM_OPAQUE_COUNT 41
+#define BVN_PROFILE_UCUM_OPAQUE_LAST  200039
+#define BVN_PROFILE_UCUM_OPAQUE_COUNT 40
 #define BVN_PROFILE_UCUM_SLOT_BASE    265
 #define BVN_SLOT_UCUM(b) (BVN_PROFILE_UCUM_SLOT_BASE + \
 	((int)(b) - BVN_PROFILE_UCUM_OPAQUE_FIRST))
 #define BVN_PROFILE_UNECE_OPAQUE_FIRST 300000
 #define BVN_PROFILE_UNECE_OPAQUE_LAST  300024
 #define BVN_PROFILE_UNECE_OPAQUE_COUNT 25
-#define BVN_PROFILE_UNECE_SLOT_BASE    306
+#define BVN_PROFILE_UNECE_SLOT_BASE    305
 #define BVN_SLOT_UNECE(b) (BVN_PROFILE_UNECE_SLOT_BASE + \
 	((int)(b) - BVN_PROFILE_UNECE_OPAQUE_FIRST))
 #define BVN_PROFILE_QUDT_OPAQUE_FIRST 400000
 #define BVN_PROFILE_QUDT_OPAQUE_LAST  399999
 #define BVN_PROFILE_QUDT_OPAQUE_COUNT 0
-#define BVN_PROFILE_QUDT_SLOT_BASE    331
+#define BVN_PROFILE_QUDT_SLOT_BASE    330
 #define BVN_SLOT_QUDT(b) (BVN_PROFILE_QUDT_SLOT_BASE + \
 	((int)(b) - BVN_PROFILE_QUDT_OPAQUE_FIRST))
 #define BVN_PROFILE_QUDT_QK_OPAQUE_FIRST 500000
 #define BVN_PROFILE_QUDT_QK_OPAQUE_LAST  499999
 #define BVN_PROFILE_QUDT_QK_OPAQUE_COUNT 0
-#define BVN_PROFILE_QUDT_QK_SLOT_BASE    331
+#define BVN_PROFILE_QUDT_QK_SLOT_BASE    330
 #define BVN_SLOT_QUDT_QK(b) (BVN_PROFILE_QUDT_QK_SLOT_BASE + \
 	((int)(b) - BVN_PROFILE_QUDT_QK_OPAQUE_FIRST))
 #define BVN_PROFILE_UDUNITS_OPAQUE_FIRST 600000
 #define BVN_PROFILE_UDUNITS_OPAQUE_LAST  599999
 #define BVN_PROFILE_UDUNITS_OPAQUE_COUNT 0
-#define BVN_PROFILE_UDUNITS_SLOT_BASE    331
+#define BVN_PROFILE_UDUNITS_SLOT_BASE    330
 #define BVN_SLOT_UDUNITS(b) (BVN_PROFILE_UDUNITS_SLOT_BASE + \
 	((int)(b) - BVN_PROFILE_UDUNITS_OPAQUE_FIRST))
 #define BVN_PROFILE_OM_OPAQUE_FIRST 700000
 #define BVN_PROFILE_OM_OPAQUE_LAST  699999
 #define BVN_PROFILE_OM_OPAQUE_COUNT 0
-#define BVN_PROFILE_OM_SLOT_BASE    331
+#define BVN_PROFILE_OM_SLOT_BASE    330
 #define BVN_SLOT_OM(b) (BVN_PROFILE_OM_SLOT_BASE + \
 	((int)(b) - BVN_PROFILE_OM_OPAQUE_FIRST))
 #define BVN_PROFILE_CF_OPAQUE_FIRST 800000
 #define BVN_PROFILE_CF_OPAQUE_LAST  799999
 #define BVN_PROFILE_CF_OPAQUE_COUNT 0
-#define BVN_PROFILE_CF_SLOT_BASE    331
+#define BVN_PROFILE_CF_SLOT_BASE    330
 #define BVN_SLOT_CF(b) (BVN_PROFILE_CF_SLOT_BASE + \
 	((int)(b) - BVN_PROFILE_CF_OPAQUE_FIRST))
 
-#define BVN_PROFILE_OPAQUE_COUNT 66
-#define BVN_UNIT_SLOT_COUNT      331
+#define BVN_PROFILE_OPAQUE_COUNT 65
+#define BVN_UNIT_SLOT_COUNT      330
 
 /* The dense-table slot of any opaque unit, or -1. One ternary chain rather than
  * a lookup table so it stays usable from a header, in a constant expression,

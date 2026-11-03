@@ -325,7 +325,8 @@ def main(argv):
     with open(os.path.join(repo, "src", "gendata", "ucum.bvnr"), "rb") as f:
         data = bvnr_data.load(f.read())
     mapped = {m["code"] for m in data.get("mapped", [])}
-    opaque = {o["code"] for o in data.get("opaque", [])}
+    opaque = ({o["code"] for o in data.get("opaque", [])}
+              | {o["code"] for o in data.get("opaque_aliases", [])})
 
     bad, checked = check_collisions(path, parse)
     nm_bad, nm_checked = check_nearmisses(path, parse, to_str)

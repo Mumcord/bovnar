@@ -1643,6 +1643,24 @@ def check_codes_read_back(verbose):
                     "%s is declared .opaque but the profile cannot read it"
                     % qualified)
 
+        # An alias must read as its target, the same unit and not a lookalike.
+        for rec in doc.get("opaque_aliases", []):
+            checked += 1
+            qualified = "%s:%s" % (ns, rec["code"])
+            target = "%s:%s" % (ns, rec["of"])
+            try:
+                got = bovnar.parse_unit(qualified)
+                want = bovnar.parse_unit(target)
+            except Exception:
+                problems.append(
+                    "%s is declared an alias of %s but does not read"
+                    % (qualified, target))
+                continue
+            if not bovnar.units_equal(got, want):
+                problems.append("%s is declared an alias of %s but reads as %s"
+                                % (qualified, target,
+                                   bovnar.unit_to_str(got)))
+
         # A named refusal must arrive as "known, and not carryable" rather than
         # as "that is not a code" -- the distinction the whole .unsupported list
         # exists to make, and one no test had ever exercised at scale.
@@ -2036,7 +2054,8 @@ def check_profile(ns, vocab, native, native_index, verbose):
     doc = bvnr_data.load(open(os.path.join(GENDATA, ns + ".bvnr"), "rb").read())
     mapped = doc.get("mapped", [])
     unsupported = {r["code"] for r in doc.get("unsupported", [])}
-    opaque = {r["code"] for r in doc.get("opaque", [])}
+    opaque = ({r["code"] for r in doc.get("opaque", [])}
+              | {r["code"] for r in doc.get("opaque_aliases", [])})
     declared = {m["code"] for m in mapped} | unsupported | opaque
 
     mismatch, dead, missing, notes, checked = [], [], [], [], 0
