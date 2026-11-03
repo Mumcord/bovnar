@@ -1,0 +1,17 @@
+[package]
+name = "bovnar"
+version = "2.0.0"
+edition = "2024"
+# Let-chains (`if let .. && let ..`) need 1.88; edition 2024 alone would be 1.85.
+rust-version = "1.88"
+description = "Thin Rust binding to the Bovnar (BVNR) C library"
+license = "MIT"
+publish = false
+build = "build.rs"
+
+[build-dependencies]
+cc = "1"
+
+[dev-dependencies]
+# The ABI test compiles the C manifest generator with the library's compiler.
+cc = "1"
