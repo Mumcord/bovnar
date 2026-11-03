@@ -2290,9 +2290,9 @@ comment-char = HTAB / VT / FF / %x20-7E / %x80-FF
 <p id="section-6.1-3">A comment runs from <code>#</code> to the next CR, LF, or end of document. The
 rejected control octets are errors inside a comment body.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
 <p id="section-6.1-4"><strong><code>#</code> is not a terminator of a bare token.</strong> A comment <span class="bcp14">MUST NOT</span> start
-immediately after a key, a number, a symbol, a reserved word, a reference
-or a datetime literal: there <code>#</code> is <code>error_unexpected_input_byte</code>, and at
-least one blank must come first. After a string, <code>]</code>, <code>}</code>, <code>&gt;</code>, <code>=</code>, <code>;</code>
+immediately after a key, a number, a symbol, a reserved word, a reference,
+a datetime literal or a type-annotation parameter: there <code>#</code> is
+<code>error_unexpected_input_byte</code>, and at least one blank must come first. After a string, <code>]</code>, <code>}</code>, <code>&gt;</code>, <code>=</code>, <code>;</code>
 or an inline unit, <code>#</code> may follow directly. The grammar's <code>ws</code> admits the
 forbidden placements; this prose forbids them.<a href="#section-6.1-4" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-6.1-5">

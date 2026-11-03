@@ -235,10 +235,12 @@ jobs:
 
       # -DPython3_EXECUTABLE pins the resolution to the interpreter just
       # provisioned instead of leaving FindPython3 to choose among the several on
-      # the runner -- only this one has pytest.
+      # the runner -- only this one has pytest. BVNR_WERROR makes a new warning
+      # (or -fanalyzer finding) fail the run, as CONTRIBUTING says CI does; the
+      # option existed "for CI" but no job passed it.
       - name: Configure
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBVNR_WERROR=ON \
             -DPython3_EXECUTABLE="$(command -v python3)" .
 
       - name: Build

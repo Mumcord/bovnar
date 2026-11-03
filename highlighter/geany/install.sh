@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Install the Bovnar custom filetype for Geany and register the .bvnr extension.
 set -euo pipefail
 cd "$(dirname "$0")"

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """Content-stamp the webfonts, and the stylesheet that reaches them.
 
 The server hands out `public, max-age=31536000, immutable` to any asset asked

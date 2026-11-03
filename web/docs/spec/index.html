@@ -579,7 +579,7 @@ resume on the next line, where they are ordinary and inert.</p>
 
 <div class="codehilite"><pre><code class="language-bovnar"># A full-line comment
 .foo = 42;  # an inline comment</code></pre></div>
-<p><strong><code>#</code> is not a terminator of a bare token.</strong> A comment may not start immediately after a key, a number, a symbol, a reserved word, a reference or a datetime literal: there <code>#</code> is <code>error_unexpected_input_byte</code>, and at least one whitespace byte must come first. After a string, <code>]</code>, <code>}</code>, <code>&gt;</code>, <code>=</code>, <code>;</code> or an inline unit, <code>#</code> may follow directly.</p>
+<p><strong><code>#</code> is not a terminator of a bare token.</strong> A comment may not start immediately after a key, a number, a symbol, a reserved word, a reference, a datetime literal or a type-annotation parameter (<code>&lt;uint:8# c</code> — after the family keyword itself, <code>&lt;uint# c</code>, it may): there <code>#</code> is <code>error_unexpected_input_byte</code>, and at least one whitespace byte must come first. After a string, <code>]</code>, <code>}</code>, <code>&gt;</code>, <code>=</code>, <code>;</code> or an inline unit, <code>#</code> may follow directly.</p>
 <!-- bovnar-example: rejected -->
 
 <div class="codehilite"><pre><code class="language-bovnar">.ok1 = 42 # whitespace first: valid
@@ -1305,10 +1305,11 @@ flux in netCDF and CF metadata.</p>
   is not a code byte: <code>&lt;float:64,ucum:kg # note⏎&gt;</code> is
   <code>error_unexpected_input_byte</code>, where <code>&lt;float:64,kg # note⏎&gt;</code> is fine. Put the
   comment before the parameter, or beside its namespace colon.</li>
-<li><strong>A line break is still an error</strong>, even in a namespaced parameter —
-  <code>error_type_param_whitespace</code>, as it would be in a native one. No
-  vocabulary spells a unit across a line, and admitting one would let a
-  malformed code consume a document's layout.</li>
+<li><strong>A line break inside the code is still an error</strong>, even in a namespaced
+  parameter — <code>error_type_param_whitespace</code>, as it would be in a native one.
+  No vocabulary spells a unit across a line, and admitting one would let a
+  malformed code consume a document's layout. A line break <em>after</em> the code,
+  before its <code>,</code> or <code>&gt;</code>, is trailing whitespace like any other.</li>
 </ul>
 <p>An <strong>inline</strong> unit suffix cannot carry a space and never will — whitespace is
 what terminates that token, so <code>1.0 k g</code> has always been
@@ -1666,7 +1667,10 @@ rows, but <code>[]/[1]</code> is <code>error_array_row_size_mismatch</code>.</p>
 <p><strong>The one exception is <code>datetime</code> (spec 1.1).</strong> After an element annotated
 <code>datetime</code>, a following <strong>bare integer</strong> is read as a datetime of the same width
 and epoch — <code>[&lt;datetime:64,tai&gt; 1, 2]</code> is two <code>tai</code> instants, and
-<code>[&lt;datetime:8&gt; 1, 300]</code> is <code>error_value_out_of_range</code>. Without that, the second
+<code>[&lt;datetime:8&gt; 1, 300]</code> is <code>error_value_out_of_range</code>. "Following" is in document
+order across the whole array, not only within the row: bare integers in later
+sibling sub-arrays and later <code>/</code>-rows inherit it too — <code>[[&lt;datetime:8&gt; 1], [300]]</code>
+is <code>error_value_out_of_range</code> and <code>[&lt;datetime:8&gt; 1]/[2]</code> is two datetimes. Without that, the second
 element would be a <code>uint</code> beside a <code>datetime</code> and the array could never be
 homogeneous (§7.4). It reaches integers only: a bare ISO literal still infers
 <code>&lt;datetime:64,unix&gt;</code> (§10.1), so <code>[&lt;datetime:64,tai&gt; 1, 2026-06-15]</code> mixes
@@ -2996,7 +3000,7 @@ tool's "Validation tiers" (§3 of <code>doc/13_bovnar_conformance.md</code>).</p
 </thead>
 <tbody>
 <tr>
-<td>Empty key (<code>.</code> followed by <code>=</code> or by whitespace)</td>
+<td>Empty key (<code>.</code> followed by <code>=</code>, with or without whitespace between)</td>
 <td><code>error_empty_identifier</code></td>
 </tr>
 <tr>
@@ -3113,7 +3117,7 @@ tool's "Validation tiers" (§3 of <code>doc/13_bovnar_conformance.md</code>).</p
 </code></pre></div>
 
 <h3 id="132-recovery-mode">13.2 Recovery Mode</h3>
-<p>When <code>bvnr_read_flags_t.continue_on_error</code> is <code>true</code>, the parser enters <strong>resync mode</strong> after an error in the text — any error but one inside a comment (below). A few errors end the read even so: a fault in an octet stream's framing (<code>error_octet_stream_out_of_sync</code>, <code>error_read_complete_chunk_failed</code>), <code>error_text_data_too_long</code>, <code>error_file_too_long</code>, a version directive refused under <code>strict_version</code> (§3.4), and a callback that returns <code>false</code>. The other limits of §12.2 — the five lengths, <code>max_array_items</code>, both nesting depths — are recovered from like any other error.</p>
+<p>When <code>bvnr_read_flags_t.continue_on_error</code> is <code>true</code>, the parser enters <strong>resync mode</strong> after an error in the text — any error but one inside a comment (below). A few errors end the read even so: a fault in an octet stream's framing (<code>error_octet_stream_out_of_sync</code>, <code>error_read_complete_chunk_failed</code>), <code>error_text_data_too_long</code>, <code>error_file_too_long</code>, a version directive refused under <code>strict_version</code> (§3.4), an octet stream refused under <code>text_only</code> (<code>error_octet_stream_forbidden</code>, §9), and a callback that returns <code>false</code>. The other limits of §12.2 — the five lengths, <code>max_array_items</code>, both nesting depths — are recovered from like any other error.</p>
 <ol>
 <li>The <code>on_error</code> callback is invoked with error details</li>
 <li>A <strong>resync state machine</strong> (<code>state_t: resync, resync_dot, resync_string, resync_string_escape, resync_comment</code>) skips bytes</li>
@@ -3144,7 +3148,11 @@ so parsing restarts there, usually to report a further error, which
 struct, the ones the broken statement itself was in. An array that struct is an
 <em>element of</em> stays open, with its row and element counts, so the struct's own
 <code>}</code> and the array's <code>,</code> or <code>]</code> are read normally afterwards and the start/end
-events a consumer sees always nest. A <code>}</code> that is itself the offending byte
+events a consumer sees always nest — when recovery resumes inside that struct.
+When the struct's <code>}</code> is skipped instead (the error was its last member, with no
+<code>;</code> or <code>.name</code> after it), recovery runs on past the array's <code>,</code> and <code>]</code> to the
+next boundary, and the array's remaining elements are lost with the struct:
+<code>.a=[{.x=1 @},{.x=2;}];</code> delivers <code>.a</code> as one struct whose member <code>.x</code> has no value. A <code>}</code> that is itself the offending byte
 (<code>.s = {.a = 1 };</code>, a member missing its <code>;</code>) is not discarded: it closes its
 struct.</p>
 <p><strong>An error inside a comment does not enter resync.</strong> An invalid UTF-8 sequence
@@ -3193,7 +3201,17 @@ of the comment is never read as document text.</p>
 </table>
 <p>The two counters are independent: a <code>}</code> does not balance a junk <code>[</code>, so a
 statement that opens a bracket it never closes keeps recovery from resuming
-until the bracket is closed or the input ends (§13.3).</p>
+until the bracket is closed or the input ends (§13.3). A <code>[</code> or <code>{</code> that is
+itself the offending byte opened nothing, and counts as a bracket opened since
+recovery began, so its own closing bracket does not close the enclosing
+container. A <code>#</code> that is the offending byte (<code>42# note</code>, §4.1) opens a comment,
+which recovery skips as such.</p>
+<p><strong>Recovery cannot read an octet stream's framing.</strong> When recovery skips over an
+octet stream — the error came before its <code>0x00</code>, or inside the value that
+holds it — the payload is scanned as text like any other skipped bytes, and a
+<code>;</code> or <code>.name</code> inside the payload can end recovery there. A consumer that needs
+<code>continue_on_error</code> and reads documents with octet streams should treat values
+delivered after a recovery as untrusted (<code>recovery_count</code> says one happened).</p>
 <h3 id="133-eof-in-resync">13.3 EOF in Resync</h3>
 <p>If EOF is reached while in any resync state, <code>error_got_incomplete_bvnr_stream</code> is fired as a <strong>second</strong> <code>on_error</code> notification in addition to the original error that triggered resync entry. Both error codes are delivered to the caller's <code>on_error</code> callback in order: the original error first, then <code>error_got_incomplete_bvnr_stream</code> when EOF is detected.</p>
 <h3 id="134-the-error-getters-under-recovery">13.4 The Error Getters Under Recovery</h3>
@@ -3204,7 +3222,8 @@ nowhere else:</p>
 <li><strong><code>bvnr_read</code> returned <code>false</code>:</strong> the getters hold the error that stopped it.
   Under <code>continue_on_error</code> that is one of the errors recovery does not continue
   past (§13.2: <code>max_text_bytes</code>, <code>max_file_size</code>, an octet-stream framing error, a
-  directive refused under <code>strict_version</code>, a callback that returned <code>false</code>) or the <code>error_got_incomplete_bvnr_stream</code> of
+  directive refused under <code>strict_version</code>, an octet stream refused under
+  <code>text_only</code>, a callback that returned <code>false</code>) or the <code>error_got_incomplete_bvnr_stream</code> of
   §13.3, positioned at the end of the input.</li>
 <li><strong><code>bvnr_read</code> returned <code>true</code>:</strong> <code>bvnr_reader_get_error</code> returns <code>error_none</code>
   and the line, column, byte and offset getters return <code>0</code>, however many errors
@@ -4119,6 +4138,10 @@ conversion factors — and each of those entries says so:</p>
   before the suffix (<code>&lt;float _fix:32,q8&gt;</code>) is <code>error_type_param_whitespace</code>,
   for the reason given above for whitespace inside a parameter; it was read
   as <code>float_fix</code>.</li>
+<li><em>A <code>float_fix</code> literal too large for any float</em> (<code>&lt;float_fix:16,q8&gt; 1e9862</code>,
+  or a 9862-digit integer) is <code>error_value_out_of_range</code> (§6.2). Its parse
+  overflowed to infinity, and infinity — range-exempt as the keyword <code>inf</code>
+  (§6.4) — passed the range check, so it was accepted, and read as <code>inf</code>.</li>
 <li><em>After a reference index only <code>.</code>, <code>[</code> or the end of the reference may
   follow</em> (§4.5). <code>&amp;.a[0]b</code> is <code>error_unexpected_input_byte</code>; it was accepted
   as the path <code>.a[0]b</code>, which the grammar does not derive and no lookup

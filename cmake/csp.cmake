@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Does the stamped Content-Security-Policy still authorise the page's scripts?
 #
 # The policy pins every inline <script> by the SHA-256 of its bytes (there is no

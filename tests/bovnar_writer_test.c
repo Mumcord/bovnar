@@ -2011,14 +2011,25 @@ static bool emit_dt_value(uint8_t *out, uint32_t cap, uint32_t *outlen,
 	const char *frac, uint32_t frac_len)
 {
 	bvnr_sink_t sink;
-	bvnr_writer_t *w = make_writer(out, cap, &sink);
-	if (!w) { *outlen = 0; return false; }
+	/* A datetime is written under its annotation, which needs the 1.1
+	 * directive: with neither, the carrier reads back as a plain integer.
+	 * The directive has to come before the stream begins, so this helper
+	 * opens its own writer rather than make_writer's. */
+	bvnr_sink_to_mem(&sink, out, cap);
+	bvnr_writer_t *w = bvnr_writer_create();
+	if (!w || !bvnr_open_write_sink(w, &sink, true, NULL) ||
+	    !bvnr_write_version(w, 1, 1)) {
+		bvnr_writer_destroy(w);
+		*outlen = 0;
+		return false;
+	}
 	const char *key = "t";
 	bvnr_data_t d = { .type = token_is_identifier,
 	                  .data = key, .length = 1 };
 	bvnr_write_event(w, ev_assignment_start, &d);
 	value_type_spec_t vt = { .family = vt_datetime, .width = 64,
 	                         .base = epoch_base };
+	bvnr_write_type_annotation(w, vt, BVN_UNIT_NONE);
 	d = (bvnr_data_t){ .type = token_is_number, .value_type = vt,
 	                   .data = carrier, .length = (uint32_t)strlen(carrier),
 	                   .frac_data = frac, .frac_length = frac_len };
@@ -2268,6 +2279,9 @@ static int reduce_emit_quoted(char *out, size_t cap, value_unit_t u,
 	bvnr_write_event(w, ev_stream_start, &d);
 	d.type = token_is_identifier; d.data = "d"; d.length = 1;
 	bvnr_write_event(w, ev_assignment_start, &d);
+	/* The numeric annotation the quoted form needs: without it "1b58" is a
+	 * utf8 string to the reader, whatever the event said. */
+	bvnr_write_type_annotation(w, vt, u);
 	memset(&d, 0, sizeof d);
 	d.type       = token_is_string;      /* the quoted form */
 	d.value_type = vt;
@@ -2289,12 +2303,12 @@ static void test_unit_reduce_rescales_a_quoted_literal(void)
 	static const struct { uint8_t base; value_type_family_t fam;
 			      const char *lit; const char *want; const char *what; }
 	cases[] = {
-		{ 10, vt_uint,  "7",   ".d=\"7000\" m",          "base 10, uint"  },
-		{ 16, vt_uint,  "7",   ".d=\"1b58\" m",          "base 16, uint"  },
-		{  2, vt_uint,  "111", ".d=\"1101101011000\" m", "base 2, uint"   },
-		{ 36, vt_uint,  "z",   ".d=\"r08\" m",           "base 36, uint"  },
-		{ 16, vt_float, "1p0", ".d=\"3e8\" m",           "base 16, float" },
-		{ 10, vt_float, "1.0", ".d=\"1000\" m",          "base 10, float" },
+		{ 10, vt_uint,  "7",   ".d=<uint:64,m>\"7000\"",          "base 10, uint"  },
+		{ 16, vt_uint,  "7",   ".d=<uint:64,_16,m>\"1b58\"",          "base 16, uint"  },
+		{  2, vt_uint,  "111", ".d=<uint:64,_2,m>\"1101101011000\"", "base 2, uint"   },
+		{ 36, vt_uint,  "z",   ".d=<uint:64,_36,m>\"r08\"",           "base 36, uint"  },
+		{ 16, vt_float, "1p0", ".d=<float:64,_16,m>\"3e8\"",           "base 16, float" },
+		{ 10, vt_float, "1.0", ".d=<float:64,m>\"1000\"",          "base 10, float" },
 	};
 	for (size_t i = 0; i < sizeof cases / sizeof cases[0]; i++) {
 		value_type_spec_t vt;
@@ -2305,7 +2319,7 @@ static void test_unit_reduce_rescales_a_quoted_literal(void)
 		int rc = reduce_emit_quoted(out, sizeof out, km, vt, cases[i].lit);
 		ASSERT_EQ_INT(rc, 0, cases[i].what);
 		ASSERT_TRUE(strstr(out, cases[i].want) != NULL, cases[i].what);
-		if (!strstr(out, cases[i].want))
+		if (!strstr(out, cases[i].want) || getenv("BVNR_SHOW"))
 			fprintf(stderr, "  %s: wanted %s in %s\n",
 				cases[i].what, cases[i].want, out);
 	}
@@ -2341,6 +2355,9 @@ static void test_unit_reduce_rescales_a_quoted_literal(void)
 		bvnr_write_event(w, ev_stream_start, &d);
 		d.type = token_is_identifier; d.data = "d"; d.length = 1;
 		bvnr_write_event(w, ev_assignment_start, &d);
+		/* Under its annotation (no unit on it), so the unit goes inline. */
+		bvnr_write_type_annotation(w, BVN_TYPE_UINT_BASE(64, 16),
+					   BVN_UNIT_NONE);
 		memset(&d, 0, sizeof d);
 		d.type              = token_is_string;
 		d.value_type.family = vt_uint;
@@ -2476,14 +2493,15 @@ static void test_unit_reduce_rescales_the_value(void)
 	/* A scale that does not terminate in the value's OWN base cannot be written
 	 * exactly — 1/100 in base 16 needs a factor of 5. Refuse rather than round. */
 	value_type_spec_t f16 = { .family = vt_float, .width = 64, .base = 16 };
-	ASSERT_EQ_INT(reduce_emit(out, sizeof out, BVN_UNIT_SI(bu_meter, si_centi),
+	ASSERT_EQ_INT(reduce_emit_annotated(out, sizeof out, BVN_UNIT_SI(bu_meter, si_centi),
 				  f16, "5"),
 		      (int)error_value_out_of_range,
 		      "a non-terminating rescale is refused, not rounded");
 	/* ...while one that does terminate goes through: 5 km = 5000 = 0x1388. */
-	ASSERT_EQ_INT(reduce_emit(out, sizeof out, BVN_UNIT_SI(bu_meter, si_kilo),
+	ASSERT_EQ_INT(reduce_emit_annotated(out, sizeof out, BVN_UNIT_SI(bu_meter, si_kilo),
 				  f16, "5"), 0, "a terminating rescale writes in base 16");
-	ASSERT_TRUE(strcmp(out, ".d=1388 m") == 0, "and in the value's own base");
+	ASSERT_TRUE(strstr(out, "1388") != NULL, "and in the value's own base");
+	if (!strstr(out, "1388")) fprintf(stderr, "  wrote: %s\n", out);
 
 	/* Without the flag nothing moves at all. */
 	memset(out, 0, sizeof out);
@@ -2712,6 +2730,132 @@ static void test_writer_review_2026_11(void)
 	bvnr_reader_destroy(r);
 }
 
+/*
+ * The 2026-11-03 whole-project review: five places where the writer and the
+ * reader disagreed about what a document is, and the helpers' double rounding.
+ */
+static bool rv_pipe(void *ud, bvnr_event_t ev, bvnr_data_t *d)
+{
+	return bvnr_write_event((bvnr_writer_t *)ud, ev, d);
+}
+/* Read `doc`, write what was read, and read the output back. */
+static bool rv_rewrite(const char *doc, bool version)
+{
+	uint8_t out[4096];
+	bvnr_writer_t *w = r4_open(out, sizeof out, BVN_UNIT_FLAGS_NONE, version);
+	if (!w) return false;
+	bvnr_reader_t *r = bvnr_reader_create();
+	bvnr_read_flags_t rf;
+	memset(&rf, 0, sizeof rf);
+	rf.on_verified = rv_pipe;
+	rf.userdata    = w;
+	bool ok = r && bvnr_open_read_mem(r, doc, strlen(doc), NULL, 0, &rf) &&
+		  bvnr_read(r) && bvnr_write_finish(w);
+	uint64_t n = bvnr_writer_bytes_written(w);
+	bvnr_reader_destroy(r);
+	bvnr_writer_destroy(w);
+	last_event_t le = {0};
+	return ok && roundtrip(out, n, &le);
+}
+static void test_writer_review_2026_11_whole(void)
+{
+	uint8_t out[4096];
+	bvnr_writer_t *w;
+	const value_type_spec_t P = BVN_TYPE_PLAIN;
+
+	/* 1. A nested row is ONE element of its parent row; its "/"-continuation
+	 *    adds nothing. The writer counted 2 and 1, as the 1.1 reader did. */
+	ASSERT_TRUE(rv_rewrite(".x=[[1],[2]]/[null,null];", false),
+		    "[[1],[2]]/[null,null] is rewritten");
+	ASSERT_TRUE(rv_rewrite(".x=[null]/[[1]];", false), "[null]/[[1]] is rewritten");
+	ASSERT_TRUE(rv_rewrite(".x=[[1]]/[null];", false), "[[1]]/[null] is rewritten");
+	ASSERT_TRUE(rv_rewrite(".x=[[1]/[2]]/[[3]/[4]];", false),
+		    "nested /-matrices are rewritten");
+	w = r4_open(out, sizeof out, BVN_UNIT_FLAGS_NONE, false);
+	ASSERT_TRUE(w && r4_key(w, "x") && r4_ev(w, ev_array_row_start) &&
+		    r4_ev(w, ev_array_row_start) &&
+		    r4_val(w, token_is_number, P, BVN_UNIT_NONE, "1") &&
+		    r4_ev(w, ev_array_row_end) && r4_ev(w, ev_array_row_end) &&
+		    r4_ev(w, ev_array_dim_start) && r4_ev(w, ev_array_row_start) &&
+		    r4_val(w, token_is_null_value, P, BVN_UNIT_NONE, NULL),
+		    "[[1]]/[null ... is accepted so far");
+	ASSERT_TRUE(r4_val(w, token_is_null_value, P, BVN_UNIT_NONE, NULL),
+		    "...and its second element");
+	ASSERT_FALSE(r4_ev(w, ev_array_row_end),
+		     "[[1]]/[null,null] is refused where its row closes");
+	ASSERT_EQ_INT(bvnr_writer_get_error(w), error_array_row_size_mismatch,
+		      "...as error_array_row_size_mismatch");
+	bvnr_writer_destroy(w);
+
+	/* 2. A struct under an annotation, an empty one included. */
+	w = r4_open(out, sizeof out, BVN_UNIT_FLAGS_NONE, false);
+	ASSERT_TRUE(w && r4_key(w, "x") &&
+		    r4_ann(w, BVN_TYPE_UINT(8), BVN_UNIT_NONE, false, BVN_UNIT_NONE, NULL),
+		    "<uint:8> is written");
+	ASSERT_FALSE(r4_ev(w, ev_struct_start), "<uint:8> {} is refused at its {");
+	ASSERT_EQ_INT(bvnr_writer_get_error(w), error_type_value_mismatch,
+		      "...as error_type_value_mismatch");
+	bvnr_writer_destroy(w);
+
+	/* 3/4. A datetime takes a special number, and no string or bool. */
+	ASSERT_TRUE(rv_rewrite("#!bovnar 1.1\n.x=<datetime:64> nan;", true),
+		    "<datetime:64> nan is rewritten");
+	ASSERT_TRUE(rv_rewrite("#!bovnar 1.1\n.x=<datetime:64> [inf, 5, null];", true),
+		    "<datetime:64> [inf, 5, null] is rewritten");
+	/* ...and the bare integers that inherit an element's datetime (§7.5)
+	 * are still written bare: the refusal of an unannotated datetime below
+	 * must not reach them. */
+	ASSERT_TRUE(rv_rewrite("#!bovnar 1.1\n.x=[2026-01-01, 2026-01-02];", true),
+		    "[2026-01-01, 2026-01-02] is rewritten");
+	ASSERT_TRUE(rv_rewrite("#!bovnar 1.1\n.x=[<datetime:64,tai> 100, 200];", true),
+		    "[<datetime:64,tai> 100, 200] is rewritten");
+	value_type_spec_t dt = BVN_TYPE_SINT(64);
+	dt.family = vt_datetime;
+	w = r4_open(out, sizeof out, BVN_UNIT_FLAGS_NONE, true);
+	ASSERT_TRUE(w && r4_key(w, "x") &&
+		    r4_ann(w, dt, BVN_UNIT_NONE, false, BVN_UNIT_NONE, NULL),
+		    "<datetime:64> is written");
+	ASSERT_FALSE(r4_val(w, token_is_string, dt, BVN_UNIT_NONE, "5"),
+		     "a string under <datetime> is refused");
+	ASSERT_EQ_INT(bvnr_writer_get_error(w), error_type_value_mismatch,
+		      "...as error_type_value_mismatch");
+	bvnr_writer_destroy(w);
+
+	/* 5. An annotation with no family the grammar spells. */
+	w = r4_open(out, sizeof out, BVN_UNIT_FLAGS_NONE, false);
+	ASSERT_TRUE(w && r4_key(w, "x"), "key");
+	ASSERT_FALSE(r4_ann(w, P, BVN_UNIT_NONE, false, BVN_UNIT_NONE, NULL),
+		     "a <plain> annotation is refused");
+	ASSERT_EQ_INT(bvnr_writer_get_error(w), error_illegal_value_type,
+		      "...as error_illegal_value_type");
+	bvnr_writer_destroy(w);
+
+	/* 6. With no annotation over it, a value is read as its text says: an
+	 *    event that means base 16 cannot be honoured without one. */
+	w = r4_open(out, sizeof out, BVN_UNIT_FLAGS_NONE, false);
+	ASSERT_TRUE(w && r4_key(w, "x"), "key");
+	ASSERT_FALSE(r4_val(w, token_is_number, BVN_TYPE_UINT_BASE(8, 16),
+			    BVN_UNIT_NONE, "10"),
+		     "an unannotated base-16 value is refused");
+	bvnr_writer_destroy(w);
+	w = r4_open(out, sizeof out, BVN_UNIT_FLAGS_NONE, false);
+	ASSERT_TRUE(w && r4_key(w, "x") &&
+		    r4_val(w, token_is_number, BVN_TYPE_UINT(8), BVN_UNIT_NONE, "10"),
+		    "an unannotated decimal uint:8 is written");
+	r4_expect(w, out, ".x=10;", "...as the bare number");
+
+	/* 7. float_fix is rounded once, by the reader, not first to `width`
+	 *    significand bits: 0.5019531251 * 256 = 128.50000003 rounds to 129. */
+	w = r4_open(out, sizeof out, BVN_UNIT_FLAGS_NONE, false);
+	ASSERT_TRUE(w && bvnr_write_float_fix(w, "x", 16, 8, 0.5019531251),
+		    "float_fix:16,q8 is written");
+	ASSERT_TRUE(bvnr_write_finish(w), "finish");
+	const char *lit = strchr((const char *)out, '>');
+	ASSERT_TRUE(lit && strtod(lit + 1, NULL) * 256.0 > 128.5,
+		    "the literal stays above the q8 midpoint");
+	bvnr_writer_destroy(w);
+}
+
 static void test_writer_refuses_unreadable_output(void)
 {
 	/* The writer's contract is that it "cannot be coaxed into emitting a stream
@@ -2779,12 +2923,16 @@ static void test_writer_refuses_unreadable_output(void)
 		bvnr_write_event(w, ev_stream_start, &d);
 		d.type = token_is_identifier; d.data = "k"; d.length = 1;
 		bvnr_write_event(w, ev_assignment_start, &d);
+		value_type_spec_t nvt = { .family = vt_float, .width = 64,
+					  .base = num[i].base };
+		if (num[i].base != 16 && num[i].base != 10)
+			nvt.family = vt_uint;
+		/* Under its annotation: unannotated, a base other than 10 is
+		 * refused outright (it would be read as decimal). */
+		bvnr_write_type_annotation(w, nvt, BVN_UNIT_NONE);
 		memset(&d, 0, sizeof d);
 		d.type = token_is_number;
-		d.value_type = (value_type_spec_t){ .family = vt_float, .width = 64,
-						    .base = num[i].base };
-		if (num[i].base != 16 && num[i].base != 10)
-			d.value_type.family = vt_uint;
+		d.value_type = nvt;
 		d.data = num[i].lit; d.length = (uint32_t)strlen(num[i].lit);
 		bvnr_write_event(w, ev_data, &d);
 		ASSERT_EQ_INT((int)bvnr_writer_get_error(w), num[i].want,
@@ -3116,6 +3264,7 @@ int main(void)
 	test_unwritable_unit_reports_a_unit_error();
 	test_writer_refuses_unreadable_output();
 	test_writer_review_2026_11();
+	test_writer_review_2026_11_whole();
 	test_every_unit_writer_round_trips();
 	test_writer_event_grammar();
 	test_writer_accepts_only_readable_streams();

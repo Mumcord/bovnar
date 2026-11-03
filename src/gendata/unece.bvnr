@@ -376,6 +376,7 @@
   # is why qudt:REV-PER-MIN maps there too.
   { .code = "C94"; .bovnar = "min^-1"; },   # reciprocal minute
   { .code = "M46"; .bovnar = "rev/min";},   # revolution per minute
+  { .code = "RPS"; .bovnar = "rev/s";},   # revolution per second
   { .code = "C97"; .bovnar = "s^-1";   },   # reciprocal second
   # J38 (baud) is NOT here. QUDT models it as DIMENSIONLESS -- information
   # again, the same modelling difference as the bit and the byte -- while
@@ -1781,7 +1782,6 @@
   { .code = "Q26";   .why = "dimensionless through QUDT's cross-reference — every native ratio has the same dimension vector and nothing here can say which one Rec 20 means"; },
   { .code = "QTR";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (12.70058636)"; },
   { .code = "R1";    .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (0.0042333)"; },
-  { .code = "RPS";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (6.28318531)"; },
   { .code = "WCD";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (3.62)"; },
   { .code = "WSD";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (4.672)"; },
   { .code = "35";    .why = "QUDT's cross-reference disagrees with itself about this code (claimed by MilliL-PER-CentiM2-MIN, MilliL-PER-CentiM2-SEC), so this repository cannot say what Rec 20 means by it"; },

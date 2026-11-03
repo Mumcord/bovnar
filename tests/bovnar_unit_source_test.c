@@ -750,8 +750,8 @@ static void test_writer_arrays(void)
 		 * UCUM unity. The writer's check knew only the literal no_unit. */
 		"#!bovnar 1.2\n.a=<float:64,ucum:{cells}>5;.b=<uint:64,_10,ucum:1>5;",
 		".a=<float:64,s>[<uint:8>1,3]/[4,<float:64>5];",
-		"#!bovnar 1.2\n.a=<float:64,udunits:kg m-2 s-1>"
-			"[<float:64,ucum:mL{a,b}>[<uint:8>null,\"7\"],3];",
+		("#!bovnar 1.2\n.a=<float:64,udunits:kg m-2 s-1>"
+			"[<float:64,ucum:mL{a,b}>[<uint:8>null,\"7\"],3];"),
 	};
 	for (size_t i = 0; i < sizeof docs / sizeof docs[0]; i++) {
 		/* The directive is not an event; a replay re-declares it itself. */

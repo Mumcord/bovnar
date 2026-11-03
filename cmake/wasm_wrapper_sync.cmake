@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Is web/bovnar_wasm.js still a faithful copy of its source, wasm/index.mjs?
 #
 # build_wasm.sh GENERATES web/bovnar_wasm.js from wasm/index.mjs, rewriting only
@@ -27,4 +30,49 @@ if(NOT _src STREQUAL _copy_norm)
         "it will be silently reverted by the next build. Move the change into "
         "wasm/index.mjs and re-run wasm/build_wasm.sh.")
 endif()
-message(STATUS "WASM wrapper copy is in sync with wasm/index.mjs")
+
+# ...and the npm package under dist/wasm, which build_wasm.sh assembles from the
+# same sources. Only the web copy used to be compared, so the package's wrapper,
+# README, package.json and notices could drift (or be hand-edited) unnoticed,
+# and the single-file variant the playground runs was checked by nothing.
+if(DEFINED ROOT AND DEFINED DIST)
+    foreach(_pair
+            "wasm/index.mjs|index.mjs"
+            "wasm/package.json|package.json"
+            "wasm/README.md|README.md"
+            "LICENSE|LICENSE"
+            "THIRD_PARTY_NOTICES.md|THIRD_PARTY_NOTICES.md")
+        string(REPLACE "|" ";" _p "${_pair}")
+        list(GET _p 0 _from)
+        list(GET _p 1 _to)
+        if(NOT EXISTS "${DIST}/${_to}")
+            message(FATAL_ERROR "dist/wasm/${_to} missing -- run wasm/build_wasm.sh")
+        endif()
+        file(READ "${ROOT}/${_from}" _a)
+        file(READ "${DIST}/${_to}" _b)
+        if(NOT _a STREQUAL _b)
+            message(FATAL_ERROR
+                "dist/wasm/${_to} differs from ${_from}. The package is assembled "
+                "by wasm/build_wasm.sh; re-run it rather than editing the copy.")
+        endif()
+    endforeach()
+    # index.single.mjs is index.mjs with the glue import pointed at the inlined
+    # build, the one substitution build_wasm.sh makes.
+    file(READ "${DIST}/index.single.mjs" _single)
+    string(REPLACE "'./bovnar.single.mjs'" "'./bovnar.mjs'" _single_norm "${_single}")
+    if(NOT _src STREQUAL _single_norm)
+        message(FATAL_ERROR
+            "dist/wasm/index.single.mjs differs from wasm/index.mjs beyond its "
+            "glue import -- re-run wasm/build_wasm.sh.")
+    endif()
+    # The playground core IS the package's single-file glue.
+    file(SHA256 "${DIST}/bovnar.single.mjs" _h1)
+    file(SHA256 "${ROOT}/web/bovnar_wasm_core.js" _h2)
+    if(NOT _h1 STREQUAL _h2)
+        message(FATAL_ERROR
+            "web/bovnar_wasm_core.js is not dist/wasm/bovnar.single.mjs -- the "
+            "playground and the npm package run different builds. Re-run "
+            "wasm/build_wasm.sh.")
+    endif()
+endif()
+message(STATUS "WASM wrapper copies are in sync with their sources")

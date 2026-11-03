@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 #
 # DESTRUCTIVE. Resets the working tree to HEAD and removes everything untracked,
 # then repacks the git object store and rebuilds the merged bundle.

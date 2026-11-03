@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 check_citation.py — CITATION.cff is a schema-valid CFF 1.2 file.
 

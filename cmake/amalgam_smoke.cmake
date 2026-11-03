@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # CTest driver for the single-file amalgamation.
 #
 # Generates the amalgamation into the build tree (never touching the committed

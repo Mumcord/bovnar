@@ -1770,6 +1770,72 @@ static void test_dom_node_layout_is_invisible(void)
 #endif
 }
 
+/*
+ * The 2026-11-03 whole-project review. A converted integer whose digits in the
+ * output base contain 'e' or 'p' (digits from base 15 and 26 up) was promoted to
+ * a float; and a bigint node took a value its declared type cannot hold.
+ */
+static void test_dom_review_2026_11(void)
+{
+	static const bvnr_unit_target_t t16[] = { { "m", 16 } };
+	bvnr_unit_policy_t pol;
+	memset(&pol, 0, sizeof pol);
+	pol.targets = t16;
+	pol.num_targets = 1;
+	static const char *const docs[] = {
+		".x=<uint:64,m> 14;",                     /* "e" in base 16 */
+		".x=<uint:64,_16,k~m> \"fffffffffffff\";", /* 0xfffffffffffff km */
+	};
+	static const uint64_t want[] = { 14u, 4503599627370495000u };
+	for (size_t i = 0; i < sizeof docs / sizeof *docs; i++) {
+		bvn_dom_doc_t *doc = bvn_dom_parse_policy(docs[i],
+				(uint32_t)strlen(docs[i]), &pol);
+		ASSERT_TRUE(doc && bvn_dom_doc_get_parse_error(doc) == error_none,
+			    "converted integer: the document parses");
+		if (!doc || bvn_dom_doc_get_parse_error(doc) != error_none) {
+			bvn_dom_doc_destroy(doc);
+			continue;
+		}
+		const bvn_dom_node_t *x = bvn_dom_lookup(doc, ".x");
+		ASSERT_EQ_INT(bvn_dom_node_type(x), BVN_DOM_INT,
+			      "converted integer: stays an integer node");
+		uint64_t v = 0;
+		ASSERT_TRUE(bvn_dom_get_u64(x, &v) && v == want[i],
+			    "converted integer: with its exact value");
+		bvn_dom_doc_destroy(doc);
+	}
+
+	bvn_int_t *n = bvn_int_alloc();
+	ASSERT_NOT_NULL(n, "bvn_int_alloc");
+	if (!n) return;
+	bvn_int_from_int64(n, -5);
+	ASSERT_NULL(bvn_dom_node_from_bigint(n, BVN_TYPE_UINT(128), BVN_UNIT_NONE),
+		    "a negative value is no uint:128");
+	bvn_dom_node_t *ok = bvn_dom_node_from_bigint(n, BVN_TYPE_SINT(128),
+						      BVN_UNIT_NONE);
+	ASSERT_NOT_NULL(ok, "-5 is a sint:128");
+	if (ok)
+		bvn_dom_node_destroy(ok);   /* takes the bigint with it */
+	else
+		bvn_int_free(n);
+	n = bvn_int_alloc();
+	if (!n) return;
+	bvn_int_from_uint64(n, 1u);
+	bvn_int_shl(n, 200);
+	ASSERT_NULL(bvn_dom_node_from_bigint(n, BVN_TYPE_UINT(128), BVN_UNIT_NONE),
+		    "2^200 is no uint:128");
+	bvn_int_free(n);
+	n = bvn_int_alloc();
+	if (!n) return;
+	bvn_int_from_uint64(n, 1u);
+	bvn_int_shl(n, 127);
+	n->negative = true;
+	bvn_dom_node_t *lo = bvn_dom_node_from_bigint(n, BVN_TYPE_SINT(128),
+						      BVN_UNIT_NONE);
+	ASSERT_NOT_NULL(lo, "-2^127 is the sint:128 minimum");
+	if (lo) bvn_dom_node_destroy(lo); else bvn_int_free(n);
+}
+
 int main(void)
 {
 	test_dom_node_layout_is_invisible();
@@ -1784,6 +1850,7 @@ int main(void)
 	test_dom_string_carried_numbers_are_numbers();
 	test_dom_dimension_match_is_order_insensitive();
 	test_dom_bigint_node_carries_its_unit();
+	test_dom_review_2026_11();
 	printf("Running bovnar_dom_test regression suite...\n");
 
 	test_parse_basic_dom();

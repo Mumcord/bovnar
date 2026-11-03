@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Install the Bovnar syntax definition and colour scheme for Sublime Text.
 set -euo pipefail
 cd "$(dirname "$0")"

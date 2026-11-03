@@ -23,7 +23,7 @@
 // `input` may be a string (UTF-8 encoded for you) or a Uint8Array (passed
 // through verbatim — required if the document embeds octet streams with NULs).
 
-import createBovnar from './bovnar_wasm_core.js?v=2dff21d5ed63';
+import createBovnar from './bovnar_wasm_core.js?v=217b1c1037e7';
 
 const enc = new TextEncoder();
 
@@ -62,6 +62,15 @@ export async function loadBovnar(opts) {
     }
   }
 
+  // A base crosses as a C int. `base | 0` wrapped 4294967306 to 10 and turned
+  // 2.5 into 2, each reported as a successful conversion; anything that is not
+  // a non-negative integer the C side can hold goes over as -1, which it
+  // refuses as error_invalid_argument.
+  function wasmBase(base) {
+    const b = Number(base);
+    return Number.isInteger(b) && b >= 0 && b <= 0x7fffffff ? b : -1;
+  }
+
   // Same, for the conversion variant: (buf, len, unit, base, allow) where
   // `unit` is a NUL-terminated C string we allocate alongside the document.
   function callJsonConvert(input, unit, base, allowNonterminating) {
@@ -91,7 +100,7 @@ export async function loadBovnar(opts) {
       outPtr = Module.ccall(
         'bvnr_wasm_events_convert', 'number',
         ['number', 'number', 'number', 'number', 'number'],
-        [inPtr, len, uPtr, base | 0, allowNonterminating ? 1 : 0]);
+        [inPtr, len, uPtr, wasmBase(base), allowNonterminating ? 1 : 0]);
       if (!outPtr) throw new Error('bovnar: out of memory');
       return JSON.parse(Module.UTF8ToString(outPtr));
     } finally {
@@ -189,8 +198,10 @@ export async function loadBovnar(opts) {
      *  skipped. An unparseable `unit` comes back as error_unit_illegal.
      *
      *  Note: this surface runs in resync mode, so a value the conversion
-     *  rejects is skipped along with its assignment rather than failing the
-     *  call — it simply will not appear in `events`. */
+     *  rejects is skipped along with its assignment rather than aborting the
+     *  call — it will not appear in `events` — but `ok` is then false and
+     *  `error_name` names the rejection (unit_mismatch, unit_inexact). A
+     *  `base` that is not 0 or a non-negative integer is invalid_argument. */
     eventsConvert: (input, unit = '', base = 0, allowNonterminating = false) =>
       callJsonConvert(input, unit, base, allowNonterminating),
 

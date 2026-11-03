@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 check_release_links.py — the site's Downloads menu points at the newest release.
 

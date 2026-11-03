@@ -306,6 +306,31 @@ class BvnrConverted(ctypes.Structure):
         ('den',    ctypes.c_void_p),
     ]
 
+class _OwnedBigInt:
+    """A heap ``bvn_int_t`` this process owns: a copy of a reader-owned bignum
+    (``conv.num``/``conv.den``), freed when the last reference goes. See
+    ``BvnrData._own_buffers``."""
+
+    __slots__ = ('ptr', '_free')
+
+    def __init__(self, src: int) -> None:
+        from ._ffi import get_library
+        lib = get_library()
+        self._free = lib.bvn_int_free
+        self.ptr = lib.bvn_int_alloc()
+        if not self.ptr:
+            raise MemoryError("bvn_int_alloc() returned NULL")
+        if not lib.bvn_int_copy(self.ptr, src):
+            lib.bvn_int_free(self.ptr)
+            self.ptr = None
+            raise MemoryError("bvn_int_copy() failed on a conversion result")
+
+    def __del__(self) -> None:
+        if self.ptr:
+            self._free(self.ptr)
+            self.ptr = None
+
+
 class BvnrData(ctypes.Structure):
     # Must mirror the C `bvnr_data_t` layout exactly: the writer path allocates
     # this and passes &d to bvnr_write_event(), and the reader path receives a
@@ -339,8 +364,8 @@ class BvnrData(ctypes.Structure):
 
         ``value_unit`` is what the unit means; this is what was written. They
         differ where formatting a unit is lossy: ``ucum:mL{total}`` parses to
-        ``m~L`` and only this keeps the annotation. Like ``raw_bytes()``, read it
-        inside the callback -- the bytes belong to the reader."""
+        ``m~L`` and only this keeps the annotation. Like ``raw_bytes()``, it
+        reads a copy the callback's ``BvnrData`` owns."""
         if not self.unit_source or self.unit_source_length == 0:
             return None
         return (ctypes.c_char * self.unit_source_length).from_address(
@@ -368,8 +393,9 @@ class BvnrData(ctypes.Structure):
         requested base (``want_unit_allow_nonterminating``). ``Fraction(*pair)``
         gives you the exact number.
 
-        Valid only while the callback is running: num/den point at reader-owned
-        bignums.
+        On a ``BvnrData`` a reader callback received this stays valid after
+        the callback and after the reader is gone: the snapshot owns copies of
+        the two bignums.
         """
         if not self.converted or not self.conv.num or not self.conv.den:
             return None
@@ -377,12 +403,15 @@ class BvnrData(ctypes.Structure):
         lib = get_library()
 
         def _to_int(handle: int) -> int:
+            # Base 16, not 10: a power-of-two base is exempt from CPython's
+            # int_max_str_digits limit (4300 decimal digits by default), and a
+            # conversion result can be as wide as the format's 32768 bits.
             bits = lib.bvn_int_bitlen(handle) or 1
-            size = lib.bvn_int_str_bufsize(bits, 10)
+            size = lib.bvn_int_str_bufsize(bits, 16)
             buf  = ctypes.create_string_buffer(size)
-            if lib.bvn_int_to_str(handle, buf, size, 10) < 0:
+            if lib.bvn_int_to_str(handle, buf, size, 16) < 0:
                 raise ValueError("bvn_int_to_str failed on a conversion result")
-            return int(buf.value.decode('ascii'))
+            return int(buf.value.decode('ascii'), 16)
 
         return (_to_int(self.conv.num), _to_int(self.conv.den))
 
@@ -392,7 +421,8 @@ class BvnrData(ctypes.Structure):
         Returns None when no conversion was applied, or when the exact value has
         no terminating expansion in that base — use converted_rational() there.
         Lets a caller re-render in a base other than the one requested at read
-        time. Valid only while the callback is running.
+        time. Like converted_rational(), it keeps working on a callback's
+        ``BvnrData`` after the reader is gone.
         """
         if not self.converted or not self.conv.num or not self.conv.den:
             return None
@@ -408,6 +438,58 @@ class BvnrData(ctypes.Structure):
         if n < 0 or not exact.value:
             return None                    # non-terminating, or unrepresentable
         return buf.value.decode('ascii')
+
+    def _own_buffers(self) -> None:
+        """Replace every pointer into reader memory with a copy this object
+        owns, so each accessor works after the callback returns and after the
+        reader is destroyed.
+
+        A reader hands its callbacks a view whose ``data``, ``frac_data``,
+        ``unit_source`` and ``conv.num``/``conv.den`` point at storage the
+        reader reuses and frees; a ``BvnrData`` stashed past the callback then
+        read freed memory -- raw_bytes() returned garbage and
+        converted_rational() walked a freed bignum. ``conv.text`` is a
+        ``c_char_p`` and was already copied by ctypes on assignment.
+        """
+        # Copied as ctypes arrays (from_buffer_copy of a view on the source):
+        # about a microsecond per field, which matters at one call per event.
+        keep = []
+        _arr = ctypes.c_char
+        ptr, n = self.data, self.length
+        if ptr:
+            if n:
+                b = (_arr * n).from_buffer_copy((_arr * n).from_address(ptr))
+                keep.append(b)
+                self.data = ctypes.addressof(b)
+            else:
+                self.data = None
+        ptr, n = self.frac_data, self.frac_length
+        if ptr:
+            if n:
+                b = (_arr * n).from_buffer_copy((_arr * n).from_address(ptr))
+                keep.append(b)
+                self.frac_data = ctypes.addressof(b)
+            else:
+                self.frac_data = None
+        ptr, n = self.unit_source, self.unit_source_length
+        if ptr:
+            if n:
+                b = (_arr * n).from_buffer_copy((_arr * n).from_address(ptr))
+                keep.append(b)
+                self.unit_source = ctypes.addressof(b)
+            else:
+                self.unit_source = None
+        if self.converted:
+            conv = self.conv
+            if conv.num and conv.den:
+                num, den = _OwnedBigInt(conv.num), _OwnedBigInt(conv.den)
+                keep += (num, den)
+                conv.num, conv.den = num.ptr, den.ptr
+            else:
+                conv.num = conv.den = None
+        # Without a conversion conv is not populated (Reader._snapshot copies
+        # it only when `converted` is set), so there is no pointer to replace.
+        self._owned = keep
 
     def raw_bytes(self) -> bytes:
         if not self.data or self.length == 0:

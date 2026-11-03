@@ -257,11 +257,11 @@ class Reader:
         # reader, so an object a callback stashes away segfaults later. Every
         # callback must therefore hand Python a snapshot, never the view.
         #
-        # The by-value fields below become genuinely Python-owned. The pointer
-        # fields (`data`, `frac_data`, `unit_source`) are deliberately carried
-        # over as raw addresses and stay valid only for the duration of the
-        # callback — read them with raw_bytes()/frac_str()/unit_source_str()
-        # before returning.
+        # The by-value fields below become genuinely Python-owned, and so do
+        # the pointer fields (`data`, `frac_data`, `unit_source`, `conv.num`,
+        # `conv.den`): _own_buffers() replaces each with a copy the snapshot
+        # owns. They used to be carried over as raw addresses, and a BvnrData
+        # kept past the callback read freed reader memory.
         unit_size = ctypes.sizeof(ValueUnit)
         snap = BvnrData()
         snap.type              = src.type
@@ -293,23 +293,20 @@ class Reader:
             # lets ctypes keep it alive past the callback. None when the result
             # does not terminate in the output base
             # (want_unit_allow_nonterminating) — the exact value then lives in
-            # conv.num/conv.den, which point at reader-owned bignums. Those are
-            # carried over as raw addresses, so converted_rational() is only
-            # valid during the callback.
+            # conv.num/conv.den, copied below.
             snap.conv.text = src.conv.text
             snap.conv.num  = src.conv.num
             snap.conv.den  = src.conv.den
+        snap._own_buffers()
         return snap
 
     @staticmethod
     def _wrap_callback(py_fn: Callable):
 
         state = {'exc': None}
-        # Each event gets a fresh BvnrData (callers may retain sub-struct
-        # references like d.value_type), but we skip the eager bytes copy
-        # for d.data — d.data references the lexer's internal buffer and
-        # is valid for the duration of the callback only.  Call
-        # raw_bytes() / raw_str() within the callback to capture data.
+        # Each event gets a fresh BvnrData that owns everything it points at
+        # (see _snapshot), so a callback may keep it -- or a sub-struct view
+        # like d.value_type -- and use every accessor after the reader is gone.
 
         def _c_cb(userdata_void, event_int: int, data_ptr) -> bool:
             try:

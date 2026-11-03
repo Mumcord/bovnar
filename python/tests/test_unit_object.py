@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 The Unit object and the all-properties accessor shape (1.2).
 

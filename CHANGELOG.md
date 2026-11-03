@@ -45,6 +45,124 @@ rebuild consumers against the new headers. **SOVERSION is bumped 1 → 2**
 (`libbvnr.so.2`), so a binary built against 1.x headers fails to load rather than
 reading the grown by-value structs at the wrong size.
 
+### Fixed — a whole-project review before release
+
+Five reviews side by side — reader, writer and DOM, unit system, bindings, and
+the docs, build and packaging — each finding reproduced before it was fixed.
+
+**Writer and DOM.**
+
+- **The writer counted a nested row twice**, the way the 1.1 reader did before
+  §7.3 was corrected: `[[1],[2]]/[null,null]` validated and `pretty-print`
+  refused to write it, while the events of `[[1]]/[null,null]` were written and
+  then refused by the reader. A nested array is one element of its row; its
+  `/`-continuation adds nothing.
+- **A struct under a type annotation was written** when it was empty
+  (`<uint:8> {}`, `<uint:8> [{}]`), which the reader refuses at the `{`. The
+  writer now refuses it there too, empty or not.
+- **`<datetime:64> nan` could not be rewritten** (`pretty-print` refused it),
+  while a string or a bool under `<datetime>` was written and then refused by
+  the reader. The writer now takes a datetime exactly as the reader does.
+- **An annotation of family `plain`** (or an out-of-range family) was written
+  as `<plain>`, which nothing reads; it is `error_illegal_value_type`.
+- **A typed value with no annotation over it was written as if it had one.**
+  An event meaning `10` in base 16 came out as `.x=10;` and was read as ten, a
+  datetime as a plain integer, a numeric string as text — each reported as
+  success. Without an annotation the writer refuses a base other than 10, a
+  datetime, and a numeric family on a string token (`error_type_value_mismatch`).
+  Four writer tests had pinned the unreadable output byte for byte; they now
+  write the annotation.
+- **`float_fix` and `float_dec` were rounded twice by the helpers**: first to
+  `width` bits of significand, then by the reader to the field's grid.
+  `bvnr_write_float_fix(w, "x", 16, 8, 0.5019531251)` went out as `0.50195` and
+  read as 128/256 rather than 129/256. The double's own value is written now.
+- **A unit policy that converted an integer into base 15 or above stored a
+  float.** The DOM decided "integer or fraction" from the digits, and `e` and
+  `p` are digits there: `<uint:64,m> 14` converted to metres in base 16 is `e`.
+  It decides from the exact denominator.
+- **`bvn_dom_node_from_bigint` took a value its type cannot hold** — a negative
+  `uint:128`, a 4000-bit value under 128 bits. It returns NULL for those.
+
+**Reader.**
+
+- **A `float_fix` literal too large for any float was accepted** as infinity
+  (`<float_fix:16,q8> 1e9862`, read as `inf`); it is `error_value_out_of_range`
+  (doc/03 §17). And a document of `1e-9000` values under `float_fix` took
+  about 4 ms a value to range-check; the clear cases are decided from the
+  digits now, and 2000 of them validate in milliseconds. The fixed-point
+  encoders saturate such a magnitude instead of returning 0.
+- **Recovery read a comment as code** when the `#` was the offending byte
+  (`.a = 42# was: .a = 41;` delivered `.a = 41`), and **forgot an offending
+  `{` or `[`**, so its closing bracket closed the enclosing struct and the
+  members after it changed level.
+- **`text_only` ends the read under `continue_on_error`.** Recovery cannot read
+  an octet stream's framing, scanned the refused payload as text and delivered
+  assignments out of it. doc/03 §13.2 now also says what recovery does when it
+  skips over an octet stream.
+- **A consumer's abort at four places skipped `on_error`** — the first and the
+  last event, an octet chunk and the end of an octet stream — and was reported
+  at offset 0. A source that failed inside an octet stream was reported as a
+  truncated stream (`error_read_complete_chunk_failed`) rather than as the I/O
+  error it is (`error_reading_from_source_fd`).
+- **A `}` before the first statement** was `error_unexpected_input_byte`, and
+  `error_illegal_struct_close` after one; it is the latter in both places, as
+  §8.5 says.
+- **An unusable inline unit was announced before it was refused**: `.o = 100
+  zzz;` delivered a verified type annotation and then `error_unit_illegal`, and
+  an ungated `ucum:km/h` reached `on_verified` as a unit.
+
+**Unit system.**
+
+- **OM's five temperature scales were units.** `om:CelsiusScale` and its
+  siblings mapped to K, so a Celsius-scale `20.0` read as 20 K, and the Δ°Re
+  difference unit was written back as `ReaumurScale`. OM relates a scale to its
+  unit by a factor *and an offset*; they are `error_unit_profile_unsupported`,
+  as doc/11 §16.3 already said.
+- **A per-field rule could deliver a value unconverted.** `--field .a=m/s
+  --leave-inexact` printed 100 for 100 km/h, and a rule whose conversion
+  outgrew the bignum passed the value through; a rule is an assertion
+  (doc/06 §2.1), so both fail now. `query --leave-inexact` names the unit a
+  value was left in on stderr, since the number it prints says nothing.
+- **Eight refusals had a native unit after all**: `udunits:DU`/`dobson`/
+  `dobsons` (the Dobson unit), `qudt:REV-PER-SEC`, `qudt:REV-PER-HR`,
+  `unece:RPS`, `qudt:DEG_C-PER-YR`, `qudt:DEG_C-WK` and `qudt:DEG_F-HR` map,
+  each checked against its publisher.
+- doc/05 said there is no generic `eq` alias, and doc/04 that `eq` is `val`;
+  `eq` is `val`, the water-analysis equivalent of half a mole, and doc/05 and
+  doc/07 now say how that differs from `ucum:eq`. UCUM's `[IU]` = `[iU]` is
+  recorded as a limitation (doc/11 §3.6). QUDT defines 2803 units and 1164
+  quantity kinds, not 2808 and 1165.
+
+**Bindings.**
+
+- **Python lost integers over 4300 digits**, CPython's `int_max_str_digits`:
+  `loads()` handed back the digits as a `str`, and the DOM, `dumps()` of a
+  list, `Quantity` and `converted_rational()` raised. They convert through
+  helpers that do not depend on the process limit, which is left alone.
+- **A payload kept past its callback read freed memory** once the reader was
+  gone (`raw_bytes()`, `unit_source_str()`, `converted_rational()`); the
+  snapshot owns copies now.
+- `write_array` refusing an element left the writer half-written; every element
+  is checked before anything is emitted. A DOM node's `unit_str` is `''` for no
+  unit, as `Quantity.unit_str` is; a refused policy raises `BovnarArgumentError`
+  from `dom_parse` as it does from `Reader`; `mux_load` names the demux error.
+- **WASM**: `eventsConvert` accepted a base it could not use (`-1`, `2.5`,
+  `4294967306`) and reported success; it is `invalid_argument`. The CTest gate
+  now compares every file of `dist/wasm` with its source, and the WASM stamp
+  covers `build_wasm.sh`.
+
+**Build, CI and documentation.**
+
+- **`bvnr_want_unit_test` was built and never run** — 280 assertions on the
+  read-time conversion, absent from CTest, CI and `run_tests.sh`. Registered.
+- **CI never built with `BVNR_WERROR`**, though CONTRIBUTING said it did; the
+  tests job does now (checked against GCC 13 and 15). Two GCC-only pragmas
+  failed a clang build with it.
+- The editor highlighters coloured no `Δ` unit; every hand-written source file
+  and the generated headers carry the SPDX header; and the README, CONTRIBUTING,
+  SECURITY, doc/08, doc/09, doc/11 and the JOSS paper were corrected where they
+  disagreed with the code.
+
 ### Changed — a document tree costs a tenth of the memory
 
 - **A DOM node is 48 bytes, down from 656.** Each node held its unit inline —

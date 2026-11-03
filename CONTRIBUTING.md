@@ -279,8 +279,9 @@ means, and `gen_profiles.py` only checks that a `.bovnar` target names something
 this build's registry has — not that the code is worth what the table says.
 
 `check_profile_factors.py` is the outside check. It covers all seven profiles:
-`ucum`, `udunits`, `qudt` and `qudt-qk` against their own publishers, and
-`unece` at one remove through QUDT's `uneceCommonCode` cross-reference, because
+`ucum`, `udunits`, `qudt`, `qudt-qk` and `om` against their own publishers,
+`cf` against the CF table for each name's units and UDUNITS-2 for what those
+units are worth, and `unece` at one remove through QUDT's `uneceCommonCode` cross-reference, because
 Rec 20 states its conversion factors in prose. A `unece` disagreement is
 therefore evidence that one of two tables is wrong, not proof of which:
 
@@ -292,7 +293,7 @@ python3 check_profile_factors.py --verbose   # every row, not just the failures
 It compares each mapped row against the publisher's own definitions, using the
 built library for the native side. Without the cache the CTest gate
 (`bvnr_profile_factors`) **skips green**, because a test must not depend on the
-network — so run it yourself after touching any of those four data files, and
+network — so run it yourself after touching any of those data files, and
 pass `--strict` in CI where the fetch has run. See doc/11 §9.5 for what it does
 and does not prove.
 
@@ -344,8 +345,11 @@ so it is a review question, and this section is where it is asked.
   file's `SOURCE, VERSION AND LICENSING` header block and the matching entry in
   `THIRD_PARTY_NOTICES.md` Part 1 are part of the patch, not a follow-up: the
   exact published version, the retrieval date, the licence, and what was
-  extracted. `check_profile_factors.py` must pin a *versioned* upstream URI, never
-  a `current/` alias, or the provenance you recorded cannot be reproduced later.
+  extracted. Where the publisher has versioned releases (QUDT, CF),
+  `check_profile_factors.py` pins the versioned URI, never a `current/` alias, or
+  the provenance you recorded cannot be reproduced later. UDUNITS-2, UCUM and OM
+  are fetched from their moving default branch on purpose: that is the drift the
+  weekly `vocabulary-drift` workflow watches for.
 * **A file under `web/`** — a font, a library, an image. An entry in Part 2, and,
   where the licence requires its text to travel with the file (the SIL Open Font
   License does), that text served beside it, as `web/fonts/OFL.txt` is.

@@ -2021,7 +2021,15 @@ static void bvnf_to_fix_core(const bvn_float_t *f, int total_bits,
 	if (!bvnf_scratch(&M, qhint)) return;
 	bvnf_load_mant_bvint(f, &M);
 	long sh = (long)f->_exp - (long)f->_prec + (long)frac_bits;
-	if (sh >= 0) {
+	/* A magnitude past the field is an overflow whatever its low bits are,
+	 * and is decided before the shift: a shift that large can fail (or would
+	 * need megabytes), and failing it used to return 0 -- neither saturated
+	 * nor reported, so 1e9862 under q8 passed the range probe. */
+	bool too_big = (sh >= 0) &&
+		((long)bvn_int_bitlen(&M) + sh > (long)total_bits);
+	if (too_big) {
+		bvn_int_zero(&M);
+	} else if (sh >= 0) {
 		if (sh > (long)INT_MAX || !bvn_int_shl(&M, (int)sh)) {
 			bvnf_scratch_free(&M); return;
 		}
@@ -2051,7 +2059,9 @@ static void bvnf_to_fix_core(const bvn_float_t *f, int total_bits,
 	{
 		int  bl = bvn_int_bitlen(&M);
 		bool ov;
-		if (!neg) {
+		if (too_big) {
+			ov = true;
+		} else if (!neg) {
 			ov = (bl >= total_bits);
 		} else if (bl < total_bits) {
 			ov = false;
@@ -2132,17 +2142,78 @@ bool bvn_float_fix_in_range(const bvn_float_t *f,
  * and parse failure both return true (don't reject a value the caller already
  * validated syntactically). total_bits is one of 16/32/64/128/256.
  */
+/*
+ * Decimal magnitude of a base-10 literal without parsing it: *dexp = D such
+ * that |v| lies in [10^(D-1), 10^D). Returns 0 for a zero, 1 when D is set,
+ * -1 when the text is not a plain decimal literal (the caller then parses).
+ * The exponent saturates far beyond any field, so "1e-99999" costs a scan.
+ */
+static int bvnf_dec_magnitude(const char *s, long *dexp)
+{
+	const char *p = s;
+	if (*p == '+' || *p == '-') p++;
+	long ndig_int = 0, first_nz = -1, pos = 0;
+	bool any = false, dot = false;
+	for (;; p++) {
+		if (*p >= '0' && *p <= '9') {
+			any = true;
+			if (*p != '0' && first_nz < 0) first_nz = pos;
+			pos++;
+			if (!dot) ndig_int++;
+			if (pos > 1000000L) return -1;
+		} else if (*p == '.' && !dot) {
+			dot = true;
+		} else {
+			break;
+		}
+	}
+	if (!any) return -1;
+	long e = 0;
+	if (*p == 'e' || *p == 'E') {
+		p++;
+		bool eneg = false;
+		if (*p == '+' || *p == '-') eneg = (*p++ == '-');
+		if (*p < '0' || *p > '9') return -1;
+		for (; *p >= '0' && *p <= '9'; p++)
+			if (e < 100000000L) e = e * 10 + (*p - '0');
+		if (eneg) e = -e;
+	}
+	if (*p != '\0') return -1;
+	if (first_nz < 0) return 0;
+	*dexp = ndig_int - first_nz + e;
+	return 1;
+}
 bool bvn_float_str_fits_fix(const char *s, uint32_t base,
 							uint32_t total_bits, uint32_t frac_bits)
 {
 	if (!s) return true;
+	/* Decide the clear cases from the digits alone. Parsing "1e-9000" to a
+	 * float of this precision costs milliseconds, and a document of such
+	 * values was a denial of service; a value that far below 2^-frac_bits
+	 * rounds to 0 and fits, one far above 2^total_bits cannot. The margins
+	 * (log2 10 < 3.33, and four bits either way) leave every borderline
+	 * case to the exact path below. */
+	if (base == 10u) {
+		long D;
+		int m = bvnf_dec_magnitude(s, &D);
+		if (m == 0) return true;
+		if (m == 1) {
+			if (D < 0 && -(D * 3) > (long)frac_bits + 4L) return true;
+			if (D > 1 && (D - 1) * 3 > (long)total_bits + 4L) return false;
+		}
+	}
 	uint32_t prec = total_bits + frac_bits + 64u;
 	if (prec > BVN_FLOAT_MAX_PREC) prec = BVN_FLOAT_MAX_PREC;
 	bvn_float_t *f = bvn_float_alloc(prec);
 	if (!f) return true;
 	bool fits = true;
-	if (bvn_float_from_str(f, s, base))
-		fits = bvn_float_fix_in_range(f, total_bits, frac_bits);
+	if (bvn_float_from_str(f, s, base)) {
+		/* The callers pass no special number, so an infinity here is a
+		 * finite literal past the float's exponent range: out of range,
+		 * not the range-exempt inf of §6.4. */
+		fits = !bvn_float_is_inf(f) &&
+		       bvn_float_fix_in_range(f, total_bits, frac_bits);
+	}
 	bvn_float_free(f);
 	return fits;
 }

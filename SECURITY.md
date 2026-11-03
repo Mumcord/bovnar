@@ -91,8 +91,9 @@ report does not have to guess.
 ## Hardening
 
 `BVNR_HARDEN` is on by default (stack protector on the CLI, `_FORTIFY_SOURCE=2`,
-`-Wformat` security checks). CI runs the full test suite a second time under
-ASan and UBSan with `-fno-sanitize-recover=all`, and the reader, writer, DOM and
+`-Wformat` security checks). CI runs the test suite a second time under
+ASan and UBSan with `-fno-sanitize-recover=all` (all but the Python tests, which
+load the library into an unsanitized interpreter), and the reader, writer, DOM and
 utility layers each have a self-contained fuzz harness registered as a CTest
 target, with optional libFuzzer and AFL++ builds behind `BVNR_FUZZ_EXTERNAL`.
 

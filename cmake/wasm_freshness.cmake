@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Is the committed WebAssembly artifact built from the current sources?
 #
 # The web playground is presented as "the C reference implementation, via WASM".

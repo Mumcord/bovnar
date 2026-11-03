@@ -197,3 +197,27 @@ def test_parse_embedded_reports_the_real_error():
     with pytest.raises(BovnarParseError) as ei:
         stream.parse_embedded(b'.a={.b=1;')
     assert ei.value.code == ErrorCode.GOT_INCOMPLETE_BVNR_STREAM
+
+
+@needs_lib
+def test_mux_load_names_the_demux_error():
+    # Every demux error used to read "demux desync", including a stream that
+    # ends part-way through a message, which bovnar_stream.h keeps distinct
+    # from a framing desync.
+    from bovnar.enums import ErrorCode
+    with pytest.raises(BovnarParseError) as ei:
+        stream.mux_load(b'.mux=\x00\x01\x04\x00\x02\x05ab\x00;')   # 5 declared, 2 sent
+    assert ei.value.code == ErrorCode.OCTET_STREAM_TRUNCATED
+    assert 'desync' not in str(ei.value)
+    assert 'octet_stream_truncated' in str(ei.value)
+
+    with pytest.raises(BovnarParseError) as ei:
+        stream.mux_load(stream.mux_dump([(1, b'abcdef')]), max_message=3)
+    assert ei.value.code == ErrorCode.VALUE_OUT_OF_RANGE
+    assert 'desync' not in str(ei.value)
+
+    # an overlong message-length varint is a real desync, and still says so
+    with pytest.raises(BovnarParseError) as ei:
+        stream.mux_load(b'.mux=\x00\x01\x0c\x00\x01' + b'\xff' * 11 + b'\x00;')
+    assert ei.value.code == ErrorCode.OCTET_STREAM_OUT_OF_SYNC
+    assert 'desync' in str(ei.value)

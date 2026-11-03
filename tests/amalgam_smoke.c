@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: MIT
+ *
+ * Copyright (c) 2026 Janos Sonntag
+ *
  * Smoke test for the single-file amalgamation (dist/bovnar.h + dist/bovnar.c).
  *
  * Compiled and run by cmake/amalgam_smoke.cmake (CTest target bvnr_amalgam),

@@ -22,7 +22,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Bovnar (BVNR) — unit-safe serialization">
 <meta property="article:published_time" content="2026-07-27">
-<meta property="article:modified_time" content="2026-10-11">
+<meta property="article:modified_time" content="2026-11-03">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Bovnar Unit Profiles">
@@ -32,7 +32,7 @@
 <link rel="stylesheet" href="/fonts/fonts.css?v=47fe6a616ffc">
 <link rel="stylesheet" href="/docs/docs.css?v=9cf496752b97">
 <link rel="alternate" type="text/markdown" href="/doc/11_bovnar_unit_profiles.md">
-<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "TechArticle", "headline": "Bovnar Unit Profiles", "description": "Writing UCUM, UN/ECE, QUDT, UDUNITS, OM 2 and CF codes in a Bovnar unit slot: the transliteration tables, the collisions between the namespaces, what has no representation, and the cross-vocabulary conformance suite.", "url": "https://www.bovnar.io/docs/profiles/", "mainEntityOfPage": "https://www.bovnar.io/docs/profiles/", "inLanguage": "en", "image": ["https://www.bovnar.io/bovnar-og.png"], "datePublished": "2026-07-27", "dateModified": "2026-10-11", "author": {"@type": "Person", "@id": "https://www.bovnar.io/#author", "name": "Janos Sonntag"}, "publisher": {"@type": "Organization", "@id": "https://www.bovnar.io/#organization", "name": "Bovnar", "url": "https://www.bovnar.io/", "logo": {"@type": "ImageObject", "url": "https://www.bovnar.io/apple-touch-icon.png", "width": 180, "height": 180}}, "isPartOf": {"@type": "WebSite", "@id": "https://www.bovnar.io/#website", "name": "Bovnar", "url": "https://www.bovnar.io/"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.bovnar.io/"}, {"@type": "ListItem", "position": 2, "name": "Documentation", "item": "https://www.bovnar.io/docs/"}, {"@type": "ListItem", "position": 3, "name": "Bovnar Unit Profiles", "item": "https://www.bovnar.io/docs/profiles/"}]}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "TechArticle", "headline": "Bovnar Unit Profiles", "description": "Writing UCUM, UN/ECE, QUDT, UDUNITS, OM 2 and CF codes in a Bovnar unit slot: the transliteration tables, the collisions between the namespaces, what has no representation, and the cross-vocabulary conformance suite.", "url": "https://www.bovnar.io/docs/profiles/", "mainEntityOfPage": "https://www.bovnar.io/docs/profiles/", "inLanguage": "en", "image": ["https://www.bovnar.io/bovnar-og.png"], "datePublished": "2026-07-27", "dateModified": "2026-11-03", "author": {"@type": "Person", "@id": "https://www.bovnar.io/#author", "name": "Janos Sonntag"}, "publisher": {"@type": "Organization", "@id": "https://www.bovnar.io/#organization", "name": "Bovnar", "url": "https://www.bovnar.io/", "logo": {"@type": "ImageObject", "url": "https://www.bovnar.io/apple-touch-icon.png", "width": 180, "height": 180}}, "isPartOf": {"@type": "WebSite", "@id": "https://www.bovnar.io/#website", "name": "Bovnar", "url": "https://www.bovnar.io/"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.bovnar.io/"}, {"@type": "ListItem", "position": 2, "name": "Documentation", "item": "https://www.bovnar.io/docs/"}, {"@type": "ListItem", "position": 3, "name": "Bovnar Unit Profiles", "item": "https://www.bovnar.io/docs/profiles/"}]}]}</script>
 </head>
 <body>
 <header class="site"><a class="brand" href="/"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6cb0ea"/><stop offset="1" stop-color="#0a85d6"/></linearGradient></defs><path d="M28 13 L12.5 32 L28 51" fill="none" stroke="url(#g)" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 13 L51.5 32 L36 51" fill="none" stroke="url(#g)" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 20 L44 32 L32 44 L20 32 Z" fill="#33a78f"/><path d="M32 20 L20 32 L32 32 Z" fill="#9cdcfe"/><path d="M32 20 L44 32 L32 32 Z" fill="#4ec9b0"/><path d="M20 32 L32 44 L32 32 Z" fill="#3fb89e"/><path d="M44 32 L32 44 L32 32 Z" fill="#2c9281"/></svg>BOVNAR<span class="ext">.bvnr</span></a><nav><a href="/#playground">Playground</a><a href="/#quickstart">Quick&nbsp;Start</a><a href="/docs/">Documentation</a><a class="cta" href="https://github.com/sothis/bovnar">GitHub&nbsp;↗</a><button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light theme" title="Toggle light / dark theme"><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button></nav></header>
@@ -70,35 +70,35 @@ admitted after that pass, which is why they sit after it rather than beside thei
 <td><code>unece:</code></td>
 <td>UN/ECE Recommendation 20 and 21</td>
 <td>flat</td>
-<td>1298 + 25 opaque</td>
+<td>1299 + 25 opaque</td>
 <td><a href="#11-the-unece-profile">11</a></td>
 </tr>
 <tr>
 <td><code>qudt:</code></td>
 <td>QUDT unit local names</td>
 <td>flat</td>
-<td>2238, <strong>all 2808 QUDT defines</strong></td>
+<td>2243, <strong>all 2803 QUDT defines</strong></td>
 <td><a href="#12-the-qudt-profiles">12</a></td>
 </tr>
 <tr>
 <td><code>qudt-qk:</code></td>
 <td>QUDT quantity kinds</td>
 <td>flat</td>
-<td>903, <strong>all 1165 QUDT defines</strong></td>
+<td>903, <strong>all 1164 QUDT defines</strong></td>
 <td><a href="#123-quantity-kinds-qudt-qk">12.3</a></td>
 </tr>
 <tr>
 <td><code>udunits:</code></td>
 <td>UDUNITS-2, the CF/netCDF units syntax</td>
 <td>expression</td>
-<td>765 (its regular plurals included), <strong>all 580 UDUNITS defines</strong></td>
+<td>768 (its regular plurals included), <strong>all 580 UDUNITS defines</strong></td>
 <td><a href="#13-the-udunits-profile">13</a></td>
 </tr>
 <tr>
 <td><code>om:</code></td>
 <td>OM 2 — Ontology of units of Measure</td>
 <td>flat</td>
-<td>1341 + 119 refused, <strong>every unit individual OM states</strong></td>
+<td>1336 + 124 refused, <strong>every unit individual OM states</strong></td>
 <td><a href="#16-the-om-2-profile">16</a></td>
 </tr>
 <tr>
@@ -123,7 +123,7 @@ they wrote it in. <code>unece</code> cannot be closed the same way and §11.1 sa
 pass changed and what it cost.</p>
 <p>Every acceptance, refusal and conversion factor quoted below was produced by running the
 reference implementation built from this tree, and the behavioural claims are pinned by the test
-files named above (1328 assertions across the seven profiles, plus 4789 in the cross-vocabulary
+files named above (1335 assertions across the seven profiles, plus 4789 in the cross-vocabulary
 suite). The VOCABULARY side — whether each foreign code is <em>worth</em> what the table says — is checked
 too, but not by the same means and not to the same strength: <code>check_profile_factors.py</code> (§9.5)
 resolves every mapped code against its publisher's own machine-readable definitions, and <code>unece</code>
@@ -777,7 +777,10 @@ numeric-factor component to <code>value_unit_component_t</code> breaks the ABI f
 does not appear to need. A named refusal is better than either.</p>
 <h3 id="36-arbitrary-units">3.6 Arbitrary units</h3>
 <p>UCUM's arbitrary units — <code>[IU]</code>, <code>[arb'U]</code>, <code>[PFU]</code>, <code>[CFU]</code>, and the rest of that table — are
-assay-defined. UCUM's own rule is that they are commensurable with nothing, including each other.
+assay-defined. UCUM's own rule is that they are commensurable with nothing, including each other —
+with one exception UCUM states itself: <code>[IU]</code> is defined as <code>1 [iU]</code>, the international unit in
+two spellings. Bovnar carries them as <strong>two</strong> opaque units that do not compare equal, so
+<code>ucum:[IU]</code> and <code>ucum:[iU]</code> cannot be converted into one another; write one spelling throughout.
 They are also the single largest reason a real clinical code fails to map (§6.4).</p>
 <p>The profile admits all <strong>41</strong> of them, as a contiguous run at the bottom of UCUM's own block of the
 <code>value_base_unit_t</code> id space (§7.1), one id per UCUM arbitrary atom. Consequences, all of which fall
@@ -2968,11 +2971,11 @@ that went in spelled <code>qudt:M-PER-SEC</code> comes out spelled <code>qudt:M-
 </tr>
 <tr>
 <td><code>unece.bvnr</code></td>
-<td>1298 mapped, 25 opaque, 156 unsupported</td>
+<td>1299 mapped, 25 opaque, 155 unsupported</td>
 </tr>
 <tr>
 <td><code>qudt.bvnr</code></td>
-<td>2238 mapped, 570 unsupported</td>
+<td>2243 mapped, 565 unsupported</td>
 </tr>
 <tr>
 <td><code>qudt-qk.bvnr</code></td>
@@ -2980,11 +2983,11 @@ that went in spelled <code>qudt:M-PER-SEC</code> comes out spelled <code>qudt:M-
 </tr>
 <tr>
 <td><code>udunits.bvnr</code></td>
-<td>41 prefixes, 765 mapped, 101 unsupported</td>
+<td>41 prefixes, 768 mapped, 98 unsupported</td>
 </tr>
 <tr>
 <td><code>om.bvnr</code></td>
-<td>1341 mapped, 119 unsupported</td>
+<td>1336 mapped, 124 unsupported</td>
 </tr>
 <tr>
 <td><code>cf.bvnr</code></td>
@@ -3054,7 +3057,7 @@ them to each other:</p>
 <tr>
 <td><code>tests/bovnar_ucum_test.c</code></td>
 <td><code>bvnr_ucum_test</code></td>
-<td>171</td>
+<td>197</td>
 <td>§2–§10</td>
 </tr>
 <tr>
@@ -3072,13 +3075,13 @@ them to each other:</p>
 <tr>
 <td><code>tests/bovnar_udunits_test.c</code></td>
 <td><code>bvnr_udunits_test</code></td>
-<td>199</td>
+<td>224</td>
 <td>§13</td>
 </tr>
 <tr>
 <td><code>tests/bovnar_om_test.c</code></td>
 <td><code>bvnr_om_test</code></td>
-<td>103</td>
+<td>110</td>
 <td>§16</td>
 </tr>
 <tr>
@@ -3709,7 +3712,7 @@ every writer entry point.</p>
 <blockquote>
 <p><code>unece:</code> — UN/ECE Recommendation 20, <em>Codes for Units of Measure Used in International Trade</em>, and
 Recommendation 21, <em>Codes for Passengers, Types of Cargo, Packages and Packaging Materials</em>.
-Data file <code>src/gendata/unece.bvnr</code> (1298 mapped, 25 opaque, 156 unsupported — every Rec 20 code
+Data file <code>src/gendata/unece.bvnr</code> (1299 mapped, 25 opaque, 155 unsupported — every Rec 20 code
 QUDT's cross-reference reaches, which is not the same as every Rec 20 code; §11.1);
 pinned by <code>tests/bovnar_unece_test.c</code> (557 assertions).</p>
 </blockquote>
@@ -4063,9 +4066,10 @@ that are equal in SI and different in meaning, and <code>C94</code>/<code>M46</c
 <hr />
 <h2 id="12-the-qudt-profiles">12. The QUDT profiles</h2>
 <blockquote>
-<p><code>qudt:</code> — QUDT unit local names (2238 mapped, 570 unsupported — every one of the 2808 local
-names QUDT defines).
-<code>qudt-qk:</code> — QUDT quantity kinds (903 mapped, 262 unsupported — every one of the 1165 kinds).
+<p><code>qudt:</code> — QUDT unit local names (2243 mapped, 565 unsupported — every one of the 2803 local
+names QUDT defines, plus five refusals for names it does not: <code>USD</code>, <code>EUR</code> and three <code>DECIBEL_*</code>).
+<code>qudt-qk:</code> — QUDT quantity kinds (903 mapped, 262 unsupported — every one of the 1164 kinds,
+plus a refusal for <code>LogarithmicRatio</code>, which QUDT 3.1.0 does not define).
 Data files <code>src/gendata/qudt.bvnr</code> and <code>src/gendata/qudt-qk.bvnr</code>;
 pinned by <code>tests/bovnar_qudt_test.c</code> (201 assertions).</p>
 </blockquote>
@@ -4139,7 +4143,7 @@ the common shape of a QUDT- or DTDL-sourced feed, and the only reason the namesp
 <p><code>qudt-qk</code> is also why a namespace may contain a hyphen (§2.1). It may not lead: <code>-qk:Mass</code> is not a
 namespace and falls through to the native parser, which rejects it as it always did.</p>
 <h3 id="124-the-quantity-kind-table-the-iso-80000-core">12.4 The quantity-kind table: the ISO 80000 core</h3>
-<p>The table is no longer short enough to print — 910 of QUDT's 1164 kinds map. What follows is the
+<p>The table is no longer short enough to print — 903 of QUDT's 1164 kinds map. What follows is the
 ISO 80000 core it started as, which is still the part worth reading, and every row in it was
 verified to have a native coherent-SI factor of exactly <code>1.0</code>, the claim §12.3 makes. For the rest,
 read <code>src/gendata/qudt-qk.bvnr</code>.</p>
@@ -4330,7 +4334,7 @@ same equivalence class.</p>
 <blockquote>
 <p><code>udunits:</code> — UDUNITS-2, Unidata's unit library, whose string grammar is the de-facto units syntax
 of netCDF and the CF conventions.
-Data file <code>src/gendata/udunits.bvnr</code> (41 prefixes, 765 mapped, 101 unsupported — every one of
+Data file <code>src/gendata/udunits.bvnr</code> (41 prefixes, 768 mapped, 98 unsupported — every one of
 the 580 spellings the UDUNITS-2 database defines);
 pinned by <code>tests/bovnar_udunits_test.c</code> (224 assertions).</p>
 </blockquote>
@@ -4751,8 +4755,8 @@ Growing the native registry to reach them is a separate decision, and doc/05 is 
 <blockquote>
 <p><code>om:</code> — OM 2, the Ontology of units of Measure (Rijgersberg, van Assem, Top; Wageningen), the
 second unit ontology of the semantic web beside QUDT.
-Data file <code>src/gendata/om.bvnr</code> (1341 mapped, 119 refused — every unit individual OM states);
-pinned by <code>tests/bovnar_om_test.c</code> (103 assertions); id block 70, contributing no opaque units.</p>
+Data file <code>src/gendata/om.bvnr</code> (1336 mapped, 124 refused — every unit individual OM states);
+pinned by <code>tests/bovnar_om_test.c</code> (110 assertions); id block 70, contributing no opaque units.</p>
 </blockquote>
 <h3 id="161-why-this-vocabulary">16.1 Why this vocabulary</h3>
 <p>QUDT is the vocabulary of digital twins and building semantics; OM is the one agrifood, food
@@ -4836,10 +4840,10 @@ last fence, 10⁵ metres — OM's <code>_100Kilometre</code>, for which no SI pr
 refused instead.</p>
 <p>The same walk is implemented independently in <code>check_profile_factors.py</code> (<code>class Om</code>), which
 resolves every local name against <code>om-2.0.rdf</code> and compares it with what the library says the target
-is worth: <strong>1276 rows compared, no mismatch</strong>. The three shapes of resolver this brings the tool to
+is worth: <strong>1271 rows compared, no mismatch</strong>. The three shapes of resolver this brings the tool to
 — expression, table read, composition — are listed in its header.</p>
 <h3 id="163-what-the-derivation-refuses">16.3 What the derivation refuses</h3>
-<p>205 local names are carried as refusals rather than mappings, and four groups are worth naming:</p>
+<p>124 local names are carried as refusals rather than mappings, and four groups are worth naming:</p>
 <ul>
 <li><strong><code>om:year</code>, and everything built on it.</strong> OM's year is the <strong>Gregorian</strong> 31 556 952 s; native
   <code>yr</code> is the Julian 31 557 600 s. Twenty-one parts per million apart, dimensionally identical, and
@@ -4853,7 +4857,9 @@ is worth: <strong>1276 rows compared, no mismatch</strong>. The three shapes of 
   same assay unit would make the two <strong>incommensurable with each other</strong> — two units that cannot be
   compared although they are the same unit. This is why block 70 contributes no opaque ids.</li>
 <li><strong>Money, scales and dimension one.</strong> OM models currencies as units (<code>om:euro</code>); bovnar carries
-  currencies in a system of their own (§7.2). <code>KelvinScale</code> is a scale, not a unit of one.
+  currencies in a system of their own (§7.2). <code>KelvinScale</code>, <code>CelsiusScale</code> and the other three
+  <code>…Scale</code> individuals are scales, not units: OM relates each to its unit by a factor <em>and an
+  offset</em>, so mapping one to a unit would read a Celsius-scale 20 as 20 K.
   <code>om:one</code>, <code>om:metrePerMetre</code> and <code>om:dozen</code> are dimension one, which bovnar spells by omitting the
   slot — translating them would make a count compare equal to a percentage.</li>
 </ul>
@@ -5000,7 +5006,7 @@ defines. <strong>Per-<code>year</code> quantities used to be on this list and ar
 level tendencies carry <code>m/yr_trop</code>. That is the same change §13.3 records for UDUNITS, reaching a
 second vocabulary.</p>
 <p><strong>The size, measured rather than estimated.</strong> This is by far the largest table in the repository:
-5071 codes averaging 54 bytes, against 2808 QUDT names averaging 12. <code>BVNR_UNIT_STRING_MAX</code> did not
+5071 codes averaging 54 bytes, against 2808 QUDT rows averaging 12. <code>BVNR_UNIT_STRING_MAX</code> did not
 have to move — the longest name is 166 bytes and the cap is 1088 — but the binary did:</p>
 <table>
 <thead>

@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Install the Bovnar syntax extension for the VS Code family (Code, Insiders,
 # Code-OSS / VSCodium). Drops the extension folder into each editor's per-user
 # extensions directory; VS Code picks it up on the next restart.

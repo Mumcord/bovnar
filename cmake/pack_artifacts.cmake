@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Regenerate the single-file amalgamation and pack the release archives.
 #
 # Invoked on every build by the `bvnr_package` target (add_custom_target ... ALL

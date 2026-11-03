@@ -271,7 +271,10 @@ static bool bvn_validate_number_for_writer(bvnr_writer_t* w,
 	buf[length] = '\0';
 	bool ok = true;
 	if (bvn_is_special_number_string(buf)) {
-		if (!bvn_type_is_numeric(vt) && !bvn_type_is_plain(vt)) {
+		/* A datetime takes a special number as the numeric families do
+		 * (doc/03 §6.1, §6.4); the reader accepts <datetime:64> nan. */
+		if (!bvn_type_is_numeric(vt) && !bvn_type_is_plain(vt) &&
+		    vt.family != vt_datetime) {
 			ok = bvn_writer_set_error(w,
 				error_type_value_mismatch);
 		}
@@ -512,6 +515,10 @@ static bool bvn_validate_reference_for_writer(bvnr_writer_t* w,
 static bool bvn_validate_type_spec_for_writer(bvnr_writer_t* w,
 	value_type_spec_t vt)
 {
+	/* Only the families the grammar spells (doc/12 param-type). The
+	 * serialiser writes anything else as "plain", which no reader parses. */
+	if (vt.family == vt_plain || vt.family >= vt_illegal)
+		return bvn_writer_set_error(w, error_illegal_value_type);
 	/* datetime is a spec-1.1 construct, and the reader gates the family on a
 	 * DECLARED version. Writing one into a document with no "#!bovnar 1.1"
 	 * directive produced something the library cannot read back, reported as
@@ -610,6 +617,15 @@ static bool bvn_check_type_value_compat(bvnr_writer_t* w,
 			return bvn_writer_set_error(w,
 				error_type_value_mismatch);
 		}
+		return true;
+	}
+	/* A datetime is a bare number (an epoch count, an ISO literal or a
+	 * special number); the reader refuses a string or bool under it, as
+	 * bvn_validate_type_value_compat does. */
+	if (vt.family == vt_datetime) {
+		if (tt != token_is_number && tt != token_is_array_number)
+			return bvn_writer_set_error(w,
+				error_type_value_mismatch);
 		return true;
 	}
 	return true;
@@ -973,6 +989,19 @@ static value_type_spec_t bvn_w_bare_number_type(const void* text, uint32_t len)
 		return BVN_TYPE_SINT(64);
 	return BVN_TYPE_UINT(64);
 }
+/* An optional '-' and decimal digits: what the reader's datetime inheritance
+ * accepts (bvn_str_is_plain_integer). */
+static bool bvn_w_is_plain_integer(const void* text, uint32_t len)
+{
+	const char* p = (const char*)text;
+	uint32_t i = 0;
+	if (!p || !len) return false;
+	if (p[0] == '-') i = 1;
+	if (i == len) return false;
+	for (; i < len; i++)
+		if (p[i] < '0' || p[i] > '9') return false;
+	return true;
+}
 static bool bvn_w_is_special_number(const void* text, uint32_t len)
 {
 	char sb[8] = {0};
@@ -1120,12 +1149,7 @@ static bool bvn_writer_validate_event(bvnr_writer_t* w,
 		w->gov_unit  = BVN_UNIT_NONE;
 		w->gov_typed = false;
 		w->gov_type  = BVN_TYPE_PLAIN;
-		/* A member of a struct that stands under a type annotation is what
-		 * the reader refuses (error_type_value_mismatch). */
-		if (w->ser.struct_depth > 0u &&
-		    w->ser.struct_depth <= UINT8_MAX + 1u &&
-		    w->struct_typed[w->ser.struct_depth - 1u])
-			return bvn_writer_set_error(w, error_type_value_mismatch);
+		w->last_ann_type = BVN_TYPE_PLAIN;
 		if (!bvn_validate_id_for_writer(w, data->data, data->length))
 			return false;
 		/* A spelling set by bvnr_writer_set_unit_source is for the NEXT value.
@@ -1252,6 +1276,7 @@ static bool bvn_writer_validate_event(bvnr_writer_t* w,
 		              ? w->ann_unit : BVN_UNIT_NONE;
 		w->gov_typed           = true;
 		w->gov_type            = w->ann_type;
+		w->last_ann_type       = w->ann_type;
 		/* The start event's type was checked when it arrived; what the
 		 * parameter events then wrote is checked here, since they are free
 		 * to say something else -- a width event carrying 7 under a start
@@ -1299,6 +1324,29 @@ static bool bvn_writer_validate_event(bvnr_writer_t* w,
 			if (tt == token_is_symbol || tt == token_is_reference)
 				return bvn_writer_set_error(w, error_type_value_mismatch);
 		} else {
+			/* With no annotation over it a number is read in decimal as
+			 * uint/sint/float by its text, and a string as utf8 (spec §10),
+			 * whatever this event's value_type says. A value_type that would
+			 * be READ differently cannot be honoured without one: "10" in
+			 * base 16 came back as ten, a datetime as a plain integer, and a
+			 * numeric string as text -- each reported as success. The caller
+			 * emits the annotation events (doc/08 §2.7). */
+			const value_type_spec_t ev_vt = data->value_type;
+			bool num = tt == token_is_number || tt == token_is_array_number;
+			bool str = tt == token_is_string || tt == token_is_array_string;
+			/* ...except the one place the reader supplies the type itself:
+			 * a plain integer after a datetime-annotated element of the same
+			 * assignment inherits that datetime (doc/03 §7.5), which is how
+			 * the canonical form writes [<datetime:64> 1, 2, 3]. */
+			bool dt_inherited = num && ev_vt.family == vt_datetime &&
+				bvn_type_spec_eq(ev_vt, w->last_ann_type) &&
+				bvn_w_is_plain_integer(data->data, data->length);
+			if (!bvn_type_is_plain(ev_vt) && !dt_inherited &&
+			    ((num && (ev_vt.family == vt_datetime ||
+			              bvn_effective_base(ev_vt) != 10u)) ||
+			     (str && ev_vt.family != vt_utf8)))
+				return bvn_writer_set_error(w,
+					error_type_value_mismatch);
 			vt = bvn_w_effective_type(data, false, vt);
 		}
 		if (!bvn_check_type_value_compat(w, tt, vt))
@@ -1524,8 +1572,13 @@ static bool bvn_writer_validate_event(bvnr_writer_t* w,
 		w->ser.stream_begun = true;
 		if (w->ser.struct_depth >= (uint32_t)w->ser.max_struct_nesting)
 			return bvn_writer_set_error(w, error_struct_nesting_too_high);
+		/* A struct takes no annotation (doc/03 §6.1): under one, written or
+		 * inherited from its array, the reader refuses it at its "{" with
+		 * error_type_value_mismatch -- an empty struct included, so the
+		 * check cannot wait for the first member as it used to. */
+		if (w->gov_typed)
+			return bvn_writer_set_error(w, error_type_value_mismatch);
 		bvn_w_element_begins(w);
-		w->struct_typed[w->ser.struct_depth] = w->gov_typed;
 		w->gov_unit  = BVN_UNIT_NONE;
 		w->gov_typed = false;
 		w->gov_type  = BVN_TYPE_PLAIN;
@@ -1538,12 +1591,16 @@ static bool bvn_writer_validate_event(bvnr_writer_t* w,
 		if (w->ser.array_depth >= w->ser.max_array_nesting)
 			return bvn_writer_set_error(w, error_array_nesting_too_high);
 		/* A row's width as the READER measures it (bvn_action_array_intro /
-		 * _outro): one per element position, and one more per nested row,
-		 * a "/"-continued one included. The two sides have to count alike or
-		 * this refuses what the reader takes. */
+		 * _new_array_value): one per element position. A nested array is one
+		 * element of its parent row, and a "/"-continued row of it is the
+		 * same element, so it adds nothing (doc/03 §17: [[1],[2]]/[null,null]
+		 * is valid, [[1]]/[null,null] is not). This used to count 2 and 1,
+		 * the double count the reader dropped in 2.0.0, and refused what the
+		 * reader takes. The two sides have to count alike. */
 		uint32_t d = w->ser.array_depth;
-		if (d > 0u && bvn_ser_is_direct_array_element(&w->ser, d - 1u))
-			w->arr_count[d - 1u] += w->ser.w_after_dim ? 1u : 2u;
+		if (d > 0u && bvn_ser_is_direct_array_element(&w->ser, d - 1u)
+		    && !w->ser.w_after_dim)
+			w->arr_count[d - 1u] += 1u;
 		w->arr_gov_unit[d]  = w->gov_unit;
 		w->arr_gov_typed[d] = w->gov_typed;
 		w->arr_gov_type[d]  = w->gov_type;

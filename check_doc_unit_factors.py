@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 check_doc_unit_factors.py — the Factor column in doc/04 and doc/05, against
 src/gendata/units.bvnr.

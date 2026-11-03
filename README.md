@@ -398,6 +398,12 @@ was POSIX-only and had no packer at all, and carries no assets.
 | `BVNR_FUZZ_EXTERNAL` | `OFF` | Build libFuzzer / AFL++ targets (requires clang or afl-clang-fast). |
 | `BVNR_PACKAGE` | `ON` | On each build, regenerate the amalgamation into `build/amalgamate/` and pack release archives into the build dir. |
 | `BVNR_SANITIZE` | `OFF` | ASan + UBSan (`-fno-sanitize-recover=all`) plus `-ftrivial-auto-var-init=pattern` where the compiler has it. GCC/Clang only; a diagnostic build, never a release one. |
+| `BVNR_ANALYZER` | `ON` | GCC `-fanalyzer` static analysis. Turn it off for release wheel builds, where newer GCCs in the manylinux image can crash on it. |
+| `BVNR_LTO` | `ON` | Link-time optimisation for GCC `Release`/`RelWithDebInfo` builds (forced off under MinGW). |
+| `BVNR_BUILD_TESTS` | `ON` | Build and register the C/Python test suite. |
+| `BVNR_REGEN_TABLES` | `OFF` | Regenerate the unit, prefix and currency tables from `src/gendata/*.bvnr` unconditionally (they are regenerated when missing anyway). Needs only Python 3. |
+| `BVNR_WITH_<NAME>_PROFILE` | `ON` | One per unit-profile vocabulary (`UCUM`, `UNECE`, `QUDT`, `QUDT_QK`, `UDUNITS`, `OM`, `CF`). Off drops that vocabulary's tables; the ABI does not change. |
+| `BVNR_CROSS_MINGW` | `OFF` | On a Linux host with the MinGW-w64 toolchain, also build the Windows target into `build/mingw/` as part of `all`. |
 
 ```bash
 cmake -B build -DBVNR_WERROR=ON .
@@ -474,9 +480,12 @@ cmake --build build/mingw                   # -> libbvnr.dll + libbvnr.dll.a, li
 ```
 
 On MSVC the static archive is `bvnr_static.lib` because the DLL's import library
-already takes `bvnr.lib`. The C/Python test suite is POSIX-only and not built on
-Windows; the `Build & Package` CI workflow builds both Windows toolchains and a
-native Linux target, smoke-tests the CLI, and publishes the artifacts.
+already takes `bvnr.lib`. On Windows the portable part of the C test suite still
+builds and runs (the POSIX-only tests and the Python bindings are left out; a
+MinGW cross build runs its tests under Wine), but the native MSVC CI job builds
+with `-DBVNR_BUILD_TESTS=OFF`. The `Build & Package` CI workflow builds both
+Windows toolchains and a native Linux target, smoke-tests the CLI, and publishes
+the artifacts.
 Consumers passing their own file descriptors to the fd source/sink on Windows
 must open them in binary mode (`_O_BINARY`); the `bovnar` CLI does this itself.
 
@@ -489,7 +498,7 @@ The `bovnar` binary built above wraps the library for everyday use:
 | Command | Description |
 |---|---|
 | `bovnar validate [opts] <file>` | Validate a `.bvnr` file; exit non-zero on the first error. `--require-unit` additionally rejects any numeric value that carries no unit; `--require-dimension <unit>` (repeatable) requires every numeric value to be validly convertible to one of the named units — "this document is lengths, in whatever unit it wrote them". `--require-field <path>=<unit>` (repeatable) asserts one key path rather than the whole document, and a path may end in `.*` to name a subtree. `--text-only` rejects a document containing an octet stream, for a consumer whose transport is not binary-safe. |
-| `bovnar query [opts] <path> <file>` | Print a single **value** by dotted path, e.g. `.sensor.temperature` — the number alone, so it pipes into other tools; the unit is deliberately not printed, so read `25` from a `°C` field as 25 °C and not 25 K. Floats print as the shortest decimal that reads back as the same double; a `float_dec` or `float:128` wider than a double is rounded on the way through the DOM, so use the reader or the Python bindings when you need the stored digits verbatim. Takes the unit-policy options of `events` except `--base` (the value is printed in decimal), so a query can assert what it expects and ask for the unit it wants back: `--field .a.b=m`, `--require-unit`. |
+| `bovnar query [opts] <path> <file>` | Print a single **value** by dotted path, e.g. `.sensor.temperature` — the number alone, so it pipes into other tools; the unit is deliberately not printed, so read `25` from a `°C` field as 25 °C and not 25 K. Floats print as the shortest decimal that reads back as the same double; a `float_dec` or `float:128` wider than a double is rounded on the way through the DOM, so use the reader or the Python bindings when you need the stored digits verbatim. Takes the unit-policy options of `events` except `--base` (the value is printed in decimal) and `--text-only` (use `bovnar validate --text-only`), so a query can assert what it expects and ask for the unit it wants back: `--field .a.b=m`, `--require-unit`. |
 | `bovnar pretty-print [--canonical] <file>` | Re-serialise a document in pretty form, keeping each unit's spelling. `--canonical` writes each unit in reduced form and rescales its value (`km` → `m`, `kg` → `g`; a prefix on a named derived unit such as `kN` stays, as `k~N`), so two spellings of one unit produce the same bytes; it fails with `value_out_of_range` rather than round where an integer cannot be rescaled. |
 | `bovnar convert <file>` | Convert between `json` and `bvnr`; direction is auto-detected from the `.json`/`.bvnr` extension. Add `--from <fmt>` or `--to <fmt>` to override. bvnr → json is lossy for most documents — JSON has no units, types, symbols, references, octet streams, non-finite floats or datetimes — so the JSON is still written, what was lost is listed on stderr, and the exit status is 1: exit 0 means the JSON converts back to the same document. A datetime with sub-second digits is refused outright. json → bvnr refuses what Bovnar cannot hold (a number too large for a 64-bit float, a string with a control character, a key that is not an identifier) and names the key. |
 | `bovnar events [opts] <file\|->` | Print the lexer (unverified) and validator (verified) event streams side by side. `-c` resync on error (the exit status is still non-zero if any occurred), `-d` debug re-serialisation, `-p` pretty debug output. Pass `-` to read stdin. (`-d` re-serialises the event stream and re-emits the source's `#!bovnar` version directive, so its debug output round-trips even for spec-1.1-gated values.) Unit policy: `--unit <unit>` (repeatable) converts values to the first unit they fit, `--si` converts anything left over to coherent SI base units, `--base <N>` renders conversions in base N, `--leave-inexact` leaves a value the conversion cannot deliver exactly rather than failing the parse. |
@@ -703,6 +712,7 @@ print(doc["temperature"])    # 36.6
 ### Streaming event-driven API
 
 ```python
+import bovnar
 from bovnar import Reader, Event
 
 def on_event(ev, data):

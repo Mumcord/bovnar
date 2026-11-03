@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 The exact-rational renderer, checked against arithmetic rather than against
 itself.

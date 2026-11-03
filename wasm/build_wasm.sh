@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 #
 # Build the Bovnar WebAssembly module from the single-file amalgamation.
 #
@@ -102,7 +104,10 @@ sed "s#'./bovnar.mjs'#'./bovnar.single.mjs'#" \
 # ought to be rebuilt. cmake/wasm_freshness.cmake recomputes this and fails the
 # test suite when they diverge.
 {
+	# build_wasm.sh itself is an input: its emcc flags and EXPORTS shape the
+	# module as much as the sources do.
 	sha256sum "$AMALG/bovnar.c" "$AMALG/bovnar.h" "$ROOT/wasm/bvnr_wasm.c" \
+		"$ROOT/wasm/build_wasm.sh" \
 		| cut -d' ' -f1 | tr -d '\n'
 } | sha256sum | cut -d' ' -f1 > "$ROOT/wasm/built_from.sha256"
 echo ">> recorded source stamp $(cat "$ROOT/wasm/built_from.sha256" | cut -c1-12)"

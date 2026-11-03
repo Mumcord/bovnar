@@ -268,6 +268,8 @@
   # mapping to it read every QUDT rotational speed 2π times too small while
   # remaining dimensionally perfect.
   { .code = "REV-PER-MIN";    .bovnar = "rev/min"; },
+  { .code = "REV-PER-SEC";    .bovnar = "rev/s"; },
+  { .code = "REV-PER-HR";     .bovnar = "rev/h"; },
 
   # Angle and ratio
   { .code = "RAD";        .bovnar = "rad";    },
@@ -324,6 +326,8 @@
   # hundredweight the registry has just gained.
   { .code = "DEG_C-PER-HR";                    .bovnar = "K/h";                 .reverse = false; },
   { .code = "DEG_C-PER-MIN";                   .bovnar = "K/min";               .reverse = false; },
+  { .code = "DEG_C-PER-YR";                    .bovnar = "K/yr";                .reverse = false; },
+  { .code = "DEG_C-WK";                        .bovnar = "K·wk";                .reverse = false; },
   { .code = "DEG_C-PER-BAR";                   .bovnar = "K/bar";               .reverse = false; },
   { .code = "DEG_C_GROWING_CEREAL-DAY";        .bovnar = "K·d";                 .reverse = false; },
   { .code = "PER-DEG_C";                       .bovnar = "K^-1";                .reverse = false; },
@@ -332,6 +336,7 @@
   { .code = "MilliM-PER-DEG_C-M";              .bovnar = "m~m/(K·m)";           .reverse = false; },
   { .code = "BAR-PER-DEG_C";                   .bovnar = "bar/K";               .reverse = false; },
   { .code = "DEG_F-PER-HR";                    .bovnar = "Δ°F/h";               .reverse = false; },
+  { .code = "DEG_F-HR";                        .bovnar = "Δ°F·h";               .reverse = false; },
   { .code = "DEG_F-PER-MIN";                   .bovnar = "Δ°F/min";             .reverse = false; },
   { .code = "DEG_F-PER-SEC";                   .bovnar = "Δ°F/s";               .reverse = false; },
   { .code = "BTU_IT-PER-DEG_F";                .bovnar = "Btu/Δ°F";             .reverse = false; },
@@ -2836,9 +2841,6 @@
   { .code = "DEGREE_PLATO";                .why = "QUDT states a non-positive conversion multiplier"; },
   { .code = "DEGREE_TWADDELL";             .why = "QUDT states a non-positive conversion multiplier"; },
   { .code = "DEG_C-PER-K";                 .why = "a dimensionless QUDT unit — every native ratio has the same dimension vector, so nothing here can tell which one it is; QUDT states no ucumCode or udunitsCode to settle it"; },
-  { .code = "DEG_C-PER-YR";                .why = "no native unit of this dimension is a decade away from QUDT's multiplier (3.168808781e-08)"; },
-  { .code = "DEG_C-WK";                    .why = "no native unit of this dimension is a decade away from QUDT's multiplier (604800)"; },
-  { .code = "DEG_F-HR";                    .why = "no native unit of this dimension is a decade away from QUDT's multiplier (2000)"; },
   { .code = "DEG_F-HR-FT2-PER-BTU_IT";     .why = "no native unit of this dimension is a decade away from QUDT's multiplier (0.1761101837)"; },
   { .code = "DEG_F-HR-FT2-PER-BTU_IT-IN";  .why = "no native unit of this dimension is a decade away from QUDT's multiplier (6.933471799)"; },
   { .code = "DEG_F-HR-PER-BTU_IT";         .why = "no native unit of this dimension is a decade away from QUDT's multiplier (1.895634241)"; },
@@ -3109,8 +3111,6 @@
   { .code = "QT_UK-PER-SEC";               .why = "no native unit of this dimension is a decade away from QUDT's multiplier (0.0011365225)"; },
   { .code = "QUAD";                        .why = "no native unit of this dimension is a decade away from QUDT's multiplier (1.055e+18)"; },
   { .code = "Quarter_UK";                  .why = "no native unit of this dimension is a decade away from QUDT's multiplier (12.70058636)"; },
-  { .code = "REV-PER-HR";                  .why = "no native unit of this dimension is a decade away from QUDT's multiplier (0.00174532925)"; },
-  { .code = "REV-PER-SEC";                 .why = "no native unit of this dimension is a decade away from QUDT's multiplier (6.28318531)"; },
   { .code = "RHE";                         .why = "QUDT states no conversionMultiplier for this unit"; },
   { .code = "RPK";                         .why = "a dimensionless QUDT unit — every native ratio has the same dimension vector, so nothing here can tell which one it is; QUDT states no ucumCode or udunitsCode to settle it"; },
   { .code = "RT";                          .why = "QUDT states no conversionMultiplier for this unit"; },

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 #
 # publish_web.sh — deploy the Bovnar website (everything under ./web) to the
 # live server's web root with rsync.

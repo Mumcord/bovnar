@@ -347,10 +347,27 @@ class TestDomPolicy:
         assert e.value.code == ErrorCode.UNIT_MISMATCH
 
     def test_a_bad_policy_is_not_a_parse_error(self):
-        from bovnar import dom_parse
-        with pytest.raises(BovnarParseError) as e:
-            dom_parse(".a = 5 m;", UnitPolicy(targets=["not_a_unit_at_all"]))
-        assert e.value.code == ErrorCode.INVALID_ARGUMENT
+        # The DOM path validates the policy as Reader.set_unit_policy does and
+        # raises the same BovnarArgumentError, naming the bad entry. It used to
+        # surface as BovnarParseError(INVALID_ARGUMENT) with no reason at all,
+        # which is what doc/09 §5.6 said it did NOT do.
+        from bovnar import dom_parse, UnitRule
+        bad = UnitPolicy(targets=["not_a_unit_at_all"])
+        with pytest.raises(BovnarArgumentError) as dom_err:
+            dom_parse(".a = 5 m;", bad)
+        with pytest.raises(BovnarArgumentError) as reader_err:
+            Reader().set_unit_policy(bad)
+        assert "not_a_unit_at_all" in str(dom_err.value)
+        assert str(dom_err.value) == str(reader_err.value)
+        with pytest.raises(BovnarArgumentError, match="'zz'"):
+            dom_parse(".a = 5 m;", UnitPolicy(rules=[UnitRule(".a", "zz")]))
+
+    def test_a_bad_policy_is_refused_by_parse_fd_too(self, tmp_path):
+        from bovnar import DomDoc
+        p = tmp_path / "d.bvnr"
+        p.write_bytes(b".a = 5 m;")
+        with pytest.raises(BovnarArgumentError, match="nosuch"):
+            DomDoc.parse_file(str(p), UnitPolicy(targets=["nosuch"]))
 
     def test_across_an_array_of_structs(self):
         from bovnar import dom_parse, UnitRule

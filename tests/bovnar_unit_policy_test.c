@@ -2205,8 +2205,8 @@ static void test_dom_and_reader_agree(void)
 		".h = [ { .a = <float:64,in> 12.0; }, { .a = <float:64,k~m> 1.0; } ];\n",
 		".v = <float:64,in> [12.0, 24.0, 36.0];\n",
 		".m = <uint:32,g> 5;\n.n = <uint:64,k~m> 3;\n",
-		".mix = <float:64,%> 35.0;\n.bare = <float:64> 0.25;\n"
-		".cur = <float:64,$USD> 5.0;\n",
+		(".mix = <float:64,%> 35.0;\n.bare = <float:64> 0.25;\n"
+		 ".cur = <float:64,$USD> 5.0;\n"),
 	};
 	static const bvnr_unit_target_t tgt[] = { { "m", 0 } };
 	uint32_t compared = 0;
@@ -2514,9 +2514,49 @@ static void test_every_unit_through_the_other_tiers(void)
 	ASSERT_EQ_INT(bad, 0, "tiers: dom, writer and self-target agree for every unit");
 }
 
+/* The 2026-11-03 review. A per-field rule is an assertion: neither
+ * bvnr_inexact_leave nor the "not a match after all" pass-through applies to
+ * it, so `--field .a=m/s --leave-inexact` no longer delivers 100 k~m/h as
+ * written. And six profile codes refused for want of a native unit map. */
+static void test_review_2026_11_rules_and_mappings(void)
+{
+	static const bvnr_unit_rule_t ms[] = { { ".a", "m/s", 0, bvnr_rule_convert } };
+	bvnr_unit_policy_t p = {0};
+	p.rules = ms; p.num_rules = 1;
+	p.on_inexact = bvnr_inexact_leave;
+	pol_ctx_t c = {0};
+	run_policy(".a = 100 k~m/h;\n", &p, &c, false, error_unit_inexact);
+
+	static const bvnr_unit_rule_t big[] = {
+		{ ".a", "q~m¹⁰⁰·q~g¹⁰⁰", 0, bvnr_rule_convert } };
+	bvnr_unit_policy_t q = {0};
+	q.rules = big; q.num_rules = 1;
+	pol_ctx_t d = {0};
+	run_policy(".a = 1 Q~m¹⁰⁰·Q~g¹⁰⁰;\n", &q, &d, false,
+		   error_value_out_of_range);
+
+	static const struct { const char *code, *native; } map[] = {
+		{ "udunits:DU",       "DU"    },
+		{ "udunits:dobsons",  "DU"    },
+		{ "qudt:REV-PER-SEC", "rev/s" },
+		{ "qudt:REV-PER-HR",  "rev/h" },
+		{ "unece:RPS",        "rev/s" },
+		{ "qudt:DEG_C-PER-YR","K/yr"  },
+		{ "qudt:DEG_C-WK",    "K·wk"  },
+		{ "qudt:DEG_F-HR",    "Δ°F·h" },
+	};
+	for (size_t i = 0; i < sizeof map / sizeof *map; i++) {
+		bool ok1 = false, ok2 = false;
+		value_unit_t a = bvn_parse_unit((const uint8_t *)map[i].code, &ok1);
+		value_unit_t b = bvn_parse_unit((const uint8_t *)map[i].native, &ok2);
+		ASSERT_TRUE(ok1 && ok2 && bvn_unit_equal(a, b), map[i].code);
+	}
+}
+
 int main(void)
 {
 	test_targets_mixed_document();
+	test_review_2026_11_rules_and_mappings();
 	test_target_order_is_significant();
 	test_target_output_base();
 	test_unitless_is_fenced_from_the_ratio_units();

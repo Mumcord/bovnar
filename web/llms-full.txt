@@ -3158,7 +3158,7 @@ HT (0x09), LF (0x0A), VT (0x0B), FF (0x0C), CR (0x0D), SP (0x20)
 .foo = 42;  # an inline comment
 ```
 
-**`#` is not a terminator of a bare token.** A comment may not start immediately after a key, a number, a symbol, a reserved word, a reference or a datetime literal: there `#` is `error_unexpected_input_byte`, and at least one whitespace byte must come first. After a string, `]`, `}`, `>`, `=`, `;` or an inline unit, `#` may follow directly.
+**`#` is not a terminator of a bare token.** A comment may not start immediately after a key, a number, a symbol, a reserved word, a reference, a datetime literal or a type-annotation parameter (`<uint:8# c` — after the family keyword itself, `<uint# c`, it may): there `#` is `error_unexpected_input_byte`, and at least one whitespace byte must come first. After a string, `]`, `}`, `>`, `=`, `;` or an inline unit, `#` may follow directly.
 
 <!-- bovnar-example: rejected -->
 ```bovnar
@@ -3803,10 +3803,11 @@ Four details of that exception:
   is not a code byte: `<float:64,ucum:kg # note⏎>` is
   `error_unexpected_input_byte`, where `<float:64,kg # note⏎>` is fine. Put the
   comment before the parameter, or beside its namespace colon.
-- **A line break is still an error**, even in a namespaced parameter —
-  `error_type_param_whitespace`, as it would be in a native one. No
-  vocabulary spells a unit across a line, and admitting one would let a
-  malformed code consume a document's layout.
+- **A line break inside the code is still an error**, even in a namespaced
+  parameter — `error_type_param_whitespace`, as it would be in a native one.
+  No vocabulary spells a unit across a line, and admitting one would let a
+  malformed code consume a document's layout. A line break *after* the code,
+  before its `,` or `>`, is trailing whitespace like any other.
 
 An **inline** unit suffix cannot carry a space and never will — whitespace is
 what terminates that token, so `1.0 k g` has always been
@@ -4191,7 +4192,10 @@ Individual elements may carry type annotations. The annotation appears **before*
 **The one exception is `datetime` (spec 1.1).** After an element annotated
 `datetime`, a following **bare integer** is read as a datetime of the same width
 and epoch — `[<datetime:64,tai> 1, 2]` is two `tai` instants, and
-`[<datetime:8> 1, 300]` is `error_value_out_of_range`. Without that, the second
+`[<datetime:8> 1, 300]` is `error_value_out_of_range`. "Following" is in document
+order across the whole array, not only within the row: bare integers in later
+sibling sub-arrays and later `/`-rows inherit it too — `[[<datetime:8> 1], [300]]`
+is `error_value_out_of_range` and `[<datetime:8> 1]/[2]` is two datetimes. Without that, the second
 element would be a `uint` beside a `datetime` and the array could never be
 homogeneous (§7.4). It reaches integers only: a bare ISO literal still infers
 `<datetime:64,unix>` (§10.1), so `[<datetime:64,tai> 1, 2026-06-15]` mixes
@@ -4794,7 +4798,7 @@ Setting most fields to `0` in `bvnr_read_flags_t` substitutes an internal defaul
 
 | Check | Error |
 |-------|-------|
-| Empty key (`.` followed by `=` or by whitespace) | `error_empty_identifier` |
+| Empty key (`.` followed by `=`, with or without whitespace between) | `error_empty_identifier` |
 | `.` followed by any other byte that cannot start an identifier (`.1`, `.;`, `.-a`) | `error_unexpected_input_byte` |
 | Invalid character in identifier | `error_unexpected_input_byte` |
 
@@ -4845,7 +4849,7 @@ typedef void (*bvnr_on_error_fn)(
 
 ### 13.2 Recovery Mode
 
-When `bvnr_read_flags_t.continue_on_error` is `true`, the parser enters **resync mode** after an error in the text — any error but one inside a comment (below). A few errors end the read even so: a fault in an octet stream's framing (`error_octet_stream_out_of_sync`, `error_read_complete_chunk_failed`), `error_text_data_too_long`, `error_file_too_long`, a version directive refused under `strict_version` (§3.4), and a callback that returns `false`. The other limits of §12.2 — the five lengths, `max_array_items`, both nesting depths — are recovered from like any other error.
+When `bvnr_read_flags_t.continue_on_error` is `true`, the parser enters **resync mode** after an error in the text — any error but one inside a comment (below). A few errors end the read even so: a fault in an octet stream's framing (`error_octet_stream_out_of_sync`, `error_read_complete_chunk_failed`), `error_text_data_too_long`, `error_file_too_long`, a version directive refused under `strict_version` (§3.4), an octet stream refused under `text_only` (`error_octet_stream_forbidden`, §9), and a callback that returns `false`. The other limits of §12.2 — the five lengths, `max_array_items`, both nesting depths — are recovered from like any other error.
 
 1. The `on_error` callback is invoked with error details
 2. A **resync state machine** (`state_t: resync, resync_dot, resync_string, resync_string_escape, resync_comment`) skips bytes
@@ -4878,7 +4882,11 @@ so parsing restarts there, usually to report a further error, which
 struct, the ones the broken statement itself was in. An array that struct is an
 *element of* stays open, with its row and element counts, so the struct's own
 `}` and the array's `,` or `]` are read normally afterwards and the start/end
-events a consumer sees always nest. A `}` that is itself the offending byte
+events a consumer sees always nest — when recovery resumes inside that struct.
+When the struct's `}` is skipped instead (the error was its last member, with no
+`;` or `.name` after it), recovery runs on past the array's `,` and `]` to the
+next boundary, and the array's remaining elements are lost with the struct:
+`.a=[{.x=1 @},{.x=2;}];` delivers `.a` as one struct whose member `.x` has no value. A `}` that is itself the offending byte
 (`.s = {.a = 1 };`, a member missing its `;`) is not discarded: it closes its
 struct.
 
@@ -4902,7 +4910,18 @@ of the comment is never read as document text.
 
 The two counters are independent: a `}` does not balance a junk `[`, so a
 statement that opens a bracket it never closes keeps recovery from resuming
-until the bracket is closed or the input ends (§13.3).
+until the bracket is closed or the input ends (§13.3). A `[` or `{` that is
+itself the offending byte opened nothing, and counts as a bracket opened since
+recovery began, so its own closing bracket does not close the enclosing
+container. A `#` that is the offending byte (`42# note`, §4.1) opens a comment,
+which recovery skips as such.
+
+**Recovery cannot read an octet stream's framing.** When recovery skips over an
+octet stream — the error came before its `0x00`, or inside the value that
+holds it — the payload is scanned as text like any other skipped bytes, and a
+`;` or `.name` inside the payload can end recovery there. A consumer that needs
+`continue_on_error` and reads documents with octet streams should treat values
+delivered after a recovery as untrusted (`recovery_count` says one happened).
 
 ### 13.3 EOF in Resync
 
@@ -4917,7 +4936,8 @@ nowhere else:
 - **`bvnr_read` returned `false`:** the getters hold the error that stopped it.
   Under `continue_on_error` that is one of the errors recovery does not continue
   past (§13.2: `max_text_bytes`, `max_file_size`, an octet-stream framing error, a
-  directive refused under `strict_version`, a callback that returned `false`) or the `error_got_incomplete_bvnr_stream` of
+  directive refused under `strict_version`, an octet stream refused under
+  `text_only`, a callback that returned `false`) or the `error_got_incomplete_bvnr_stream` of
   §13.3, positioned at the end of the input.
 - **`bvnr_read` returned `true`:** `bvnr_reader_get_error` returns `error_none`
   and the line, column, byte and offset getters return `0`, however many errors
@@ -5910,6 +5930,10 @@ conversion factors — and each of those entries says so:
   before the suffix (`<float _fix:32,q8>`) is `error_type_param_whitespace`,
   for the reason given above for whitespace inside a parameter; it was read
   as `float_fix`.
+- *A `float_fix` literal too large for any float* (`<float_fix:16,q8> 1e9862`,
+  or a 9862-digit integer) is `error_value_out_of_range` (§6.2). Its parse
+  overflowed to infinity, and infinity — range-exempt as the keyword `inf`
+  (§6.4) — passed the range check, so it was accepted, and read as `inf`.
 - *After a reference index only `.`, `[` or the end of the reference may
   follow* (§4.5). `&.a[0]b` is `error_unexpected_input_byte`; it was accepted
   as the path `.a[0]b`, which the grammar does not derive and no lookup
@@ -8252,8 +8276,10 @@ Reading across, with 1 mmol·L⁻¹ as the reference:
 > **`val` is the equivalent as *water analysis* uses it.** The ions counted are divalent, so one
 > equivalent is half a mole and `m~val/L` = 0.5 mmol/L, which is what the hardness tables state.
 > An equivalent of a *monovalent* species is one mole — Bovnar cannot know the species from the
-> unit, so for that case write the amount directly (`m~mol/L`). There is deliberately no generic
-> `eq` / `equivalent` alias.
+> unit, so for that case write the amount directly (`m~mol/L`). `eq` is accepted as a spelling of
+> `val` (below) and means the same divalent equivalent — it is **not** UCUM's generic equivalent of
+> one mole: native `meq/L` is half of `ucum:meq/L`. A clinical `meq/L` of a monovalent ion (Na⁺,
+> K⁺, Cl⁻) is one millimole per litre, so write it as `m~mol/L` or as `ucum:meq/L`.
 
 > **Exactness.** Every degree is derived from a molar mass (IUPAC 2021: Ca 40.078, C 12.011,
 > O 15.999 g·mol⁻¹), so the factors are measurement-derived rather than exact rationals. They carry
@@ -9990,7 +10016,7 @@ int32_t      bvn_unit_to_ucum(value_unit_t u, char *buf, size_t bufsize);
 
 **`bvn_unit_is_profile_only`** is true when a unit has no native spelling, which is exactly the units carrying an **opaque** base unit: a UCUM arbitrary atom (`[IU]`, `[PFU]`, …) or a UNECE package or count code (`XBX`, `C62`, …). For those, `bvn_unit_to_string` emits the profile form in the namespace that *owns* the unit, and re-parsing that output yields the same unit.
 
-**`bvn_unit_to_profile`** writes a code in the named vocabulary — any of the seven namespaces, without the `<ns>:` prefix, though the read-only `cf` has a code for no unit — returning its length or a negative value. **`bvn_unit_to_ucum`** is the `ucum` case, kept for callers that predate the others. Both are **partial by construction**, in three ways: the Old German units, the water-hardness degrees, the turbidity kinds, `PSU`, `CF`, `kph` and every currency have no code in any of these vocabularies (membership is per unit, not per family: `mph` is `unece:HM` and `qudt:MI-PER-HR`, while `kph` has nothing); an opaque unit belonging to a *different* profile has none either; and a **flat** vocabulary (`unece`, `qudt`, `qudt-qk`, `om`) can spell only a single unprefixed component, so `k~m/h` has no UNECE form even though `unece:KMH` parses to exactly it. All three are refused rather than approximated.
+**`bvn_unit_to_profile`** writes a code in the named vocabulary — any of the seven namespaces, without the `<ns>:` prefix, though the read-only `cf` has a code for no unit — returning its length or a negative value. **`bvn_unit_to_ucum`** is the `ucum` case, kept for callers that predate the others. Both are **partial by construction**, in three ways: the Old German units, the water-hardness degrees, the turbidity kinds, `PSU`, `CF`, `kph` and every currency have no code in any of these vocabularies (membership is per unit, not per family: `mph` is `unece:HM` and `qudt:MI-PER-HR`, while `kph` has nothing); an opaque unit belonging to a *different* profile has none either; and a **flat** vocabulary (`unece`, `qudt`, `qudt-qk`, `om`) can spell only a single component — prefixed or not, `k~m` is `unece:KMT` — so `k~m/h` has no UNECE form even though `unece:KMH` parses to exactly it. All three are refused rather than approximated.
 
 ```c
 char buf[BVNR_UNIT_STRING_MAX];
@@ -11495,6 +11521,7 @@ Every row below was produced by the reference implementation.
 | `MI` | *(case-sensitive; not a unit)* | `qudt:MI` → `mi`, the **mile** | A flat vocabulary never decomposes a code, so this is not milli-anything |
 | `KGM` | *(not a unit)* | `unece:KGM` → `k~g` | Likewise not a `k` prefix on a `GM` that Rec 20 never defined |
 | `MTS` | *(not a unit)* | `unece:MTS` → `m/s` | Not a mega-`TS`; and `unece:MTK` one letter away is the square metre |
+| `eq` | `val`, the **water-analysis equivalent**, ½ mol | `ucum:eq` → `mol`, the **generic equivalent** | Same dimension, a factor of two apart: 140 native `m~eq/L` is 70 mmol/L, 140 `ucum:meq/L` is 140 mmol/L. A clinical `meq/L` of a monovalent ion is the UCUM one (§14) |
 
 Two rules make this tractable, and both are worth knowing before writing a profile code:
 
@@ -12359,7 +12386,9 @@ stays transport-safe.
 The refusal fires at the stream's **opening `0x00`**, before any payload is read
 — the point is that such a document should not have reached this reader at all,
 so the earliest refusal is the useful one, and a large binary region is never
-touched. The flag changes nothing else: a document without an octet stream parses
+touched. It ends the read even under `continue_on_error` (doc/03 §13.2): recovery
+cannot read the payload's framing and would scan the binary bytes as text. The
+flag changes nothing else: a document without an octet stream parses
 identically with it set.
 
 Available on the CLI for `validate` and `events`. `query` refuses the option
@@ -12704,7 +12733,7 @@ bool bvnr_write_finish(bvnr_writer_t *w);
 
 Flush any buffered output and finalise the stream. Must be called after all `bvnr_write_event` calls and before `bvnr_writer_destroy`. Returns `false` if any struct or array is still open, or an assignment, a type annotation or a `/` row separator was left with nothing after it (`error_got_incomplete_bvnr_stream`), if writing the trailing semicolon fails, or if flushing the write buffer to the sink fails.
 
-**64 KiB write buffer.** The writer accumulates output into an internal 64 KiB buffer. Individual `bvnr_write_event` calls do not push bytes to the sink immediately; instead bytes accumulate in the buffer and are forwarded to the sink only when the buffer is full or when `bvnr_write_finish` is called. This means the sink receives large contiguous writes rather than one tiny push per token, which is important for fd-based sinks. `bvnr_writer_bytes_written` always reflects the true total of bytes handed off to the sink plus bytes still in the buffer, so the count is accurate at any point during writing.
+**64 KiB write buffer.** For an fd or a custom sink the writer accumulates output into an internal 64 KiB buffer. Individual `bvnr_write_event` calls do not push bytes to the sink immediately; instead bytes accumulate in the buffer and are forwarded to the sink only when the buffer is full or when `bvnr_write_finish` is called. A memory sink (`bvnr_open_write_mem`) is written through directly — there is no point buffering a buffer — so its bytes are in the caller's buffer as soon as each event returns. This means the sink receives large contiguous writes rather than one tiny push per token, which is important for fd-based sinks. `bvnr_writer_bytes_written` always reflects the true total of bytes handed off to the sink plus bytes still in the buffer, so the count is accurate at any point during writing.
 
 ```c
 if (!bvnr_write_finish(w)) {
@@ -13325,6 +13354,11 @@ flush the trailing state, then `bvnr_canon_observer_destroy`.
 
 **It does not re-validate.** The events already came from a validating reader, so the
 observer reproduces faithfully what it is fed rather than checking it a second time.
+That includes the gaps of a read under `continue_on_error`: a recovered error leaves
+a statement without its value (`.a=[1,2,{.b=@;},3]` delivers the key `.b` and nothing
+after it), and the observer writes it as it arrived — `{.b=}` — so its output is not
+a readable document when any error was recovered from. Check
+`bvnr_reader_get_recovery_count` before using it as one.
 For the same reason its array-nesting cap is set to the maximum: the reader has already
 enforced its own limit, and a second, stricter cap here would reject a document the
 reader accepted.
@@ -14119,9 +14153,17 @@ The `BvnrData` payload passed to a callback exposes:
 | `data.converted_in_base(base)` | `str \| None` | The exact conversion re-rendered in `base` |
 | `data.converted_rational()` | `tuple[int, int] \| None` | The exact conversion as `(numerator, denominator)` |
 | `data.frac_str()` | `str \| None` | Verbatim ISO sub-second digits of a `datetime` literal (spec 1.1), or `None` |
-| `data.unit_source_str()` | `str \| None` | The unit exactly as the document spelled it (library 2.0), or `None` when the value carries no unit. Read it inside the callback |
+| `data.unit_source_str()` | `str \| None` | The unit exactly as the document spelled it (library 2.0), or `None` when the value carries no unit |
 
 It also carries the `converted` (bool) and `value_type` / `value_unit` fields directly.
+
+**A payload may outlive its callback.** The `BvnrData` a callback (or a
+`want_unit` hook) receives is a copy the binding owns, not a view of the
+reader's memory: the token bytes, the sub-second digits, the unit spelling and
+the exact conversion (`conv.num`/`conv.den`) are all copied out before the
+callback runs. A callback can keep the object, and every method in the table
+above returns the same answer after the callback has returned and after the
+reader is closed.
 
 ### 4.3 Generator / iterator interface
 
@@ -14526,9 +14568,10 @@ doc.lookup(".inlet.temperature").as_float()    # 100.0, from a document in °F
 
 A value the policy converted is STORED converted — digits, unit and base — and
 an integer that converts to a fraction (5 g in kilograms is 0.005) is stored as
-a float. A policy the library refuses raises ``INVALID_ARGUMENT`` rather than a
-parse error, so a mistake in the policy is never mistaken for a fault in the
-document.
+a float. A policy the library refuses raises `BovnarArgumentError` — the same
+error, naming the same entry, as `Reader.set_unit_policy` — before anything is
+parsed, rather than a parse error, so a mistake in the policy is never mistaken
+for a fault in the document.
 
 **The writer takes the same policy, validation half only.** A reader can only
 reject a document somebody already wrote; `Writer.set_unit_policy` is what stops
@@ -15164,8 +15207,8 @@ Parse BVNR from a `bytes`, `bytearray`, or `memoryview` object.
 | `continue_on_error` | `bool` | `False` | Enable resync mode |
 | `strict_version` | `bool` | `False` | Reject a declared spec version newer than this build (`error_unsupported_spec_version`) |
 | `text_only` | `bool` | `False` | Refuse a document that contains an octet stream (`error_octet_stream_forbidden`), for a channel that is not byte-transparent |
-| `want_unit` | `Callable[[BvnrData], tuple \| None] \| None` | `None` | Optional read-time lossless unit/base conversion hook. Called per numeric value; return `(unit, base)` to request a conversion (the exact result arrives on the payload as `converted`/`converted_text`), or `None` to leave the value untouched. An inexact conversion aborts the parse (`error_unit_inexact`). |
-| `want_unit_allow_nonterminating` | `bool` | `False` | Deliver an exact-rational-but-non-terminating conversion (e.g. km/h→m/s) as a rational with `converted_text` `None` instead of aborting with `error_unit_inexact` |
+| `want_unit` | `Callable[[BvnrData], tuple \| None] \| None` | `None` | Optional read-time lossless unit/base conversion hook. Called per numeric value; return `(unit, base)` to request a conversion (the exact result arrives on the payload as `converted` and `converted_str()`, with `converted_rational()` / `converted_in_base()` beside it — see §4.2), or `None` to leave the value untouched. An inexact conversion aborts the parse (`error_unit_inexact`). |
+| `want_unit_allow_nonterminating` | `bool` | `False` | Deliver an exact-rational-but-non-terminating conversion (e.g. km/h→m/s) as a rational — `converted_str()` returns `None`, `converted_rational()` the exact pair — instead of aborting with `error_unit_inexact` |
 | `max_conversion_length` | `int` | `0` (default 1024) | Longest converted text a conversion may produce, in characters; a longer exact result aborts with `error_value_out_of_range` |
 
 ### 11.3 `read_fd`
@@ -15390,8 +15433,10 @@ tree; any `DomNode` derived from it becomes invalid after that point.
 
 > **File-size limits:** `DomDoc.parse_fd` and `DomDoc.parse_file` apply an internal
 > ceiling of `BVN_DOM_FD_MAX_BYTES` (256 MiB). This is 16× larger than
-> `Reader.read_file`'s `MAX_FILESIZE_BYTES` (16 MiB). Use `bvn_dom_parse_fd_ex`
-> directly if you need a different limit.
+> `Reader.read_file`'s `MAX_FILESIZE_BYTES` (16 MiB). The C library's
+> `bvn_dom_parse_fd_ex` can lower that ceiling (never raise it), but it is
+> C-only — the binding does not wrap it. From Python, to bound the input
+> yourself, read at most the bytes you allow and pass them to `DomDoc.parse`.
 | `DomDoc.parse_file(path)` | Class method. Open path and parse (fd closed in `finally`). Applies an internal hard cap of `BVN_DOM_FD_MAX_BYTES` (256 MiB) via the C function `bvn_dom_parse_fd`. This ceiling is distinct from `Reader.read_file`'s `MAX_FILESIZE_BYTES` (16 MiB). |
 | `doc.parse_error` | `ErrorCode` — `NONE` on success. |
 | `doc[key]` | Return a `DomNode` by key; raises `KeyError` when absent. `key` goes to the path lookup, so `doc["server"]` is a top-level entry and a dotted or indexed path reaches below it: `doc["server.tls"]` is `doc["server"]["tls"]`, `doc["matrix[1][0]"]` an element. A key cannot contain `.` or `[`, so the two readings never collide. |
@@ -15412,7 +15457,7 @@ for as long as any derived `DomNode` is in use.
 | `node.dom_type` | `DomType` enum value |
 | `node.value_type` | `ValueTypeSpec` |
 | `node.unit` | `ValueUnit` |
-| `node.unit_str` | Unit as a string via `bvn_dom_get_unit_string`, or `''` |
+| `node.unit_str` | Unit as a canonical string via `bvn_dom_get_unit_string`, or `''` when the value carries no unit — the same contract as `Quantity.unit_str` (the C formatter's `no_unit` spelling is never returned) |
 | `node.is_null()` | `True` for null values |
 | `node.value_in_base_units()` | Numeric value scaled to SI base units (`float`); an affine unit gets its offset applied (`25 °C` → `298.15`). Returns `0.0` for *any* failure — non-numeric node, currency, affine-in-compound — which is indistinguishable from a genuine zero, and it rounds to `double`. Use `units.unit_to_si_factor()` (which reports `ok`) or the `want_unit` hook when either matters |
 | `node.as_i64()` / `as_u64()` | Signed / unsigned 64-bit integer |
@@ -15471,6 +15516,7 @@ are skipped automatically when `numpy` / `pint` is not installed. Install
 bovnar/
 ├── __init__.py      # loads() / dumps() / dom_parse() / unit helpers — public API
 ├── _ffi.py          # ctypes FFI: library discovery + argtypes/restype
+├── _bigint.py       # int <-> digit text past CPython's 4300-digit int_max_str_digits limit
 ├── _bvnfloat.py     # BvnFloat: arbitrary-precision float + IEEE binary/decimal/fixed encoders
 ├── _numpy.py        # NumPy bridge: to_numpy/from_numpy/to_pint_array/array_to_bvnr (numpy optional)
 ├── _pint_bridge.py  # pint bridge: to_pint/from_pint/to_pint_unit/from_pint_unit (pint optional)
@@ -15500,6 +15546,7 @@ tests/
 ├── test_escapes.py, test_unicode_normalisation.py
 ├── test_datetime.py, test_datetime_oracle.py
 ├── test_lossless_floats.py, test_hex_float_decode.py, test_decimal_tie_rounding.py
+├── test_bigint_digits.py                # integers past the 4300-digit str limit
 ├── test_units.py, test_unit_object.py, test_unit_physics.py, test_unit_source.py
 ├── test_unit_policy.py, test_unit_factors_derived.py
 ├── test_base_rendering_property.py, test_convertible_implies_convertible.py
@@ -15528,7 +15575,7 @@ All errors surface as subclasses of `BovnarError`:
 | ok | requires_affine | Meaning |
 |---|---|---|
 | `True` | `False` | Multiplicative conversion; `factor` is ready to use |
-| `True` | `True` | Both sides are affine and share their zero (e.g. °C ↔ °Ré), so `factor` alone is correct |
+| `True` | `True` | Both sides are affine and share their zero (e.g. °C ↔ °Re, Réaumur), so `factor` alone is correct |
 | `False` | `True` | Affine conversion the offsets do not cancel (e.g. °C ↔ K). **`factor` is `0.0`** — not a usable multiplier |
 | `False` | `False` | Units are dimensionally incompatible → `BovnarArgumentError` |
 
@@ -15586,7 +15633,8 @@ ON_ERROR_FUNC = ctypes.CFUNCTYPE(
 ### 17.2 `BvnrWriteFlags` layout
 
 `BvnrWriteFlags` mirrors the C `bvnr_write_flags_s` struct in full, including
-the trailing `unit_flags` field (`bvn_unit_flags_t`, a `uint32_t`):
+its `unit_flags` field (`bvn_unit_flags_t`, a `uint32_t`) and the
+`emit_version` flag and `_reserved[4]` words that follow it:
 
 | Flag constant (C) | Value | Effect |
 |---|---|---|
@@ -15710,8 +15758,10 @@ only invite the bounds check it can no longer support. Use `UNIT_NATIVE_FIRST`
 `bovnar.currency.is_currency`.
 
 > **The profiles' opaque units are not in this enum.** The C
-> `value_base_unit_t` also has blocks 20–60 for the profile-only units — UCUM's
-> arbitrary atoms and UN/ECE's package and count codes (doc/11 §7.1) — and
+> `value_base_unit_t` also has a block per profile for the profile-only units,
+> and as shipped only two of them have members — UCUM's arbitrary atoms
+> (200000–200040) and UN/ECE's package and count codes (300000–300024),
+> doc/11 §7.1 — and
 > `BaseUnit` deliberately omits them, because they have no native spelling for a
 > Python name to mirror. A unit carrying one is still fully usable: `parse_unit`, `unit_to_str`,
 > `unit_is_profile_only` and the comparison helpers all handle it, and
@@ -16156,11 +16206,11 @@ admitted after that pass, which is why they sit after it rather than beside thei
 | Namespace | Vocabulary | Grammar | Codes carried | Section |
 |---|---|---|---|---|
 | `ucum:` | UCUM — Unified Code for Units of Measure | expression | 206 mapped + 41 arbitrary, **all 312 UCUM defines** | [2](#2-syntax)–[10](#10-cost-risk-and-what-is-left-out) |
-| `unece:` | UN/ECE Recommendation 20 and 21 | flat | 1298 + 25 opaque | [11](#11-the-unece-profile) |
-| `qudt:` | QUDT unit local names | flat | 2238, **all 2808 QUDT defines** | [12](#12-the-qudt-profiles) |
-| `qudt-qk:` | QUDT quantity kinds | flat | 903, **all 1165 QUDT defines** | [12.3](#123-quantity-kinds-qudt-qk) |
-| `udunits:` | UDUNITS-2, the CF/netCDF units syntax | expression | 765 (its regular plurals included), **all 580 UDUNITS defines** | [13](#13-the-udunits-profile) |
-| `om:` | OM 2 — Ontology of units of Measure | flat | 1341 + 119 refused, **every unit individual OM states** | [16](#16-the-om-2-profile) |
+| `unece:` | UN/ECE Recommendation 20 and 21 | flat | 1299 + 25 opaque | [11](#11-the-unece-profile) |
+| `qudt:` | QUDT unit local names | flat | 2243, **all 2803 QUDT defines** | [12](#12-the-qudt-profiles) |
+| `qudt-qk:` | QUDT quantity kinds | flat | 903, **all 1164 QUDT defines** | [12.3](#123-quantity-kinds-qudt-qk) |
+| `udunits:` | UDUNITS-2, the CF/netCDF units syntax | expression | 768 (its regular plurals included), **all 580 UDUNITS defines** | [13](#13-the-udunits-profile) |
+| `om:` | OM 2 — Ontology of units of Measure | flat | 1336 + 124 refused, **every unit individual OM states** | [16](#16-the-om-2-profile) |
 | `cf:` | CF standard names | flat, read-only | 4454 + 617 refused, **all 5071 names of table v94** | [17](#17-the-cf-standard-name-profile) |
 
 Companion to [Unit & Currency Reference](05_bovnar_unit_system.md) (the native registry and notation
@@ -16178,7 +16228,7 @@ pass changed and what it cost.
 
 Every acceptance, refusal and conversion factor quoted below was produced by running the
 reference implementation built from this tree, and the behavioural claims are pinned by the test
-files named above (1328 assertions across the seven profiles, plus 4789 in the cross-vocabulary
+files named above (1335 assertions across the seven profiles, plus 4789 in the cross-vocabulary
 suite). The VOCABULARY side — whether each foreign code is *worth* what the table says — is checked
 too, but not by the same means and not to the same strength: `check_profile_factors.py` (§9.5)
 resolves every mapped code against its publisher's own machine-readable definitions, and `unece`
@@ -16760,7 +16810,10 @@ does not appear to need. A named refusal is better than either.
 ### 3.6 Arbitrary units
 
 UCUM's arbitrary units — `[IU]`, `[arb'U]`, `[PFU]`, `[CFU]`, and the rest of that table — are
-assay-defined. UCUM's own rule is that they are commensurable with nothing, including each other.
+assay-defined. UCUM's own rule is that they are commensurable with nothing, including each other —
+with one exception UCUM states itself: `[IU]` is defined as `1 [iU]`, the international unit in
+two spellings. Bovnar carries them as **two** opaque units that do not compare equal, so
+`ucum:[IU]` and `ucum:[iU]` cannot be converted into one another; write one spelling throughout.
 They are also the single largest reason a real clinical code fails to map (§6.4).
 
 The profile admits all **41** of them, as a contiguous run at the bottom of UCUM's own block of the
@@ -17868,11 +17921,11 @@ One hand-edited data file per namespace in `src/gendata/`, in the same shape as 
 | File | Lists |
 |---|---|
 | `ucum.bvnr` | 20 prefixes, 206 mapped, 41 opaque, 65 unsupported |
-| `unece.bvnr` | 1298 mapped, 25 opaque, 156 unsupported |
-| `qudt.bvnr` | 2238 mapped, 570 unsupported |
+| `unece.bvnr` | 1299 mapped, 25 opaque, 155 unsupported |
+| `qudt.bvnr` | 2243 mapped, 565 unsupported |
 | `qudt-qk.bvnr` | 903 mapped, 262 unsupported |
-| `udunits.bvnr` | 41 prefixes, 765 mapped, 101 unsupported |
-| `om.bvnr` | 1341 mapped, 119 unsupported |
+| `udunits.bvnr` | 41 prefixes, 768 mapped, 98 unsupported |
+| `om.bvnr` | 1336 mapped, 124 unsupported |
 | `cf.bvnr` | 4454 mapped, 617 unsupported |
 
 Four list kinds, and a code belongs to exactly one of them: the vocabulary's prefix spellings with
@@ -17935,11 +17988,11 @@ them to each other:
 
 | Test | Target | Assertions | Specifies |
 |---|---|---|---|
-| `tests/bovnar_ucum_test.c` | `bvnr_ucum_test` | 171 | §2–§10 |
+| `tests/bovnar_ucum_test.c` | `bvnr_ucum_test` | 197 | §2–§10 |
 | `tests/bovnar_unece_test.c` | `bvnr_unece_test` | 557 | §11 |
 | `tests/bovnar_qudt_test.c` | `bvnr_qudt_test` | 201 | §12 |
-| `tests/bovnar_udunits_test.c` | `bvnr_udunits_test` | 199 | §13 |
-| `tests/bovnar_om_test.c` | `bvnr_om_test` | 103 | §16 |
+| `tests/bovnar_udunits_test.c` | `bvnr_udunits_test` | 224 | §13 |
+| `tests/bovnar_om_test.c` | `bvnr_om_test` | 110 | §16 |
 | `tests/bovnar_cf_test.c` | `bvnr_cf_test` | 46 | §17 |
 | `tests/bovnar_crossvocab_test.c` | `bvnr_crossvocab_test` | 4789 | §14 |
 
@@ -18431,7 +18484,7 @@ every writer entry point.
 
 > `unece:` — UN/ECE Recommendation 20, *Codes for Units of Measure Used in International Trade*, and
 > Recommendation 21, *Codes for Passengers, Types of Cargo, Packages and Packaging Materials*.
-> Data file `src/gendata/unece.bvnr` (1298 mapped, 25 opaque, 156 unsupported — every Rec 20 code
+> Data file `src/gendata/unece.bvnr` (1299 mapped, 25 opaque, 155 unsupported — every Rec 20 code
 > QUDT's cross-reference reaches, which is not the same as every Rec 20 code; §11.1);
 > pinned by `tests/bovnar_unece_test.c` (557 assertions).
 
@@ -18575,9 +18628,10 @@ that are equal in SI and different in meaning, and `C94`/`M46` is the pair that 
 
 ## 12. The QUDT profiles
 
-> `qudt:` — QUDT unit local names (2238 mapped, 570 unsupported — every one of the 2808 local
-> names QUDT defines).
-> `qudt-qk:` — QUDT quantity kinds (903 mapped, 262 unsupported — every one of the 1165 kinds).
+> `qudt:` — QUDT unit local names (2243 mapped, 565 unsupported — every one of the 2803 local
+> names QUDT defines, plus five refusals for names it does not: `USD`, `EUR` and three `DECIBEL_*`).
+> `qudt-qk:` — QUDT quantity kinds (903 mapped, 262 unsupported — every one of the 1164 kinds,
+> plus a refusal for `LogarithmicRatio`, which QUDT 3.1.0 does not define).
 > Data files `src/gendata/qudt.bvnr` and `src/gendata/qudt-qk.bvnr`;
 > pinned by `tests/bovnar_qudt_test.c` (201 assertions).
 
@@ -18668,7 +18722,7 @@ namespace and falls through to the native parser, which rejects it as it always 
 
 ### 12.4 The quantity-kind table: the ISO 80000 core
 
-The table is no longer short enough to print — 910 of QUDT's 1164 kinds map. What follows is the
+The table is no longer short enough to print — 903 of QUDT's 1164 kinds map. What follows is the
 ISO 80000 core it started as, which is still the part worth reading, and every row in it was
 verified to have a native coherent-SI factor of exactly `1.0`, the claim §12.3 makes. For the rest,
 read `src/gendata/qudt-qk.bvnr`.
@@ -18724,7 +18778,7 @@ same equivalence class.
 
 > `udunits:` — UDUNITS-2, Unidata's unit library, whose string grammar is the de-facto units syntax
 > of netCDF and the CF conventions.
-> Data file `src/gendata/udunits.bvnr` (41 prefixes, 765 mapped, 101 unsupported — every one of
+> Data file `src/gendata/udunits.bvnr` (41 prefixes, 768 mapped, 98 unsupported — every one of
 > the 580 spellings the UDUNITS-2 database defines);
 > pinned by `tests/bovnar_udunits_test.c` (224 assertions).
 
@@ -19079,8 +19133,8 @@ Growing the native registry to reach them is a separate decision, and doc/05 is 
 
 > `om:` — OM 2, the Ontology of units of Measure (Rijgersberg, van Assem, Top; Wageningen), the
 > second unit ontology of the semantic web beside QUDT.
-> Data file `src/gendata/om.bvnr` (1341 mapped, 119 refused — every unit individual OM states);
-> pinned by `tests/bovnar_om_test.c` (103 assertions); id block 70, contributing no opaque units.
+> Data file `src/gendata/om.bvnr` (1336 mapped, 124 refused — every unit individual OM states);
+> pinned by `tests/bovnar_om_test.c` (110 assertions); id block 70, contributing no opaque units.
 
 ### 16.1 Why this vocabulary
 
@@ -19139,12 +19193,12 @@ refused instead.
 
 The same walk is implemented independently in `check_profile_factors.py` (`class Om`), which
 resolves every local name against `om-2.0.rdf` and compares it with what the library says the target
-is worth: **1276 rows compared, no mismatch**. The three shapes of resolver this brings the tool to
+is worth: **1271 rows compared, no mismatch**. The three shapes of resolver this brings the tool to
 — expression, table read, composition — are listed in its header.
 
 ### 16.3 What the derivation refuses
 
-205 local names are carried as refusals rather than mappings, and four groups are worth naming:
+124 local names are carried as refusals rather than mappings, and four groups are worth naming:
 
 - **`om:year`, and everything built on it.** OM's year is the **Gregorian** 31 556 952 s; native
   `yr` is the Julian 31 557 600 s. Twenty-one parts per million apart, dimensionally identical, and
@@ -19158,7 +19212,9 @@ is worth: **1276 rows compared, no mismatch**. The three shapes of resolver this
   same assay unit would make the two **incommensurable with each other** — two units that cannot be
   compared although they are the same unit. This is why block 70 contributes no opaque ids.
 - **Money, scales and dimension one.** OM models currencies as units (`om:euro`); bovnar carries
-  currencies in a system of their own (§7.2). `KelvinScale` is a scale, not a unit of one.
+  currencies in a system of their own (§7.2). `KelvinScale`, `CelsiusScale` and the other three
+  `…Scale` individuals are scales, not units: OM relates each to its unit by a factor *and an
+  offset*, so mapping one to a unit would read a Celsius-scale 20 as 20 K.
   `om:one`, `om:metrePerMetre` and `om:dozen` are dimension one, which bovnar spells by omitting the
   slot — translating them would make a count compare equal to a percentage.
 
@@ -19269,7 +19325,7 @@ level tendencies carry `m/yr_trop`. That is the same change §13.3 records for U
 second vocabulary.
 
 **The size, measured rather than estimated.** This is by far the largest table in the repository:
-5071 codes averaging 54 bytes, against 2808 QUDT names averaging 12. `BVNR_UNIT_STRING_MAX` did not
+5071 codes averaging 54 bytes, against 2808 QUDT rows averaging 12. `BVNR_UNIT_STRING_MAX` did not
 have to move — the longest name is 166 bytes and the cap is 1088 — but the binary did:
 
 | | stripped release `bovnar` |
@@ -19538,10 +19594,11 @@ version-int  = "0"
 (* Whitespace: blank characters and comments, freely intermixed.     *)
 (* ONE RESTRICTION this production cannot carry: "#" is not a          *)
 (* terminator of a bare token. A comment may not start immediately     *)
-(* after a key, a number, a symbol, a reserved word, a reference or a  *)
-(* datetime literal -- there "#" is error_unexpected_input_byte, and   *)
-(* at least one ws-char must come first. After a string, "]", "}",     *)
-(* ">", "=", ";" or an inline unit, "#" may follow directly.           *)
+(* after a key, a number, a symbol, a reserved word, a reference, a    *)
+(* datetime literal or a type-annotation parameter -- there "#" is     *)
+(* error_unexpected_input_byte, and at least one ws-char must come     *)
+(* first. After a string, "]", "}", ">", "=", ";" or an inline unit,  *)
+(* "#" may follow directly.                                           *)
 ws           = {ws-char | comment} ;
 
 (* At least one whitespace character, followed by optional further    *)
@@ -19812,7 +19869,8 @@ param-type   = ("uint" | "sint" | "float" | "float_fix" | "float_dec" | "utf8"
 (* that does NOT open a namespace: only a later ":" at bracket depth 0 *)
 (* does, which is what keeps "<uint:6 4>" an error. Trailing           *)
 (* whitespace is trimmed (it is beside the separator that ends the     *)
-(* parameter), and a line break is an error even there.               *)
+(* parameter); a line break inside the code is an error, one after it  *)
+(* is trailing whitespace.                                            *)
 (* ">" always terminates the annotation.                              *)
 type-param-list = type-param , {ws , "," , ws , type-param} ;
 

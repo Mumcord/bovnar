@@ -172,11 +172,14 @@ def _materialise_decimal(dec, width: int):
     be_max = (3 << (exp_bits - 2)) if is_std else ((1 << exp_bits) - 1)
     sign, digits, E = dec.as_tuple()
     neg = bool(sign)
-    C = int(''.join(map(str, digits)))
+    # Not int(str): CPython refuses a decimal conversion past 4300 digits
+    # (int_max_str_digits), and an exact integer literal can have ~9865.
+    from ._bigint import int_from_text, int_to_decimal
+    C = int_from_text(''.join(map(str, digits)), 10)
     if C == 0:
         return ('zero', neg)
     # combined round: at most max_digits significant digits AND biased exp >= 0.
-    drop = max(len(str(C)) - max_digits, -(E + bias))
+    drop = max(len(int_to_decimal(C)) - max_digits, -(E + bias))
     if drop > 0:
         factor = 10 ** drop
         dropped = C % factor
@@ -186,7 +189,7 @@ def _materialise_decimal(dec, width: int):
         sticky = (dropped % (10 ** (drop - 1))) != 0
         if top > 5 or (top == 5 and (sticky or (C & 1))):   # round half to even
             C += 1
-            if len(str(C)) > max_digits:                    # 999..9 -> 1000..0
+            if len(int_to_decimal(C)) > max_digits:     # 999..9 -> 1000..0
                 C //= 10
                 E += 1
         if C == 0:
@@ -199,7 +202,7 @@ def _materialise_decimal(dec, width: int):
     if be < 0:
         be = 0
     # clamp near Emax: lengthen with trailing zeros until the exponent fits.
-    while be >= be_max and len(str(C)) < max_digits:
+    while be >= be_max and len(int_to_decimal(C)) < max_digits:
         C *= 10
         E -= 1
         be -= 1

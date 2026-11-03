@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 The C writer and the Python writer must agree about every unit-carrying shape.
 

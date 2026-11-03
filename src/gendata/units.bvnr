@@ -2135,7 +2135,9 @@
     # one equivalent is half a mole and m~val/L = 0.5 mmol/L, which is what the
     # hardness tables state. An equivalent of a MONOVALENT species is one mole —
     # bovnar cannot know the species, so for that case write the amount directly
-    # (m~mol/L). This is why there is no generic "eq"/"equivalent" alias here.
+    # (m~mol/L). The "eq" alias below is this water-analysis equivalent, NOT
+    # UCUM's generic one-mole equivalent (ucum:eq maps to mol): native meq/L
+    # is half of ucum:meq/L. doc/05 and doc/07 say so.
     .factor  = 0.5;
     .dims    = { .amount = 1; };
     .affine  = false;
@@ -3574,8 +3576,9 @@
 #   a token that is a WELL-KNOWN annotation for something else, which the
 #   compact form would otherwise accept as a valid — and quietly wrong —
 #   physical unit. Rejecting them keeps `error_unit_illegal` as the answer to
-#   "mph", which is the whole point of a unit-safe format. "Something else" is
-#   usually a quantity bovnar does not model (acidity), but "kt" is the harder
+#   such a token, which is the whole point of a unit-safe format. (`mph` and
+#   `pH`, once the examples here, are units of their own now.) "Something else"
+#   is a reading bovnar does not intend (the bus in "usb"), but "kt" is the harder
 #   case: it is a standard abbreviation for TWO units bovnar DOES model, the
 #   kilotonne and the knot, and reading a speed as a mass is exactly the
 #   failure this format exists to prevent. A token that cannot be resolved by

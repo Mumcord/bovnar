@@ -742,8 +742,16 @@ static bool bvn_apply_want_unit(bvnr_reader_t* r, token_type_t tt, bvnr_data_t* 
 	 * path at all: a caller who named one target for one value gets the strict
 	 * all-or-nothing contract that hook was documented with.
 	 */
-	const bool leave_on_refusal =
-		from_policy && v->policy.on_inexact == (uint8_t)bvnr_inexact_leave;
+	/* A per-field RULE is an assertion (doc/06 §2.1): the caller named this
+	 * field, and a value it cannot be delivered in is an error, never the
+	 * native value passed through quietly. So neither the inexact-leave mode
+	 * nor the "not a match after all" pass-through below applies to one --
+	 * `--field .a=m/s --leave-inexact` used to deliver 100 k~m/h as written.
+	 * bvn_resolve_unit_target sets from_policy for a rule only when the hook
+	 * did not choose, so cur_rule >= 0 here means the rule chose. */
+	const bool from_rule = from_policy && v->cur_rule >= 0;
+	const bool leave_on_refusal = from_policy && !from_rule &&
+		v->policy.on_inexact == (uint8_t)bvnr_inexact_leave;
 
 	/* Settle the output base before doing any work: 0 keeps the value's own, and
 	 * anything else must be a base bvnr can actually write (2..62, 64, 85).
@@ -886,7 +894,7 @@ static bool bvn_apply_want_unit(bvnr_reader_t* r, token_type_t tt, bvnr_data_t* 
 		 * to build a rational from. Ask the cheap question the engine's own
 		 * screen answers rather than restating its capacity rule here.
 		 */
-		if (from_policy) return true;
+		if (from_policy && !from_rule) return true;
 		/*
 		 * ...and the capacity question is asked STRUCTURALLY, not through the
 		 * screen. bvn_units_convertible passes an affine scale in a compound by
@@ -2128,6 +2136,24 @@ bool bvn_val_receive(bvnr_reader_t* r, const bvnr_raw_token_t* raw)
 			fold_unit_str = raw->inline_unit_data;
 			fold_unit_len = raw->inline_unit_len;
 			fold_unit_val = iu_unit;
+		}
+		/* The synthesised annotation is a VERIFIED event, so the inline unit
+		 * it may carry has to have passed first: `.o = 100 zzz;` delivered a
+		 * verified <uint:64,_10,no_unit> before its unit_illegal, and an
+		 * ungated `ucum:km/h` reached on_verified as a unit (and a writer fed
+		 * from it then failed instead of the reader). The same two checks
+		 * run again below for the annotated path. */
+		if (iu_have &&
+		    bvni_unit_has_profile((const char*)raw->inline_unit_data,
+		                          raw->inline_unit_len) &&
+		    !bvn_lex_supports_1_2(&r->lex)) {
+			v->last_error = error_unit_illegal;
+			return false;
+		}
+		if (iu_have && !iu_ok) {
+			v->last_error = bvn_unit_error_code(
+				raw->inline_unit_data, raw->inline_unit_len);
+			return false;
 		}
 		if (!bvn_emit_default_type_annotation(r, tt,
 				raw->str_data, raw->str_len, is_currency_unit,

@@ -313,6 +313,14 @@ set_tests_properties(bvnr_writer_test PROPERTIES
     LABELS "unit;writer"
     PASS_REGULAR_EXPRESSION "PASSED")
 
+# Built since the want_unit hook landed but never registered, so neither CI nor
+# run_tests.sh ran it: the read-time conversion suite (exactness, output bases,
+# refusals) could have regressed without a red test.
+add_test(NAME bvnr_want_unit_test COMMAND bvnr_want_unit_test)
+set_tests_properties(bvnr_want_unit_test PROPERTIES
+    LABELS "unit;reader;policy"
+    PASS_REGULAR_EXPRESSION "PASSED")
+
 add_test(NAME bvnr_extended_reader_test COMMAND bvnr_extended_reader_test)
 set_tests_properties(bvnr_extended_reader_test PROPERTIES
     LABELS "unit;reader"
@@ -1444,7 +1452,7 @@ set_tests_properties(bvnr_cli_query_array_dims3 PROPERTIES
 # Deliberately NOT a cache variable: a cached value survives an edit to the
 # default here, so bumping the count after adding a test would have no effect in
 # an existing build directory -- the check would keep reporting the old number.
-set(BVNR_EXPECTED_TEST_COUNT 182)   # 129 base + unit_source + 3 for examples/unit_profiles.bvnr + i18n_de + wrapper_sync + doc_counts + doc_examples + doc_unit_factors + doc_profile_atoms + doc_ambiguities + doc_python_examples + doc_policy + 9 policy-diagnostic (6 validate + 2 query + 1 document-tier) + cli_regressions + wasm_native_shape
+set(BVNR_EXPECTED_TEST_COUNT 183)   # 129 base + unit_source + 3 for examples/unit_profiles.bvnr + i18n_de + wrapper_sync + doc_counts + doc_examples + doc_unit_factors + doc_profile_atoms + doc_ambiguities + doc_python_examples + doc_policy + 9 policy-diagnostic (6 validate + 2 query + 1 document-tier) + cli_regressions + wasm_native_shape
                                     #             + citation
                                     #         + profiles_off_build
                                     # + om_test + cf_test
@@ -1461,6 +1469,7 @@ set(BVNR_EXPECTED_TEST_COUNT 182)   # 129 base + unit_source + 3 for examples/un
                                     #           + py_currency_parity
                                     #           + doc_layout + doc_refs
                                     #           + llms
+                                    #           + want_unit_test
 
 # ── bvnr_data.py vs the reference reader ────────────────────────────────────
 # bvnr_data.py is a SECOND implementation of the format: a dependency-free parser
@@ -1528,7 +1537,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/wasm/built_from.sha256 AND BVNR_PACKAGE)
         NAME    bvnr_wasm_freshness
         COMMAND "${CMAKE_COMMAND}"
                 -DSTAMP=${CMAKE_CURRENT_SOURCE_DIR}/wasm/built_from.sha256
-                "-DSOURCES=${CMAKE_CURRENT_BINARY_DIR}/amalgamate/bovnar.c;${CMAKE_CURRENT_BINARY_DIR}/amalgamate/bovnar.h;${CMAKE_CURRENT_SOURCE_DIR}/wasm/bvnr_wasm.c"
+                "-DSOURCES=${CMAKE_CURRENT_BINARY_DIR}/amalgamate/bovnar.c;${CMAKE_CURRENT_BINARY_DIR}/amalgamate/bovnar.h;${CMAKE_CURRENT_SOURCE_DIR}/wasm/bvnr_wasm.c;${CMAKE_CURRENT_SOURCE_DIR}/wasm/build_wasm.sh"
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/wasm_freshness.cmake)
     set_tests_properties(bvnr_wasm_freshness PROPERTIES
         LABELS "wasm;packaging" TIMEOUT 60)
@@ -1545,6 +1554,8 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/wasm/index.mjs)
         COMMAND "${CMAKE_COMMAND}"
                 -DSRC=${CMAKE_CURRENT_SOURCE_DIR}/wasm/index.mjs
                 -DCOPY=${CMAKE_CURRENT_SOURCE_DIR}/web/bovnar_wasm.js
+                -DROOT=${CMAKE_CURRENT_SOURCE_DIR}
+                -DDIST=${CMAKE_CURRENT_SOURCE_DIR}/dist/wasm
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/wasm_wrapper_sync.cmake)
     set_tests_properties(bvnr_wasm_wrapper_sync PROPERTIES
         LABELS "wasm;web" TIMEOUT 60)

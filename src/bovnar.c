@@ -1034,7 +1034,7 @@ static int cmd_events(int argc, char **argv)
 		if (fd < 0) { perror(filename); return 1; }
 	}
 	bvnr_reader_t *rd = bvnr_reader_create();
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wanalyzer-fd-leak"
 #endif
@@ -1043,7 +1043,7 @@ static int cmd_events(int argc, char **argv)
 		if (!from_stdin) { close(fd); fd = -1; }
 		return 1;
 	}
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__)
 #  pragma GCC diagnostic pop
 #endif
 	if (!cli_apply_unit_policy("events", rd, &up)) {
@@ -1362,6 +1362,38 @@ static int cmd_query(const char *path, const char *filename,
 	}
 	print_dom_node(node, 0);
 	putchar('\n');
+	/* query prints the number alone. Under --leave-inexact a value the policy
+	 * would have converted can come back in its own unit, and nothing on
+	 * stdout says so; name the unit it was left in. (A per-field rule never
+	 * leaves a value: it fails instead.) */
+	if (up && up->policy.on_inexact == bvnr_inexact_leave &&
+	    (bvn_dom_node_type(node) == BVN_DOM_INT ||
+	     bvn_dom_node_type(node) == BVN_DOM_FLOAT)) {
+		value_unit_t u = bvn_dom_get_unit(node);
+		bool would = false, there = false;
+		for (uint32_t i = 0; i < up->policy.num_targets && !there; i++) {
+			bool ok = false;
+			value_unit_t t = bvn_parse_unit(
+				(const uint8_t *)up->policy.targets[i].unit, &ok);
+			if (!ok)
+				continue;
+			if (bvn_unit_equal(u, t))
+				there = true;
+			else if (bvn_units_convertible(u, t))
+				would = true;
+		}
+		value_unit_t si;
+		if (!there && up->policy.normalise == bvnr_normalise_si &&
+		    bvn_unit_si_normal_form(u, &si) && !bvn_unit_equal(si, u))
+			would = true;
+		if (would && !there) {
+			char ub[BVNR_UNIT_STRING_MAX];
+			if (bvn_unit_to_string(u, ub, sizeof ub) < 0)
+				strcpy(ub, "?");
+			fprintf(stderr, "query: %s left in %s: the conversion is not "
+				"exact (--leave-inexact)\n", path, ub);
+		}
+	}
 	bvn_dom_doc_destroy(doc);
 	return 0;
 }
@@ -3855,7 +3887,9 @@ static void usage(FILE *out, const char *prog)
 		"                  units, types, symbols, references or octet streams.\n"
 		"                  The JSON is still written; what was lost is listed on\n"
 		"                  stderr and the exit status is 1, so 0 means the JSON\n"
-		"                  converts back to the same document.\n",
+		"                  converts back to the same document.\n"
+		"                  The unit-policy options are accepted and\n"
+		"                  ignored here: JSON carries no units.\n",
 		prog);
 	/* Split here: one string literal for the whole of usage() grew past the
 	 * 4095 characters C99 requires a compiler to support, which -Wpedantic

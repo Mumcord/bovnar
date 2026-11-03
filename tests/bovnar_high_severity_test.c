@@ -653,6 +653,163 @@ static void test_error_getters_after_recovery(void)
 }
 
 /*
+ * The 2026-11-03 whole-project review: recovery that read a comment or a
+ * skipped bracket as document text, an octet stream recovery could not frame,
+ * aborts and errors reported unevenly, and the float_fix range check.
+ */
+typedef struct {
+	char   trace[512];
+	size_t n;
+	int    errors;
+	error_code_t first;
+	int    verified_types;
+	int    abort_at;        /* event index to abort at, -1 never */
+	int    seen;
+} rv_trace_t;
+static void rv_put(rv_trace_t *t, const char *s, size_t len)
+{
+	if (t->n + len + 1 < sizeof t->trace) {
+		memcpy(t->trace + t->n, s, len);
+		t->n += len;
+		t->trace[t->n] = '\0';
+	}
+}
+static bool rv_on_verified(void *ud, bvnr_event_t ev, bvnr_data_t *d)
+{
+	rv_trace_t *t = ud;
+	if (t->abort_at >= 0 && t->seen++ == t->abort_at)
+		return false;
+	if (ev == ev_assignment_start) {
+		rv_put(t, (const char *)d->data, d->length);
+		rv_put(t, ",", 1);
+	} else if (ev == ev_struct_start) {
+		rv_put(t, "{", 1);
+	} else if (ev == ev_struct_end) {
+		rv_put(t, "}", 1);
+	} else if (ev == ev_type_annotation_start) {
+		t->verified_types++;
+	}
+	return true;
+}
+static void rv_on_error(void *ud, error_code_t e, uint64_t line, uint64_t col,
+			uint32_t byte, uint64_t off)
+{
+	(void)line; (void)col; (void)byte; (void)off;
+	rv_trace_t *t = ud;
+	if (!t->errors++)
+		t->first = e;
+}
+static bool rv_read(const char *doc, size_t len, bool cont, bool text_only,
+		    int abort_at, rv_trace_t *t)
+{
+	memset(t, 0, sizeof *t);
+	t->abort_at = abort_at;
+	bvnr_reader_t *r = bvnr_reader_create();
+	if (!r) return false;
+	bvnr_read_flags_t f;
+	memset(&f, 0, sizeof f);
+	f.on_verified = rv_on_verified;
+	f.on_error = rv_on_error;
+	f.userdata = t;
+	f.continue_on_error = cont;
+	f.text_only = text_only;
+	bool ok = bvnr_open_read_mem(r, doc, len, NULL, 0, &f) && bvnr_read(r);
+	if (!ok && !t->errors)
+		t->first = bvnr_reader_get_error(r);
+	bvnr_reader_destroy(r);
+	return ok;
+}
+static void test_reader_review_2026_11_whole(void)
+{
+	printf("  test_reader_review_2026_11_whole...\n");
+	rv_trace_t t;
+
+	/* A '#' that is itself the offending byte opens a comment, and recovery
+	 * skips it as one: ".a = 41" inside it was delivered, and the '"' after
+	 * it opened a string that swallowed the rest of the document. */
+	static const char c1[] = ".a = 42# was: .a = 41; .old = \"x\n.c = 2;\n.d = 3;\n";
+	ASSERT_TRUE(rv_read(c1, strlen(c1), true, false, -1, &t),
+		    "42# comment: the read recovers");
+	ASSERT_TRUE(strcmp(t.trace, "a,c,d,") == 0,
+		    "42# comment: nothing inside the comment is delivered");
+	ASSERT_EQ_INT(t.errors, 1, "42# comment: one error");
+
+	/* A '{' that is itself the offending byte opened nothing; its own '}'
+	 * must not close the enclosing struct. */
+	static const char c2[] = ".s = {.x = <utf8> {.a = 1;}; .y = 2;}; .c = 4;\n";
+	ASSERT_TRUE(rv_read(c2, strlen(c2), true, false, -1, &t),
+		    "annotated struct: the read recovers");
+	ASSERT_TRUE(strcmp(t.trace, "s,{x,y,}c,") == 0,
+		    "annotated struct: .y stays in .s and .a is not delivered");
+	ASSERT_EQ_INT(t.errors, 1, "annotated struct: one error");
+
+	/* text_only refuses the document: recovery cannot frame the payload. */
+	static const char c3[] = ".a = \x00\x01\x0b\x00;.evil = 1;\x00; .b = 1;\n";
+	ASSERT_FALSE(rv_read(c3, sizeof c3 - 1u, true, true, -1, &t),
+		     "text_only: an octet stream ends the read under continue_on_error");
+	ASSERT_EQ_INT(t.first, error_octet_stream_forbidden,
+		      "text_only: as error_octet_stream_forbidden");
+	ASSERT_TRUE(strstr(t.trace, "evil") == NULL,
+		    "text_only: nothing in the payload is delivered");
+
+	/* An abort at the first event is reported through on_error like any
+	 * other; it skipped on_error. */
+	static const char c4[] = ".a = 1;\n";
+	ASSERT_FALSE(rv_read(c4, strlen(c4), false, false, 0, &t),
+		     "abort at stream_start fails the read");
+	ASSERT_EQ_INT(t.errors, 1, "abort at stream_start: on_error is called");
+	ASSERT_EQ_INT(t.first, error_scanner_callback_failed,
+		      "abort at stream_start: as error_scanner_callback_failed");
+
+	/* A '}' before the first statement is an unmatched close (doc/03 §8.5),
+	 * as it is after one. */
+	static const char *const closes[] = { "}\n", "  }\n", "# c\n}\n",
+					      "\xef\xbb\xbf}\n", ".a=1;}\n" };
+	for (size_t i = 0; i < sizeof closes / sizeof *closes; i++) {
+		rv_read(closes[i], strlen(closes[i]), false, false, -1, &t);
+		ASSERT_EQ_INT(t.first, error_illegal_struct_close,
+			      "a stray } is error_illegal_struct_close");
+	}
+
+	/* float_fix: a finite literal past the float exponent range is out of
+	 * range, not the range-exempt inf; a tiny one rounds to 0 and fits. */
+	static const char *const big[] = {
+		".a = <float_fix:16,q8> 1e9862;\n",
+		".a = <float_fix:16,q8> -1e99999;\n",
+		".a = <float_fix:16,q8> \"1e99999\";\n",
+		".a = <float_fix:16,q8> 128;\n",
+	};
+	for (size_t i = 0; i < sizeof big / sizeof *big; i++) {
+		ASSERT_FALSE(rv_read(big[i], strlen(big[i]), false, false, -1, &t),
+			     "float_fix: an over-range literal is refused");
+		ASSERT_EQ_INT(t.first, error_value_out_of_range,
+			      "float_fix: as error_value_out_of_range");
+	}
+	static const char *const fits[] = {
+		".a = <float_fix:16,q8> 1e-9000;\n",
+		".a = <float_fix:16,q8> 127.99;\n",
+		".a = <float_fix:16,q8> -128;\n",
+		".a = <float_fix:16,q8> 0e99999;\n",
+	};
+	for (size_t i = 0; i < sizeof fits / sizeof *fits; i++)
+		ASSERT_TRUE(rv_read(fits[i], strlen(fits[i]), false, false, -1, &t),
+			    "float_fix: an in-range literal is read");
+
+	/* No verified event for a value whose inline unit is refused: the
+	 * synthesised annotation used to go out first. */
+	static const char c5[] = ".o = 100 zzz;\n";
+	ASSERT_FALSE(rv_read(c5, strlen(c5), false, false, -1, &t),
+		     "an unknown inline unit fails the read");
+	ASSERT_EQ_INT(t.verified_types, 0,
+		      "...before any verified annotation is delivered");
+	static const char c6[] = ".o = 100 ucum:km/h;\n";
+	ASSERT_FALSE(rv_read(c6, strlen(c6), false, false, -1, &t),
+		     "an ungated profile unit fails the read");
+	ASSERT_EQ_INT(t.first, error_unit_illegal, "...as error_unit_illegal");
+	ASSERT_EQ_INT(t.verified_types, 0,
+		      "...before any verified annotation is delivered");
+}
+/*
  * Three recovery defects found in the 2026-11-03 review of doc/03 §12-18.
  */
 static void test_recovery_review_2026_11(void)
@@ -3687,6 +3844,7 @@ int main(void)
 	test_recovery_count();
 	test_error_getters_after_recovery();
 	test_recovery_review_2026_11();
+	test_reader_review_2026_11_whole();
 
 	printf("\nGap 6: callback abort\n");
 	test_callback_abort_verified();

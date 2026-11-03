@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 #
 # run_tests.sh — build, then run EVERY registered test, then sweep the fuzzers.
 #

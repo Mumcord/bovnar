@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 check_doc_profile_atoms.py — doc/11 §6.1's UCUM atom tables, against
 src/gendata/ucum.bvnr.

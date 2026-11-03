@@ -779,8 +779,10 @@ Reading across, with 1 mmol·L⁻¹ as the reference:
 > **`val` is the equivalent as *water analysis* uses it.** The ions counted are divalent, so one
 > equivalent is half a mole and `m~val/L` = 0.5 mmol/L, which is what the hardness tables state.
 > An equivalent of a *monovalent* species is one mole — Bovnar cannot know the species from the
-> unit, so for that case write the amount directly (`m~mol/L`). There is deliberately no generic
-> `eq` / `equivalent` alias.
+> unit, so for that case write the amount directly (`m~mol/L`). `eq` is accepted as a spelling of
+> `val` (below) and means the same divalent equivalent — it is **not** UCUM's generic equivalent of
+> one mole: native `meq/L` is half of `ucum:meq/L`. A clinical `meq/L` of a monovalent ion (Na⁺,
+> K⁺, Cl⁻) is one millimole per litre, so write it as `m~mol/L` or as `ucum:meq/L`.
 
 > **Exactness.** Every degree is derived from a molar mass (IUPAC 2021: Ca 40.078, C 12.011,
 > O 15.999 g·mol⁻¹), so the factors are measurement-derived rather than exact rationals. They carry
@@ -2517,7 +2519,7 @@ int32_t      bvn_unit_to_ucum(value_unit_t u, char *buf, size_t bufsize);
 
 **`bvn_unit_is_profile_only`** is true when a unit has no native spelling, which is exactly the units carrying an **opaque** base unit: a UCUM arbitrary atom (`[IU]`, `[PFU]`, …) or a UNECE package or count code (`XBX`, `C62`, …). For those, `bvn_unit_to_string` emits the profile form in the namespace that *owns* the unit, and re-parsing that output yields the same unit.
 
-**`bvn_unit_to_profile`** writes a code in the named vocabulary — any of the seven namespaces, without the `<ns>:` prefix, though the read-only `cf` has a code for no unit — returning its length or a negative value. **`bvn_unit_to_ucum`** is the `ucum` case, kept for callers that predate the others. Both are **partial by construction**, in three ways: the Old German units, the water-hardness degrees, the turbidity kinds, `PSU`, `CF`, `kph` and every currency have no code in any of these vocabularies (membership is per unit, not per family: `mph` is `unece:HM` and `qudt:MI-PER-HR`, while `kph` has nothing); an opaque unit belonging to a *different* profile has none either; and a **flat** vocabulary (`unece`, `qudt`, `qudt-qk`, `om`) can spell only a single unprefixed component, so `k~m/h` has no UNECE form even though `unece:KMH` parses to exactly it. All three are refused rather than approximated.
+**`bvn_unit_to_profile`** writes a code in the named vocabulary — any of the seven namespaces, without the `<ns>:` prefix, though the read-only `cf` has a code for no unit — returning its length or a negative value. **`bvn_unit_to_ucum`** is the `ucum` case, kept for callers that predate the others. Both are **partial by construction**, in three ways: the Old German units, the water-hardness degrees, the turbidity kinds, `PSU`, `CF`, `kph` and every currency have no code in any of these vocabularies (membership is per unit, not per family: `mph` is `unece:HM` and `qudt:MI-PER-HR`, while `kph` has nothing); an opaque unit belonging to a *different* profile has none either; and a **flat** vocabulary (`unece`, `qudt`, `qudt-qk`, `om`) can spell only a single component — prefixed or not, `k~m` is `unece:KMT` — so `k~m/h` has no UNECE form even though `unece:KMH` parses to exactly it. All three are refused rather than approximated.
 
 ```c
 char buf[BVNR_UNIT_STRING_MAX];

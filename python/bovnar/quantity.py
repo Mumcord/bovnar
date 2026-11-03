@@ -105,7 +105,8 @@ def _exact_number_text(value) -> str:
     if isinstance(value, Decimal):
         return _decimal_to_text(value)
     if isinstance(value, numbers.Integral):      # Python int, numpy ints, ...
-        return str(int(value))
+        from ._bigint import int_to_decimal      # str() stops at 4300 digits
+        return int_to_decimal(int(value))
     if isinstance(value, numbers.Real):          # Python/numpy floats
         f = float(value)
         # repr() spells the non-finite values Python's way, and '-inf' is not a

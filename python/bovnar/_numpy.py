@@ -323,14 +323,9 @@ def _leaf(obj, acc):
                                obj.value_type.base)
         if dt:
             acc['dtypes'].add(dt)
-        # DomNode.unit_str is a PROPERTY returning the literal 'no_unit' for a
-        # dimensionless value, where Quantity.unit_str returns ''. Used raw,
-        # every DOM-sourced array reported a truthy unit string -- contradicting
-        # the documented '' contract and disagreeing with the typed-list path for
-        # the same document.
+        # DomNode.unit_str is '' for a value with no unit, like
+        # Quantity.unit_str (it used to return the literal 'no_unit').
         us = obj.unit_str
-        if us == 'no_unit':
-            us = ''
         if us:
             # DomNode.unit is still a bare ValueUnit; only Quantity.unit became a
             # Unit object. _record_unit wants the struct, so this one is already it.

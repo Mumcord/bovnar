@@ -696,10 +696,12 @@ static bvn_dom_node_t *make_array(value_type_spec_t vt)
  * This is what lets a bare "3.14" land as a float and "42" as an int without an
  * annotation.
  */
-/* Does this text spell a whole number? Asked of a CONVERTED value, whose
- * digits may be fractional even though the source family was an integer one —
- * the base does not matter, because '.', 'e' and 'E' are not digits in any base
- * bvnr writes (base 16 exponents use 'p'). */
+/* Is a CONVERTED value a whole number? Its digits may be fractional even
+ * though the source family was an integer one. The answer comes from the exact
+ * denominator the reader hands over: the digits cannot tell, because 'e' and
+ * 'p' ARE digits from base 15 and 26 up -- `<uint:64,m> 14` converted to m in
+ * base 16 is "e", and was stored as a float. The text test is only the
+ * fallback for a conversion that carries no rational. */
 static bool bvn_is_integer_text(const char *s, uint32_t len)
 {
 	for (uint32_t i = 0; i < len; i++) {
@@ -708,6 +710,14 @@ static bool bvn_is_integer_text(const char *s, uint32_t len)
 			return false;
 	}
 	return true;
+}
+static bool bvn_conv_is_integer(const bvnr_converted_t *c,
+				const char *s, uint32_t len)
+{
+	uint64_t den;
+	if (c->den)
+		return bvn_int_to_uint64(c->den, &den) && den == 1u;
+	return bvn_is_integer_text(s, len);
 }
 /*
  * `quoted` is whether the literal came as a string token. It matters for one
@@ -955,7 +965,7 @@ static bool on_verified(void *userdata, bvnr_event_t ev, bvnr_data_t *d)
 					conv_from_rational = true;
 			}
 			if ((vt.family == vt_uint || vt.family == vt_sint) &&
-			    !bvn_is_integer_text(str, len)) {
+			    !bvn_conv_is_integer(&d->conv, str, len)) {
 				vt.family = vt_float;
 				/* The WIDTH has to follow the family. `<uint:8,g> 5` in
 				 * kilograms came back as a float of width 8, which is not a
@@ -1404,7 +1414,7 @@ static error_code_t bvn_dom_keys_unique(
  * The analyzer gives up following the two mutually recursive walks a few levels
  * down and reports what it could not finish proving. LeakSanitizer, which sees
  * what actually happens, is clean over the DOM tests and the fuzz corpus. */
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
 #endif
@@ -1449,7 +1459,7 @@ static error_code_t bvn_dom_check_homogeneous(
 		return error_none;
 	}
 }
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__)
 #  pragma GCC diagnostic pop
 #endif
 bvn_dom_doc_t *bvn_dom_parse_policy(const void *data, uint32_t len,

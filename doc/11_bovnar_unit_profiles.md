@@ -12,11 +12,11 @@ admitted after that pass, which is why they sit after it rather than beside thei
 | Namespace | Vocabulary | Grammar | Codes carried | Section |
 |---|---|---|---|---|
 | `ucum:` | UCUM — Unified Code for Units of Measure | expression | 206 mapped + 41 arbitrary, **all 312 UCUM defines** | [2](#2-syntax)–[10](#10-cost-risk-and-what-is-left-out) |
-| `unece:` | UN/ECE Recommendation 20 and 21 | flat | 1298 + 25 opaque | [11](#11-the-unece-profile) |
-| `qudt:` | QUDT unit local names | flat | 2238, **all 2808 QUDT defines** | [12](#12-the-qudt-profiles) |
-| `qudt-qk:` | QUDT quantity kinds | flat | 903, **all 1165 QUDT defines** | [12.3](#123-quantity-kinds-qudt-qk) |
-| `udunits:` | UDUNITS-2, the CF/netCDF units syntax | expression | 765 (its regular plurals included), **all 580 UDUNITS defines** | [13](#13-the-udunits-profile) |
-| `om:` | OM 2 — Ontology of units of Measure | flat | 1341 + 119 refused, **every unit individual OM states** | [16](#16-the-om-2-profile) |
+| `unece:` | UN/ECE Recommendation 20 and 21 | flat | 1299 + 25 opaque | [11](#11-the-unece-profile) |
+| `qudt:` | QUDT unit local names | flat | 2243, **all 2803 QUDT defines** | [12](#12-the-qudt-profiles) |
+| `qudt-qk:` | QUDT quantity kinds | flat | 903, **all 1164 QUDT defines** | [12.3](#123-quantity-kinds-qudt-qk) |
+| `udunits:` | UDUNITS-2, the CF/netCDF units syntax | expression | 768 (its regular plurals included), **all 580 UDUNITS defines** | [13](#13-the-udunits-profile) |
+| `om:` | OM 2 — Ontology of units of Measure | flat | 1336 + 124 refused, **every unit individual OM states** | [16](#16-the-om-2-profile) |
 | `cf:` | CF standard names | flat, read-only | 4454 + 617 refused, **all 5071 names of table v94** | [17](#17-the-cf-standard-name-profile) |
 
 Companion to [Unit & Currency Reference](05_bovnar_unit_system.md) (the native registry and notation
@@ -34,7 +34,7 @@ pass changed and what it cost.
 
 Every acceptance, refusal and conversion factor quoted below was produced by running the
 reference implementation built from this tree, and the behavioural claims are pinned by the test
-files named above (1328 assertions across the seven profiles, plus 4789 in the cross-vocabulary
+files named above (1335 assertions across the seven profiles, plus 4789 in the cross-vocabulary
 suite). The VOCABULARY side — whether each foreign code is *worth* what the table says — is checked
 too, but not by the same means and not to the same strength: `check_profile_factors.py` (§9.5)
 resolves every mapped code against its publisher's own machine-readable definitions, and `unece`
@@ -616,7 +616,10 @@ does not appear to need. A named refusal is better than either.
 ### 3.6 Arbitrary units
 
 UCUM's arbitrary units — `[IU]`, `[arb'U]`, `[PFU]`, `[CFU]`, and the rest of that table — are
-assay-defined. UCUM's own rule is that they are commensurable with nothing, including each other.
+assay-defined. UCUM's own rule is that they are commensurable with nothing, including each other —
+with one exception UCUM states itself: `[IU]` is defined as `1 [iU]`, the international unit in
+two spellings. Bovnar carries them as **two** opaque units that do not compare equal, so
+`ucum:[IU]` and `ucum:[iU]` cannot be converted into one another; write one spelling throughout.
 They are also the single largest reason a real clinical code fails to map (§6.4).
 
 The profile admits all **41** of them, as a contiguous run at the bottom of UCUM's own block of the
@@ -1724,11 +1727,11 @@ One hand-edited data file per namespace in `src/gendata/`, in the same shape as 
 | File | Lists |
 |---|---|
 | `ucum.bvnr` | 20 prefixes, 206 mapped, 41 opaque, 65 unsupported |
-| `unece.bvnr` | 1298 mapped, 25 opaque, 156 unsupported |
-| `qudt.bvnr` | 2238 mapped, 570 unsupported |
+| `unece.bvnr` | 1299 mapped, 25 opaque, 155 unsupported |
+| `qudt.bvnr` | 2243 mapped, 565 unsupported |
 | `qudt-qk.bvnr` | 903 mapped, 262 unsupported |
-| `udunits.bvnr` | 41 prefixes, 765 mapped, 101 unsupported |
-| `om.bvnr` | 1341 mapped, 119 unsupported |
+| `udunits.bvnr` | 41 prefixes, 768 mapped, 98 unsupported |
+| `om.bvnr` | 1336 mapped, 124 unsupported |
 | `cf.bvnr` | 4454 mapped, 617 unsupported |
 
 Four list kinds, and a code belongs to exactly one of them: the vocabulary's prefix spellings with
@@ -1791,11 +1794,11 @@ them to each other:
 
 | Test | Target | Assertions | Specifies |
 |---|---|---|---|
-| `tests/bovnar_ucum_test.c` | `bvnr_ucum_test` | 171 | §2–§10 |
+| `tests/bovnar_ucum_test.c` | `bvnr_ucum_test` | 197 | §2–§10 |
 | `tests/bovnar_unece_test.c` | `bvnr_unece_test` | 557 | §11 |
 | `tests/bovnar_qudt_test.c` | `bvnr_qudt_test` | 201 | §12 |
-| `tests/bovnar_udunits_test.c` | `bvnr_udunits_test` | 199 | §13 |
-| `tests/bovnar_om_test.c` | `bvnr_om_test` | 103 | §16 |
+| `tests/bovnar_udunits_test.c` | `bvnr_udunits_test` | 224 | §13 |
+| `tests/bovnar_om_test.c` | `bvnr_om_test` | 110 | §16 |
 | `tests/bovnar_cf_test.c` | `bvnr_cf_test` | 46 | §17 |
 | `tests/bovnar_crossvocab_test.c` | `bvnr_crossvocab_test` | 4789 | §14 |
 
@@ -2287,7 +2290,7 @@ every writer entry point.
 
 > `unece:` — UN/ECE Recommendation 20, *Codes for Units of Measure Used in International Trade*, and
 > Recommendation 21, *Codes for Passengers, Types of Cargo, Packages and Packaging Materials*.
-> Data file `src/gendata/unece.bvnr` (1298 mapped, 25 opaque, 156 unsupported — every Rec 20 code
+> Data file `src/gendata/unece.bvnr` (1299 mapped, 25 opaque, 155 unsupported — every Rec 20 code
 > QUDT's cross-reference reaches, which is not the same as every Rec 20 code; §11.1);
 > pinned by `tests/bovnar_unece_test.c` (557 assertions).
 
@@ -2431,9 +2434,10 @@ that are equal in SI and different in meaning, and `C94`/`M46` is the pair that 
 
 ## 12. The QUDT profiles
 
-> `qudt:` — QUDT unit local names (2238 mapped, 570 unsupported — every one of the 2808 local
-> names QUDT defines).
-> `qudt-qk:` — QUDT quantity kinds (903 mapped, 262 unsupported — every one of the 1165 kinds).
+> `qudt:` — QUDT unit local names (2243 mapped, 565 unsupported — every one of the 2803 local
+> names QUDT defines, plus five refusals for names it does not: `USD`, `EUR` and three `DECIBEL_*`).
+> `qudt-qk:` — QUDT quantity kinds (903 mapped, 262 unsupported — every one of the 1164 kinds,
+> plus a refusal for `LogarithmicRatio`, which QUDT 3.1.0 does not define).
 > Data files `src/gendata/qudt.bvnr` and `src/gendata/qudt-qk.bvnr`;
 > pinned by `tests/bovnar_qudt_test.c` (201 assertions).
 
@@ -2524,7 +2528,7 @@ namespace and falls through to the native parser, which rejects it as it always 
 
 ### 12.4 The quantity-kind table: the ISO 80000 core
 
-The table is no longer short enough to print — 910 of QUDT's 1164 kinds map. What follows is the
+The table is no longer short enough to print — 903 of QUDT's 1164 kinds map. What follows is the
 ISO 80000 core it started as, which is still the part worth reading, and every row in it was
 verified to have a native coherent-SI factor of exactly `1.0`, the claim §12.3 makes. For the rest,
 read `src/gendata/qudt-qk.bvnr`.
@@ -2580,7 +2584,7 @@ same equivalence class.
 
 > `udunits:` — UDUNITS-2, Unidata's unit library, whose string grammar is the de-facto units syntax
 > of netCDF and the CF conventions.
-> Data file `src/gendata/udunits.bvnr` (41 prefixes, 765 mapped, 101 unsupported — every one of
+> Data file `src/gendata/udunits.bvnr` (41 prefixes, 768 mapped, 98 unsupported — every one of
 > the 580 spellings the UDUNITS-2 database defines);
 > pinned by `tests/bovnar_udunits_test.c` (224 assertions).
 
@@ -2935,8 +2939,8 @@ Growing the native registry to reach them is a separate decision, and doc/05 is 
 
 > `om:` — OM 2, the Ontology of units of Measure (Rijgersberg, van Assem, Top; Wageningen), the
 > second unit ontology of the semantic web beside QUDT.
-> Data file `src/gendata/om.bvnr` (1341 mapped, 119 refused — every unit individual OM states);
-> pinned by `tests/bovnar_om_test.c` (103 assertions); id block 70, contributing no opaque units.
+> Data file `src/gendata/om.bvnr` (1336 mapped, 124 refused — every unit individual OM states);
+> pinned by `tests/bovnar_om_test.c` (110 assertions); id block 70, contributing no opaque units.
 
 ### 16.1 Why this vocabulary
 
@@ -2995,12 +2999,12 @@ refused instead.
 
 The same walk is implemented independently in `check_profile_factors.py` (`class Om`), which
 resolves every local name against `om-2.0.rdf` and compares it with what the library says the target
-is worth: **1276 rows compared, no mismatch**. The three shapes of resolver this brings the tool to
+is worth: **1271 rows compared, no mismatch**. The three shapes of resolver this brings the tool to
 — expression, table read, composition — are listed in its header.
 
 ### 16.3 What the derivation refuses
 
-205 local names are carried as refusals rather than mappings, and four groups are worth naming:
+124 local names are carried as refusals rather than mappings, and four groups are worth naming:
 
 - **`om:year`, and everything built on it.** OM's year is the **Gregorian** 31 556 952 s; native
   `yr` is the Julian 31 557 600 s. Twenty-one parts per million apart, dimensionally identical, and
@@ -3014,7 +3018,9 @@ is worth: **1276 rows compared, no mismatch**. The three shapes of resolver this
   same assay unit would make the two **incommensurable with each other** — two units that cannot be
   compared although they are the same unit. This is why block 70 contributes no opaque ids.
 - **Money, scales and dimension one.** OM models currencies as units (`om:euro`); bovnar carries
-  currencies in a system of their own (§7.2). `KelvinScale` is a scale, not a unit of one.
+  currencies in a system of their own (§7.2). `KelvinScale`, `CelsiusScale` and the other three
+  `…Scale` individuals are scales, not units: OM relates each to its unit by a factor *and an
+  offset*, so mapping one to a unit would read a Celsius-scale 20 as 20 K.
   `om:one`, `om:metrePerMetre` and `om:dozen` are dimension one, which bovnar spells by omitting the
   slot — translating them would make a count compare equal to a percentage.
 
@@ -3125,7 +3131,7 @@ level tendencies carry `m/yr_trop`. That is the same change §13.3 records for U
 second vocabulary.
 
 **The size, measured rather than estimated.** This is by far the largest table in the repository:
-5071 codes averaging 54 bytes, against 2808 QUDT names averaging 12. `BVNR_UNIT_STRING_MAX` did not
+5071 codes averaging 54 bytes, against 2808 QUDT rows averaging 12. `BVNR_UNIT_STRING_MAX` did not
 have to move — the longest name is 166 bytes and the cap is 1088 — but the binary did:
 
 | | stripped release `bovnar` |

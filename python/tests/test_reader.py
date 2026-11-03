@@ -480,3 +480,64 @@ class TestTypedRoundtripFidelity:
         bovnar.loads(src)                                  # accepted (no raise)
         with pytest.raises(BovnarParseError):
             bovnar.dom_parse(src.encode())                 # rejected by full validation
+
+
+@needs_lib
+def test_a_kept_payload_outlives_the_reader():
+    # The snapshot a callback receives used to copy only its by-value fields:
+    # data, frac_data, unit_source and conv.num/conv.den stayed pointers into
+    # the reader, so a BvnrData kept past the callback read freed memory once
+    # the reader was gone -- raw_bytes() returned garbage and
+    # converted_rational() walked a freed bignum. Every accessor must now give
+    # the answer it gave inside the callback.
+    import gc
+    from bovnar.enums import BaseUnit
+    from bovnar.structs import make_unit_si
+
+    def accessors(d):
+        return (d.raw_bytes(), d.raw_str(), d.frac_str(), d.unit_source_str(),
+                bool(d.converted), d.converted_str(), d.converted_rational(),
+                d.converted_in_base(16) if d.converted else None)
+
+    def want(d):
+        if d.unit_source_str() == 'm':                 # 1 m in miles: no
+            return (make_unit_si(BaseUnit.MILE), 10)   # finite expansion
+        if d.unit_source_str() == 'k~m':
+            return (make_unit_si(BaseUnit.METER), 10)
+        return None
+
+    kept, inside, wanted = [], [], []
+
+    def on_event(ev, d):
+        if ev == Event.DATA and d is not None:
+            kept.append(d)
+            inside.append(accessors(d))
+        return True
+
+    def want_keep(d):
+        wanted.append((d, d.raw_bytes(), d.unit_source_str()))
+        return want(d)
+
+    r = Reader()
+    r.read_mem(b'#!bovnar 1.2\n.d = 1 m;\n.k = 5 k~m;\n'
+               b'.t = 2024-01-02T03:04:05.123456Z;\n.u = 5 ucum:mL{total};\n'
+               b'.s = "' + b'x' * 300 + b'";\n',
+               on_verified=on_event, want_unit=want_keep,
+               want_unit_allow_nonterminating=True)
+    r.close()
+    del r
+    # reuse the freed memory before looking again
+    churn = [bytearray(b'Z' * 4096) for _ in range(2000)]
+    gc.collect()
+    del churn
+
+    after = [accessors(d) for d in kept]
+    assert after == inside
+    assert after[0][6] == (125, 201168)                # 1 m / 1609.344 m
+    assert after[0][5] is None
+    assert after[1][5] == '5000' and after[1][7] == '1388'
+    assert after[2][2] == '123456'
+    assert after[3][3] == 'ucum:mL{total}'
+    assert after[4][0] == b'x' * 300
+    assert [(d.raw_bytes(), d.unit_source_str()) for d, _, _ in wanted] == \
+        [(raw, src) for _, raw, src in wanted]

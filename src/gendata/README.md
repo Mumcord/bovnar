@@ -5,7 +5,7 @@ files here; the C tables are generated from them. So the enum, conversion table,
 symbol map, parse/alias tables, prefix scale/policy tables, and currency
 catalogue cannot drift out of sync. Covers 264 physical units (745 accepted
 spellings), 34 SI/IEC prefixes, 216 currencies, and the atom tables of seven unit
-profiles — 11 271 mapped codes and 1890 named refusals, which is every code UCUM,
+profiles — 11 275 mapped codes and 1886 named refusals, which is every code UCUM,
 UDUNITS-2, QUDT, OM 2 and the CF standard name table define, plus every UN/ECE
 code QUDT's cross-reference reaches (doc/11 §15–§17).
 
@@ -48,9 +48,11 @@ two questions that are still open (UCUM's derivative-works bar, and the CF
 table's absent licence).
 
 **Bumping a vocabulary to a new upstream version is three edits in one commit:**
-the rows, the `.bvnr` header block, and the notices file — plus the pinned URI in
-`check_profile_factors.py`, which fetches an exact published version and never a
-`current/` alias, so that a table can always be traced to what it was built from.
+the rows, the `.bvnr` header block, and the notices file — plus, for QUDT and CF,
+the pinned URI in `check_profile_factors.py`, which fetches that exact published
+version and never a `current/` alias, so the table can be traced to what it was
+built from. UDUNITS-2, UCUM and OM are fetched from their moving default branch
+on purpose: that is the drift the weekly `vocabulary-drift` workflow watches for.
 
 ## Building
 

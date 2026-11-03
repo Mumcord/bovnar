@@ -404,6 +404,20 @@ class TestDomNodeUnit:
         doc = DomDoc.parse(_SCALAR_INT)
         s   = doc['x'].unit_str
         assert isinstance(s, str)
+        assert s == ''
+
+    def test_unit_str_agrees_with_quantity(self):
+        # doc/09 §13.3 promises '' for a value with no unit, as Quantity.unit_str
+        # gives; the DOM returned the C formatter's literal 'no_unit' instead.
+        src = (b'.a = 1; .b = <uint:32,no_unit> 7; .s = "x"; .m = 5 m;'
+               b' .p = 5 %; .t = { .q = 1; };')
+        doc = DomDoc.parse(src)
+        typed = bovnar.loads(src, typed=True)
+        for k in ('a', 'b', 's', 'm', 'p'):
+            assert doc[k].unit_str == typed[k].unit_str, k
+        assert doc['a'].unit_str == '' and doc['b'].unit_str == ''
+        assert doc['m'].unit_str == 'm' and doc['p'].unit_str == '%'
+        assert doc['t'].unit_str == ''
 
 
 @needs_lib

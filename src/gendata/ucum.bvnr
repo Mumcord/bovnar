@@ -494,7 +494,9 @@
 ];
 
 # ── UCUM arbitrary units ────────────────────────────────────────────────────
-# Assay-defined; commensurable with nothing, including each other. These occupy
+# Assay-defined; commensurable with nothing, including each other -- except
+# that UCUM defines [IU] as 1 [iU]. Here they are two opaque ids that do not
+# compare equal (doc/11 section 3.6 says so). These occupy
 # the shared opaque block, which continues the value_base_unit_t enumeration
 # after the last native unit. gen_profiles.py assigns the ids in registry order,
 # so this list is APPEND-ONLY: inserting a row renumbers every opaque unit below

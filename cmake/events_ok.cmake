@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Run `bovnar events -d <FILE>` and require a clean, complete run.
 # Used by bvnr_cli_events_long_unit: the point is that the debug annotation
 # rebuilder survives a unit at the format's maximum length, which it did not --

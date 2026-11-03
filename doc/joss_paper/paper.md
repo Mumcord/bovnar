@@ -112,7 +112,7 @@ integers, and optional error recovery for parsing unreliable log streams.
 # Quality control
 
 The implementation is roughly 30,000 lines of C against a test suite of
-comparable size: 180 CTest targets covering unit, integration, concurrency and
+comparable size: 183 CTest targets covering unit, integration, concurrency and
 socket-pair round-trip tests, a Python test suite, self-contained fuzz
 harnesses for the reader, writer, DOM and utility layers (with optional
 libFuzzer/AFL++ targets), and ASan/UBSan builds. Conformance is defined

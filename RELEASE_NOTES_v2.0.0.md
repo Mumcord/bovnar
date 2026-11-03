@@ -100,6 +100,8 @@ amalgamation and the source tarball are attached to the GitHub release, with a
 - **Python.** `Quantity.unit` is a `Unit` object (use `str(q.unit)`, or
   `q.unit.raw` for the struct), the value accessors are uniformly properties
   (`q.decimal`, not `q.decimal()`), and `Quantity()` validates its arguments.
+  A DOM node's `unit_str` is `''` for a value without a unit, as
+  `Quantity.unit_str` is (it was `'no_unit'`).
 - **Removed names.** The currency id sub-ranges are gone, because currencies
   are catalogue rows now and their order carries no meaning: in C,
   `BVN_CURRENCY_FIAT_FIRST`/`_LAST`, `BVN_CURRENCY_CRYPTO_FIRST`/`_LAST`, the
@@ -168,7 +170,8 @@ else. What does differ:
   a struct member inside an array (`.f = [{.x = 7, 1;}];`, which 1.1 read as
   `.x = 71`), and a `]` there that closed the array from inside its own
   element (`.a = [{.x = 1];};`); whitespace or a comment inside `float_fix` /
-  `float_dec` (`<float _fix:32,q8>`); a reference with bytes directly after an
+  `float_dec` (`<float _fix:32,q8>`); a `float_fix` literal too large for any
+  float (`<float_fix:16,q8> 1e9862`, which 1.1 read as `inf`); a reference with bytes directly after an
   index (`&.a[0]b`); a comment cut off inside a UTF-8 sequence at end-of-input;
   quoted digits that spell a special number and exceed their width
   (`<uint:8,_36> "inf"` is 24171); a fractional datetime literal whose UTC

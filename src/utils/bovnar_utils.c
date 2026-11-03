@@ -2648,6 +2648,13 @@ int32_t bvn_format_double(char* buf, size_t bufsize, double value,
 	 * still round-trips the double exactly, while a narrower declared width
 	 * (float:16/float:32) is preserved so its rounding intent is honoured. */
 	if (prec > 53u) prec = 53u;
+	/* For float_fix and float_dec the width is the FIELD (a Q-format integer,
+	 * a decimal interchange format), not a binary significand. Rounding the
+	 * double to `width` bits first and leaving the reader to round again to
+	 * the field's grid was a double rounding: 0.5019531251 under q8 went out
+	 * as 0.50195 and was read as 128/256 instead of 129/256. Write the
+	 * double's own value, and let the one rounding happen in the reader. */
+	if (vt.family == vt_float_fix || vt.family == vt_float_dec) prec = 53u;
 	bvn_float_init_buf(&f, prec, _dlimbs, BVN_FLOAT_NLIMBS(64u));
 	if (!bvn_float_from_double(&f, value)) return -1;
 	uint32_t base = bvn_effective_base(vt);

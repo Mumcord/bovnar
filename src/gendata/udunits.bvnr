@@ -560,6 +560,9 @@
   # too small against it. Same reading as qudt:REV-PER-MIN and unece:M46, and
   # the reason all three now land on one target.
   { .code = "rpm";                 .bovnar = "rev/min"; .metric = false; },
+  { .code = "DU";                  .bovnar = "DU";      .metric = false; },   # Dobson unit, 446.2 umol/m^2 -- native DU is exactly that
+  { .code = "dobson";              .bovnar = "DU";      .metric = false; },
+  { .code = "dobsons";             .bovnar = "DU";      .metric = false; },
   { .code = "denier";              .bovnar = "den";     .metric = false; },
   { .code = "tex";                 .bovnar = "tex";     .metric = false; },
 
@@ -1250,8 +1253,6 @@
   { .code = "BµV";                     .why = "bel microvolt — dB carries no reference level"; },
   { .code = "work_year";               .why = "work year (2056 hours) — a labour convention, not a decade off any native time"; },
   { .code = "work_month";              .why = "work month (2056/12 hours) — a labour convention, not a decade off any native time"; },
-  { .code = "DU";                      .why = "Dobson unit (446.2 umol/m^2) — 446.2 is not a decade"; },
-  { .code = "dobson";                  .why = "Dobson unit (446.2 umol/m^2) — 446.2 is not a decade"; },
   { .code = "molecule";                .why = "one molecule — a mole divided by Avogadro's number, no native form"; },
   { .code = "molec";                   .why = "one molecule — a mole divided by Avogadro's number, no native form"; },
   { .code = "nucleon";                 .why = "one molecule — a mole divided by Avogadro's number, no native form"; },
@@ -1273,7 +1274,6 @@
   { .code = "work_years";               .why = "work year (2056 hours) — a labour convention, not a decade off any native time"; },
   { .code = "work_months";              .why = "work month (2056/12 hours) — a labour convention, not a decade off any native time"; },
   { .code = "counts"; .why = "a bare count — omit the unit slot instead"; },
-  { .code = "dobsons";                  .why = "Dobson unit (446.2 umol/m^2) — 446.2 is not a decade"; },
   { .code = "molecules";                .why = "one molecule — a mole divided by Avogadro's number, no native form"; },
   { .code = "molecs";                   .why = "one molecule — a mole divided by Avogadro's number, no native form"; },
   { .code = "nucleons";                 .why = "one molecule — a mole divided by Avogadro's number, no native form"; },

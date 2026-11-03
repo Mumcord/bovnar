@@ -25,6 +25,7 @@
 import ctypes
 
 from ._ffi import get_library
+from ._bigint import int_repr, int_to_decimal
 from .enums import (
     Event, TokenType, ValueTypeFamily,
     BaseUnit, SIPrefix, IECPrefix, Exponent, ErrorCode,
@@ -727,7 +728,7 @@ class Writer:
         if not 0 <= value < (1 << 64):
             raise BovnarWriteError(
                 ErrorCode.NONE,
-                message=f"uint value {value} does not fit a 64-bit field "
+                message=f"uint value {int_repr(value)} does not fit a 64-bit field "
                         "(use write_bvni for arbitrary-precision integers)")
         lib = get_library()
         buf = ctypes.create_string_buffer(128)
@@ -741,7 +742,7 @@ class Writer:
         if not -(1 << 63) <= value < (1 << 63):
             raise BovnarWriteError(
                 ErrorCode.NONE,
-                message=f"sint value {value} does not fit a 64-bit field "
+                message=f"sint value {int_repr(value)} does not fit a 64-bit field "
                         "(use write_bvni for arbitrary-precision integers)")
         lib = get_library()
         buf = ctypes.create_string_buffer(128)
@@ -777,6 +778,10 @@ class Writer:
                 return chr(ord('a') + d - 10)
             return chr(ord('A') + d - 36)
 
+        if base == 10:
+            # str() refuses past 4300 digits (int_max_str_digits); the format
+            # holds ~9865.
+            return int_to_decimal(value)
         negative = value < 0
         mag = abs(value)
         if mag == 0:

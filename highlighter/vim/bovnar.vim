@@ -142,7 +142,7 @@ syn match   BovnarSpecialFloat '\<\(nan\|inf\|ninf\)\>\%([+-]\)\@!'
 " characters, so a leading \< never matches a unit that starts with one (e.g.
 " '°C'). The group is 'contained' (only reached inside <…> or a BovnarInlineUnit),
 " so the boundaries are unnecessary anyway.
-syn match   BovnarTypeUnit  '[A-Za-zµΩΩ°][A-Za-z0-9_·()\-\+\/\^]*' contained
+syn match   BovnarTypeUnit  '[A-Za-zµΩΩ°Δ][A-Za-z0-9_·()\-\+\/\^°Δ]*' contained
 syn match   BovnarUnitSep   '[()]' contained
 syn match   BovnarTypeUnit  '[%‰‱]' contained
 " Currency component carries a mandatory '$' sigil (spec 1.0): $USD, $BTC.

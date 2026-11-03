@@ -632,6 +632,7 @@ Every row below was produced by the reference implementation.
 | `MI` | *(case-sensitive; not a unit)* | `qudt:MI` → `mi`, the **mile** | A flat vocabulary never decomposes a code, so this is not milli-anything |
 | `KGM` | *(not a unit)* | `unece:KGM` → `k~g` | Likewise not a `k` prefix on a `GM` that Rec 20 never defined |
 | `MTS` | *(not a unit)* | `unece:MTS` → `m/s` | Not a mega-`TS`; and `unece:MTK` one letter away is the square metre |
+| `eq` | `val`, the **water-analysis equivalent**, ½ mol | `ucum:eq` → `mol`, the **generic equivalent** | Same dimension, a factor of two apart: 140 native `m~eq/L` is 70 mmol/L, 140 `ucum:meq/L` is 140 mmol/L. A clinical `meq/L` of a monovalent ion is the UCUM one (§14) |
 
 Two rules make this tractable, and both are worth knowing before writing a profile code:
 

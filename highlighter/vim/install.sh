@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Install the Bovnar syntax + filetype detection for Vim and (if present) Neovim.
 set -euo pipefail
 cd "$(dirname "$0")"

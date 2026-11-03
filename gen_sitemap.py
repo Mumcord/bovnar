@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """Generate web/sitemap.xml with accurate, git-derived <lastmod> dates.
 
 The sitemap was hand-maintained, so its <lastmod> dates drifted from the actual

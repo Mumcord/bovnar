@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 check_doc_python_examples.py — doc/09's `# →` expectations, actually evaluated.
 

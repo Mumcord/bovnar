@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # CMake toolchain file for cross-compiling the 64-bit MinGW-w64 Windows build
 # from a Linux host (mirrors the MINGW64 leg of .github/workflows/build-and-package.yml,
 # which builds natively under MSYS2). Use it for a local cross-build:

@@ -378,6 +378,18 @@ def _declare_functions(lib: ctypes.CDLL) -> None:
     lib.bvn_int_to_str.restype  = c_int32
     lib.bvn_int_to_str.argtypes = [c_void_p, c_char_p, c_size_t, c_uint32]
 
+    # bvn_int.h -- owned copies. A snapshot taken inside a reader callback
+    # copies conv.num/conv.den into bignums IT owns, so converted_rational()
+    # and converted_in_base() still work once the reader has freed its own.
+    lib.bvn_int_alloc.restype  = c_void_p
+    lib.bvn_int_alloc.argtypes = []
+
+    lib.bvn_int_free.restype  = None
+    lib.bvn_int_free.argtypes = [c_void_p]
+
+    lib.bvn_int_copy.restype  = c_bool
+    lib.bvn_int_copy.argtypes = [c_void_p, c_void_p]
+
     lib.bvn_unit_dimension_vector.restype  = c_bool
     lib.bvn_unit_dimension_vector.argtypes = [ValueUnit, P(c_int32)]
 

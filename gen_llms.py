@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """Generate the LLM-facing plain-text/Markdown views of the Bovnar website.
 
 Produces three files under web/ from the canonical Markdown sources (README.md

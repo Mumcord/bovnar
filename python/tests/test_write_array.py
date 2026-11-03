@@ -564,3 +564,27 @@ class TestWriteArrayHeldToAnnotation:
         out = self._write([1.0], make_type_spec(ValueTypeFamily.FLOAT, 64),
                           vu=bovnar.Unit.parse('m'))
         assert out == b'.p=<float:64,m>[1.0];'
+
+    @pytest.mark.parametrize("rows, vt", [
+        ([80, 443, 80800], make_type_spec(ValueTypeFamily.UINT, 16)),
+        ([[1, 2], [3, 1.5]], make_type_spec(ValueTypeFamily.UINT, 16)),
+        ([1, 2, {'a': 1}], make_type_spec(ValueTypeFamily.UINT, 16)),
+        ([1, 2, 10 ** 5000], make_type_spec(ValueTypeFamily.UINT, 16)),
+        (["a", 1], make_type_spec(ValueTypeFamily.UTF8, 0)),
+        ([1, 2, object()], None),
+    ])
+    def test_a_refusal_writes_nothing(self, rows, vt):
+        # The refusal came at the bad element, after `.p = <uint:16> [80, 443,`
+        # was already out: the writer was left inside an open array and every
+        # later write failed with it. Now the whole array is checked first.
+        w = Writer.to_mem(pretty=False)
+        w.write_string('before', 'x')
+        mark = w.get_output()
+        with pytest.raises(BovnarArgumentError):
+            write_array(w, 'p', rows, vt=vt)
+        assert w.get_output() == mark
+        write_array(w, 'q', [1, 2], vt=make_type_spec(ValueTypeFamily.UINT, 16))
+        w.write_string('after', 'y')
+        w.finish()
+        assert loads(w.get_output()) == {'before': 'x', 'q': [1, 2],
+                                         'after': 'y'}

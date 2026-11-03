@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Do the conformance case counts in doc/13 still match the suite?
 #
 # The documented total said 306 in six places while the suite ran 319, and a

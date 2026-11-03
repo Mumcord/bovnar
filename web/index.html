@@ -139,8 +139,8 @@ window.bvnrTcfg = function (key, english) {
      rest of the page, instead of discovering it ~250ms in when bovnar_parser_wasm.js
      runs its dynamic import(). The ?v is the build-stamped content hash — it must
      match the dynamic import so the module is reused, not re-fetched. -->
-<link rel="modulepreload" href="bovnar_wasm_core.js?v=2dff21d5ed63">
-<link rel="modulepreload" href="bovnar_wasm.js?v=2ed6b58ac63a">
+<link rel="modulepreload" href="bovnar_wasm_core.js?v=217b1c1037e7">
+<link rel="modulepreload" href="bovnar_wasm.js?v=530d866b67ad">
 <!-- Canvas textures for the orbit demo, which sits below a full-height hero.
      They are never <img> elements (the globe samples them offscreen), so they
      cannot affect first paint -- at fetchpriority="high" their 122 KB competed
@@ -4422,7 +4422,7 @@ out = bovnar.<span class="py-fn">array_to_bvnr</span>(<span class="py-str">"g_ma
   </button>
 </div>
 
-<script src="bovnar_parser_wasm.js?v=f2f60c303c8f"></script>
+<script src="bovnar_parser_wasm.js?v=792a42094f07"></script>
 <script src="bovnar_highlight.js?v=f31f84f2becd"></script>
 <script>
 /* ══ PLAYGROUND ══════════════════════════════════════════════════════════ */

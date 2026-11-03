@@ -7,10 +7,10 @@
  *
  * This wraps the amalgamated single-file library (build/amalgamate/bovnar.{c,h})
  * with a handful of stable, string-in / JSON-string-out functions suitable for
- * calling across the JS<->WASM boundary. Three surfaces are exposed:
+ * calling across the JS<->WASM boundary. These surfaces are exposed:
  *
- *   bvnr_wasm_validate(ptr,len) -> JSON  { ok, error, error_name, line, column,
- *                                          byte, offset, recovery_count,
+ *   bvnr_wasm_validate(ptr,len) -> JSON  { ok, error, error_name, tier, line,
+ *                                          column, byte, offset, recovery_count,
  *                                          declared_version }
  *   bvnr_wasm_to_json (ptr,len) -> JSON  { ok, error, error_name, value }
  *                                          where `value` is the DOM projected to
@@ -25,6 +25,11 @@
  *                                          errors:[...], declared_version }
  *                                          events + errors from ONE reader pass;
  *                                          what a caller wanting both should use
+ *   bvnr_wasm_errors  (ptr,len) -> JSON  { ok, errors:[...], declared_version }
+ *                                          every error, in resync mode
+ *   bvnr_wasm_doc     (ptr,len) -> JSON  { ok, error, error_name, tree:[...] }
+ *                                          the document tree with type fields
+ *   bvnr_wasm_version()         -> the library version string
  *
  * The caller passes a pointer+length (NOT a NUL-terminated string), because a
  * .bvnr document may carry octet streams with embedded NULs. Every returning
@@ -804,6 +809,15 @@ char *bvnr_wasm_events_convert(const char *buf, int len, const char *unit,
 	value_unit_t        target;
 	const value_unit_t *tp = NULL;
 
+	/* 0 keeps each value's own base; a negative one is no base at all, and
+	 * used to be read as 0 -- a silent "no conversion" reported as ok. */
+	if (base < 0) {
+		sb_t b; sb_init(&b);
+		sb_putc(&b, '{');
+		emit_status(&b, error_invalid_argument);
+		sb_puts(&b, ",\"events\":[]}");
+		return sb_finish(&b);
+	}
 	if (unit && unit[0]) {
 		bool ok = false;
 		target = bvn_parse_unit((const uint8_t *)unit, &ok);
@@ -816,7 +830,7 @@ char *bvnr_wasm_events_convert(const char *buf, int len, const char *unit,
 		}
 		tp = &target;
 	}
-	return events_impl(buf, len, tp, (uint32_t)(base > 0 ? base : 0),
+	return events_impl(buf, len, tp, (uint32_t)base,
 			   true, allow_nonterminating != 0);
 }
 

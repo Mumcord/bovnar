@@ -613,9 +613,9 @@ A comment runs from `#` to the next CR, LF, or end of document. The
 rejected control octets are errors inside a comment body.
 
 **`#` is not a terminator of a bare token.** A comment MUST NOT start
-immediately after a key, a number, a symbol, a reserved word, a reference
-or a datetime literal: there `#` is `error_unexpected_input_byte`, and at
-least one blank must come first. After a string, `]`, `}`, `>`, `=`, `;`
+immediately after a key, a number, a symbol, a reserved word, a reference,
+a datetime literal or a type-annotation parameter: there `#` is
+`error_unexpected_input_byte`, and at least one blank must come first. After a string, `]`, `}`, `>`, `=`, `;`
 or an inline unit, `#` may follow directly. The grammar's `ws` admits the
 forbidden placements; this prose forbids them.
 

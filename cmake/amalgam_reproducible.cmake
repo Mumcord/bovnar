@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Does the amalgamation depend on WHERE it was built?
 #
 # It must not. bvnr_wasm_freshness compares a hash of the amalgamated sources

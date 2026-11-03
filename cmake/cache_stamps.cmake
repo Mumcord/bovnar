@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Do the ?v= cache-busting stamps in web/index.html still match the files they label?
 #
 # build_wasm.sh derives each stamp from its file's own bytes, so the stamp IS the

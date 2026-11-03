@@ -307,12 +307,14 @@ struct bvnr_writer_s {
 	/* The family that annotation declares. */
 	value_type_family_t	ann_family;
 	value_unit_t		arr_gov_unit[UINT8_MAX+1];
-	/* Whether ANY annotation governs the next value, scoped the same way,
-	 * and whether each open struct was opened under one: the reader takes
-	 * `<uint:8> {}` and refuses the first member of `<uint:8> {.a = 1;}`. */
+	/* Whether ANY annotation governs the next value, scoped the same way:
+	 * the reader refuses a struct under one at its "{" (`<uint:8> {}`). */
 	bool			gov_typed;
 	bool			arr_gov_typed[UINT8_MAX+1];
-	bool			struct_typed[UINT8_MAX+1];
+	/* The type of the last annotation written in this assignment, which is
+	 * what the reader's datetime inheritance (doc/03 §7.5) keys on: a bare
+	 * integer after a datetime-annotated element is read as that datetime. */
+	value_type_spec_t	last_ann_type;
 	/* The TYPE that annotation declares, as it was actually written (the
 	 * family from the family event, the width, base and Q from whichever
 	 * parameter events came), and scoped exactly like gov_unit. A value is

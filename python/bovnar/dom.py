@@ -66,6 +66,13 @@ class DomNode:
 
     @property
     def unit_str(self) -> str:
+        """The canonical unit string, or ``''`` when the value carries no unit
+        -- the same contract as ``Quantity.unit_str``. (The C formatter spells
+        no unit ``no_unit``; that literal used to come through here, so the two
+        APIs disagreed on the same document.)"""
+        from . import _has_real_unit
+        if not _has_real_unit(self.unit):
+            return ''
         lib = get_library()
         buf = ctypes.create_string_buffer(UNIT_STRING_MAX)
         n   = lib.bvn_dom_get_unit_string(self._ptr, buf, UNIT_STRING_MAX)
@@ -332,7 +339,10 @@ class DomNode:
                     return int(u64.value)
                 if lib.bvn_dom_get_i64(self._ptr, ctypes.byref(v64)):
                     return int(v64.value)
-            return int(self.as_int_str(10))
+            # Base 16, not 10: CPython refuses a decimal int() past 4300
+            # digits (int_max_str_digits) and a 32768-bit value has ~9865.
+            # Power-of-two bases are exempt from that limit.
+            return int(self.as_int_str(16), 16)
         if dt == DomType.FLOAT:
             return self.as_float()
         if dt == DomType.BOOL:
@@ -395,6 +405,14 @@ class DomDoc:
         """Marshal a UnitPolicy for the DOM entry points, or (None, None)."""
         if policy is None:
             return None, None
+        # Validate exactly as Reader.set_unit_policy does, on a throwaway
+        # reader: a policy the library refuses raises BovnarArgumentError
+        # naming the bad entry. Handed straight to bvn_dom_parse_policy it
+        # surfaced as a BovnarParseError(INVALID_ARGUMENT) with no reason --
+        # a mistake in the policy reported as a fault in the document.
+        from .reader import Reader
+        with Reader() as r:
+            r.set_unit_policy(policy)
         from .structs import build_unit_policy
         try:
             cp, keepalive = build_unit_policy(
@@ -413,7 +431,9 @@ class DomDoc:
         With a :class:`~bovnar.UnitPolicy`, the same rules the streaming reader
         applies: a validation failure raises, and a value the policy converted
         is STORED converted — digits, unit and base. A policy the library
-        refuses raises ``INVALID_ARGUMENT``, so a mistake in the policy is never
+        refuses raises :class:`~bovnar.BovnarArgumentError` before anything is
+        parsed -- the same error, with the same reason, as
+        ``Reader.set_unit_policy`` -- so a mistake in the policy is never
         mistaken for a fault in the document.
         """
         if isinstance(data, memoryview):

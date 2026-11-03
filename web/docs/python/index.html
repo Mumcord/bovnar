@@ -367,11 +367,18 @@ external state via closure instead.</p>
 <tr>
 <td><code>data.unit_source_str()</code></td>
 <td><code>str \| None</code></td>
-<td>The unit exactly as the document spelled it (library 2.0), or <code>None</code> when the value carries no unit. Read it inside the callback</td>
+<td>The unit exactly as the document spelled it (library 2.0), or <code>None</code> when the value carries no unit</td>
 </tr>
 </tbody>
 </table>
 <p>It also carries the <code>converted</code> (bool) and <code>value_type</code> / <code>value_unit</code> fields directly.</p>
+<p><strong>A payload may outlive its callback.</strong> The <code>BvnrData</code> a callback (or a
+<code>want_unit</code> hook) receives is a copy the binding owns, not a view of the
+reader's memory: the token bytes, the sub-second digits, the unit spelling and
+the exact conversion (<code>conv.num</code>/<code>conv.den</code>) are all copied out before the
+callback runs. A callback can keep the object, and every method in the table
+above returns the same answer after the callback has returned and after the
+reader is closed.</p>
 <h3 id="43-generator--iterator-interface">4.3 Generator / iterator interface</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bovnar.reader</span><span class="w"> </span><span class="kn">import</span> <span class="n">Reader</span>
 
@@ -720,9 +727,10 @@ naming the field. <code>convert=False</code> asserts without converting.</p>
 
 <p>A value the policy converted is STORED converted — digits, unit and base — and
 an integer that converts to a fraction (5 g in kilograms is 0.005) is stored as
-a float. A policy the library refuses raises <code>INVALID_ARGUMENT</code> rather than a
-parse error, so a mistake in the policy is never mistaken for a fault in the
-document.</p>
+a float. A policy the library refuses raises <code>BovnarArgumentError</code> — the same
+error, naming the same entry, as <code>Reader.set_unit_policy</code> — before anything is
+parsed, rather than a parse error, so a mistake in the policy is never mistaken
+for a fault in the document.</p>
 <p><strong>The writer takes the same policy, validation half only.</strong> A reader can only
 reject a document somebody already wrote; <code>Writer.set_unit_policy</code> is what stops
 a bare number reaching the file:</p>
@@ -1417,13 +1425,13 @@ max_conversion_length)</code></p>
 <td><code>want_unit</code></td>
 <td><code>Callable[[BvnrData], tuple \| None] \| None</code></td>
 <td><code>None</code></td>
-<td>Optional read-time lossless unit/base conversion hook. Called per numeric value; return <code>(unit, base)</code> to request a conversion (the exact result arrives on the payload as <code>converted</code>/<code>converted_text</code>), or <code>None</code> to leave the value untouched. An inexact conversion aborts the parse (<code>error_unit_inexact</code>).</td>
+<td>Optional read-time lossless unit/base conversion hook. Called per numeric value; return <code>(unit, base)</code> to request a conversion (the exact result arrives on the payload as <code>converted</code> and <code>converted_str()</code>, with <code>converted_rational()</code> / <code>converted_in_base()</code> beside it — see §4.2), or <code>None</code> to leave the value untouched. An inexact conversion aborts the parse (<code>error_unit_inexact</code>).</td>
 </tr>
 <tr>
 <td><code>want_unit_allow_nonterminating</code></td>
 <td><code>bool</code></td>
 <td><code>False</code></td>
-<td>Deliver an exact-rational-but-non-terminating conversion (e.g. km/h→m/s) as a rational with <code>converted_text</code> <code>None</code> instead of aborting with <code>error_unit_inexact</code></td>
+<td>Deliver an exact-rational-but-non-terminating conversion (e.g. km/h→m/s) as a rational — <code>converted_str()</code> returns <code>None</code>, <code>converted_rational()</code> the exact pair — instead of aborting with <code>error_unit_inexact</code></td>
 </tr>
 <tr>
 <td><code>max_conversion_length</code></td>
@@ -1724,8 +1732,10 @@ tree; any <code>DomNode</code> derived from it becomes invalid after that point.
 <blockquote>
 <p><strong>File-size limits:</strong> <code>DomDoc.parse_fd</code> and <code>DomDoc.parse_file</code> apply an internal
 ceiling of <code>BVN_DOM_FD_MAX_BYTES</code> (256 MiB). This is 16× larger than
-<code>Reader.read_file</code>'s <code>MAX_FILESIZE_BYTES</code> (16 MiB). Use <code>bvn_dom_parse_fd_ex</code>
-directly if you need a different limit.
+<code>Reader.read_file</code>'s <code>MAX_FILESIZE_BYTES</code> (16 MiB). The C library's
+<code>bvn_dom_parse_fd_ex</code> can lower that ceiling (never raise it), but it is
+C-only — the binding does not wrap it. From Python, to bound the input
+yourself, read at most the bytes you allow and pass them to <code>DomDoc.parse</code>.
 | <code>DomDoc.parse_file(path)</code> | Class method. Open path and parse (fd closed in <code>finally</code>). Applies an internal hard cap of <code>BVN_DOM_FD_MAX_BYTES</code> (256 MiB) via the C function <code>bvn_dom_parse_fd</code>. This ceiling is distinct from <code>Reader.read_file</code>'s <code>MAX_FILESIZE_BYTES</code> (16 MiB). |
 | <code>doc.parse_error</code> | <code>ErrorCode</code> — <code>NONE</code> on success. |
 | <code>doc[key]</code> | Return a <code>DomNode</code> by key; raises <code>KeyError</code> when absent. <code>key</code> goes to the path lookup, so <code>doc["server"]</code> is a top-level entry and a dotted or indexed path reaches below it: <code>doc["server.tls"]</code> is <code>doc["server"]["tls"]</code>, <code>doc["matrix[1][0]"]</code> an element. A key cannot contain <code>.</code> or <code>[</code>, so the two readings never collide. |
@@ -1761,7 +1771,7 @@ for as long as any derived <code>DomNode</code> is in use.</p>
 </tr>
 <tr>
 <td><code>node.unit_str</code></td>
-<td>Unit as a string via <code>bvn_dom_get_unit_string</code>, or <code>''</code></td>
+<td>Unit as a canonical string via <code>bvn_dom_get_unit_string</code>, or <code>''</code> when the value carries no unit — the same contract as <code>Quantity.unit_str</code> (the C formatter's <code>no_unit</code> spelling is never returned)</td>
 </tr>
 <tr>
 <td><code>node.is_null()</code></td>
@@ -1873,6 +1883,7 @@ are skipped automatically when <code>numpy</code> / <code>pint</code> is not ins
 <div class="codehilite"><pre><span></span><code>bovnar/
 ├── __init__.py      # loads() / dumps() / dom_parse() / unit helpers — public API
 ├── _ffi.py          # ctypes FFI: library discovery + argtypes/restype
+├── _bigint.py       # int &lt;-&gt; digit text past CPython&#39;s 4300-digit int_max_str_digits limit
 ├── _bvnfloat.py     # BvnFloat: arbitrary-precision float + IEEE binary/decimal/fixed encoders
 ├── _numpy.py        # NumPy bridge: to_numpy/from_numpy/to_pint_array/array_to_bvnr (numpy optional)
 ├── _pint_bridge.py  # pint bridge: to_pint/from_pint/to_pint_unit/from_pint_unit (pint optional)
@@ -1902,6 +1913,7 @@ tests/
 ├── test_escapes.py, test_unicode_normalisation.py
 ├── test_datetime.py, test_datetime_oracle.py
 ├── test_lossless_floats.py, test_hex_float_decode.py, test_decimal_tie_rounding.py
+├── test_bigint_digits.py                # integers past the 4300-digit str limit
 ├── test_units.py, test_unit_object.py, test_unit_physics.py, test_unit_source.py
 ├── test_unit_policy.py, test_unit_factors_derived.py
 ├── test_base_rendering_property.py, test_convertible_implies_convertible.py
@@ -1959,7 +1971,7 @@ tests/
 <tr>
 <td><code>True</code></td>
 <td><code>True</code></td>
-<td>Both sides are affine and share their zero (e.g. °C ↔ °Ré), so <code>factor</code> alone is correct</td>
+<td>Both sides are affine and share their zero (e.g. °C ↔ °Re, Réaumur), so <code>factor</code> alone is correct</td>
 </tr>
 <tr>
 <td><code>False</code></td>
@@ -2016,7 +2028,8 @@ after the C call returns.</p>
 
 <h3 id="172-bvnrwriteflags-layout">17.2 <code>BvnrWriteFlags</code> layout</h3>
 <p><code>BvnrWriteFlags</code> mirrors the C <code>bvnr_write_flags_s</code> struct in full, including
-the trailing <code>unit_flags</code> field (<code>bvn_unit_flags_t</code>, a <code>uint32_t</code>):</p>
+its <code>unit_flags</code> field (<code>bvn_unit_flags_t</code>, a <code>uint32_t</code>) and the
+<code>emit_version</code> flag and <code>_reserved[4]</code> words that follow it:</p>
 <table>
 <thead>
 <tr>
@@ -2349,8 +2362,10 @@ only invite the bounds check it can no longer support. Use <code>UNIT_NATIVE_FIR
 <code>bovnar.currency.is_currency</code>.</p>
 <blockquote>
 <p><strong>The profiles' opaque units are not in this enum.</strong> The C
-<code>value_base_unit_t</code> also has blocks 20–60 for the profile-only units — UCUM's
-arbitrary atoms and UN/ECE's package and count codes (doc/11 §7.1) — and
+<code>value_base_unit_t</code> also has a block per profile for the profile-only units,
+and as shipped only two of them have members — UCUM's arbitrary atoms
+(200000–200040) and UN/ECE's package and count codes (300000–300024),
+doc/11 §7.1 — and
 <code>BaseUnit</code> deliberately omits them, because they have no native spelling for a
 Python name to mirror. A unit carrying one is still fully usable: <code>parse_unit</code>, <code>unit_to_str</code>,
 <code>unit_is_profile_only</code> and the comparison helpers all handle it, and

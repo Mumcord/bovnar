@@ -66,6 +66,9 @@ from ._pint_bridge import to_pint, to_pint_unit, from_pint, from_pint_unit
 from ._numpy import (to_numpy, to_pint_array, from_numpy, from_pint_array,
                      array_to_bvnr)
 from ._bvnfloat import BvnFloat
+from ._bigint import (int_from_text as _int_from_text,
+                      int_to_decimal as _int_to_decimal,
+                      int_repr as _int_repr)
 
 __all__ = [
     'BvnFloat',
@@ -506,6 +509,9 @@ def write_array(w: Writer,
     if not isinstance(rows, (list, tuple)):
         rows = list(rows)
     vu = _as_vu(vu)
+    # Refuse before the first byte: an exception half-way through left the
+    # writer inside an open array, and every later write failed with it.
+    _check_rows(rows, vt)
     w.emit(Event.ASSIGNMENT_START, key=key)
 
     if vt is not None:
@@ -866,18 +872,20 @@ def _decode_value(raw: bytes, fam: ValueTypeFamily, vt, tok_type: int = 0) -> ob
         # epoch seconds — a decimal signed integer (base holds the epoch index,
         # not a numeric base). Use bovnar.peek/units helpers or bvn_datetime to
         # convert to civil time.
-        try:
-            return int(text, 10)
-        except ValueError:
-            return text
+        #
+        # No fallback to the text on ValueError: the reader has validated the
+        # literal, so a failure here is a defect to surface, not a value. The
+        # fallback used to hide CPython's 4300-digit int_max_str_digits limit,
+        # and loads() quietly returned a 5000-digit uint as a str.
+        return _int_from_text(text, 10)
 
     if fam in (ValueTypeFamily.UINT, ValueTypeFamily.SINT):
         base = vt.base if vt and vt.base > 1 else 10
-        try:
-            # int() only handles bases 2..36; high bases need the custom decoder.
-            return int(text, base) if base <= 36 else _int_from_base(text, base)
-        except ValueError:
-            return text
+        # int() only handles bases 2..36; high bases need the custom decoder.
+        # int_from_text is int() without the digit-count limit -- an integer
+        # of the format's full 32768 bits is ~9865 decimal digits.
+        return (_int_from_text(text, base) if base <= 36
+                else _int_from_base(text, base))
 
     if fam in (ValueTypeFamily.FLOAT,
                ValueTypeFamily.FLOAT_FIX,
@@ -1456,8 +1464,11 @@ def _emit_value(w: Writer, key: str, value) -> None:
 def _refuse_under(elem, vt, why: str):
     fam = ValueTypeFamily(int(vt.family)).name.lower()
     spec = fam if not vt.width else f"{fam}:{int(vt.width)}"
+    # repr() of an int past 4300 digits raises ValueError (int_max_str_digits)
+    shown = (_int_repr(elem) if isinstance(elem, int) and not isinstance(elem, bool)
+             else repr(elem))
     raise BovnarArgumentError(
-        f"array element {elem!r} cannot be written under <{spec}>: {why}")
+        f"array element {shown} cannot be written under <{spec}>: {why}")
 
 
 def _emit_held_element(w: Writer, elem, vt) -> bool:
@@ -1465,6 +1476,29 @@ def _emit_held_element(w: Writer, elem, vt) -> bool:
 
     Returns False for an annotation that holds its elements to nothing (the
     plain family), so the caller writes the element as it always did.
+    The checks live in _held_element_text, which write_array also runs over
+    every element BEFORE writing anything (see _check_rows).
+    """
+    held = _held_element_text(elem, vt)
+    if held is None:
+        return False
+    import ctypes as _ct
+    text, tok = held
+    raw = text.encode('utf-8')
+    d = BvnrData()
+    d.type       = tok
+    d.value_type = vt
+    d.value_unit = make_unit_dimensionless()
+    d.data       = _ct.cast(_ct.c_char_p(raw), _ct.c_void_p)
+    d.length     = len(raw)
+    _write_event_data(w, d)
+    return True
+
+
+def _held_element_text(elem, vt):
+    """The text and token type of plain scalar *elem* written under *vt*, or
+    None when *vt* holds its elements to nothing (the plain family). Raises
+    BovnarArgumentError for an element *vt* refuses; writes nothing.
 
     WHY THIS EXISTS. The element used to be written with a type made up for it
     -- uint:64 for any non-negative int, float:64 for any float -- and that
@@ -1475,12 +1509,11 @@ def _emit_held_element(w: Writer, elem, vt) -> bool:
     0x255 = 597). Every one of those is a document saying two things, and the
     second kind is not even detectable by the reader.
     """
-    import ctypes as _ct
     from .quantity import _exact_number_text, _check_decimal_fits
     F = ValueTypeFamily
     fam = int(vt.family)
     if fam not in _FAM_NAMES and fam != int(F.BOOL):
-        return False
+        return None
     tok = TokenType.ARRAY_NUMBER
     if fam == int(F.BOOL):
         if not isinstance(elem, bool):
@@ -1505,7 +1538,7 @@ def _emit_held_element(w: Writer, elem, vt) -> bool:
         # A datetime's `base` is its epoch index, not a radix.
         base = 10 if fam == int(F.DATETIME) else (int(vt.base) or 10)
         if base == 10:
-            text = str(elem)
+            text = _int_to_decimal(elem)
         else:
             if fam == int(F.SINT) and base in (64, 85):
                 _refuse_under(elem, vt, f"base {base} is unsigned")
@@ -1529,15 +1562,40 @@ def _emit_held_element(w: Writer, elem, vt) -> bool:
             if not get_library().bvn_float_str_fits_fix(
                     text.encode('ascii'), 10, width, int(vt.base)):
                 _refuse_under(elem, vt, f"it does not fit q{int(vt.base)}")
-    raw = text.encode('utf-8')
-    d = BvnrData()
-    d.type       = tok
-    d.value_type = vt
-    d.value_unit = make_unit_dimensionless()
-    d.data       = _ct.cast(_ct.c_char_p(raw), _ct.c_void_p)
-    d.length     = len(raw)
-    _write_event_data(w, d)
-    return True
+    return text, tok
+
+
+_ARRAY_ELEMENT_TYPES = (bool, int, float, Decimal, Fraction, str, dict,
+                        bytes, bytearray, memoryview)
+
+
+def _check_rows(rows, vt) -> None:
+    """Run every element of *rows* through the refusals _emit_array_element
+    would raise -- the annotation *vt*, when there is one, and an element type
+    with no Bovnar form -- writing nothing.
+
+    write_array checks the whole array first because a refusal in the middle
+    of it used to leave the writer holding ``.h = <uint:16> [`` -- an open
+    array no later write could close, so every write after the exception
+    failed too, and the document was lost. (A struct element's own fields are
+    checked when they are written.)"""
+    for elem in rows:
+        if isinstance(elem, Quantity):
+            continue                    # written with its own literal
+        elem = _coerce_scalar(elem)
+        if isinstance(elem, (list, tuple)):
+            _check_rows(elem, vt)
+            continue
+        if elem is None:
+            continue
+        if vt is not None:
+            if isinstance(elem, (dict, bytes, bytearray, memoryview)):
+                _refuse_under(elem, vt, "an annotated array holds scalars")
+            if _held_element_text(elem, vt) is not None:
+                continue
+        if not isinstance(elem, _ARRAY_ELEMENT_TYPES):
+            raise BovnarArgumentError(
+                f"Cannot serialise array element of type {type(elem).__name__!r}")
 
 
 def _emit_array_element(w: Writer, elem, annotate: bool = False,
@@ -1648,7 +1706,7 @@ def _emit_array_element(w: Writer, elem, annotate: bool = False,
             family = ValueTypeFamily.SINT
             width  = max(64, (-elem).bit_length() + 1)
         vt  = make_type_spec(family, width, 10)
-        raw = str(elem).encode('ascii')
+        raw = _int_to_decimal(elem).encode('ascii')
         d = BvnrData()
         d.type       = _TOKEN_IS_ARRAY_NUMBER
         d.value_type = vt

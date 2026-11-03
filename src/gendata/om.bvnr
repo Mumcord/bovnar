@@ -92,7 +92,7 @@
 
 .schema_version = <uint:16> 1;
 
-# 1255 local names, alphabetical. `.reverse = false` marks a row
+# 1336 local names, alphabetical. `.reverse = false` marks a row
 # that must not be chosen when a unit is written back as an OM code.
 .mapped = [
   # A second sweep after the 35 units landed: each of these was refused for
@@ -100,7 +100,6 @@
   { .code = "franklin";                                              .bovnar = "statC"; },
   { .code = "pica-TeX";                                              .bovnar = "pca_pr"; },
   { .code = "point-TeX";                                             .bovnar = "pnt_pr"; },
-  { .code = "ReaumurScale";                                          .bovnar = "Δ°Re"; },
   { .code = "cubicMetrePerYear";                                     .bovnar = "m^3/yr_greg"; },
   { .code = "gigayear";                                              .bovnar = "G~yr_greg"; },
   { .code = "reciprocalYear";                                        .bovnar = "yr_greg^-1"; },
@@ -152,10 +151,6 @@
   { .code = "abvolt";                   .bovnar = "abV"; },
   { .code = "ton-ShortAssay";           .bovnar = "AT"; },
   { .code = "debye";                    .bovnar = "debye"; },
-  { .code = "CelsiusScale";                            .bovnar = "K";                    .reverse = false; },
-  { .code = "FahrenheitScale";                         .bovnar = "K";                    .reverse = false; },
-  { .code = "KelvinScale";                             .bovnar = "K";                    .reverse = false; },
-  { .code = "RankineScale";                            .bovnar = "K";                    .reverse = false; },
   { .code = "abampere";                                .bovnar = "da~A";                 .reverse = false; },
   { .code = "abcoulomb";                               .bovnar = "da~C";                 .reverse = false; },
   { .code = "abfarad";                                 .bovnar = "G~F";                  .reverse = false; },
@@ -1474,8 +1469,15 @@
   { .code = "zettaweber";                              .bovnar = "Z~Wb";                },
 ];
 
-# 205 local names OM defines that have no bovnar unit.
+# 124 local names OM defines that have no bovnar unit.
 .unsupported = [
+  # Scales. These five were mapped to K (and Reaumur to the DIFFERENCE unit),
+  # so `om:CelsiusScale` 20.0 read as 20 K and Δ°Re wrote back as a scale.
+  { .code = "CelsiusScale";                         .why = "a measurement scale, not a unit: OM relates it to its unit by a factor AND an offset (om:hasOff-Set), so it names a point on a scale rather than a unit to read a value in (doc/11 section 16.3)"; },
+  { .code = "FahrenheitScale";                      .why = "a measurement scale, not a unit: OM relates it to its unit by a factor AND an offset (om:hasOff-Set), so it names a point on a scale rather than a unit to read a value in (doc/11 section 16.3)"; },
+  { .code = "KelvinScale";                          .why = "a measurement scale, not a unit: OM relates it to its unit by a factor AND an offset (om:hasOff-Set), so it names a point on a scale rather than a unit to read a value in (doc/11 section 16.3)"; },
+  { .code = "RankineScale";                         .why = "a measurement scale, not a unit: OM relates it to its unit by a factor AND an offset (om:hasOff-Set), so it names a point on a scale rather than a unit to read a value in (doc/11 section 16.3)"; },
+  { .code = "ReaumurScale";                         .why = "a measurement scale, not a unit: OM relates it to its unit by a factor AND an offset (om:hasOff-Set), so it names a point on a scale rather than a unit to read a value in (doc/11 section 16.3)"; },
   { .code = "AFS";                                     .why = "a currency: OM models money as a unit, bovnar carries currencies in a system of their own (doc/11 section 7.2)"; },
   { .code = "AustralianDollar";                        .why = "a currency: OM models money as a unit, bovnar carries currencies in a system of their own (doc/11 section 7.2)"; },
   { .code = "BirminghamGauge";                         .why = "an arbitrary unit: its magnitude comes from an assay or a procedure, not from a scale"; },

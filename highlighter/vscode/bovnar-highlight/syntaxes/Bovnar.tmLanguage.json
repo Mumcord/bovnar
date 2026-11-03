@@ -305,7 +305,7 @@
 
     "inline_unit": {
       "comment": "Inline unit suffix: mandatory whitespace separates the scalar from the unit. The lookbehind fires after a digit or a closing string quote. (Special-number keywords nan/inf/ninf take no inline unit — a unit is given via the type annotation.)",
-      "match": "(?<=[\\d\"])(\\s+)([A-Za-z_$%(‰‱µΩΩ°Å][A-Za-z0-9_$()+~\\.\\-/:\\^\\*%‰‱µΩΩ°Å·¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻\\[\\]{}']*)",
+      "match": "(?<=[\\d\"])(\\s+)([A-Za-z_$%(‰‱µΩΩ°ÅΔ][A-Za-z0-9_$()+~\\.\\-/:\\^\\*%‰‱µΩΩ°ÅΔ·⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻\\[\\]{}']*)",
       "captures": {
         "1": { "name": "punctuation.separator.inline-unit.bovnar" },
         "2": { "name": "support.type.unit.inline.bovnar"          }
@@ -508,7 +508,7 @@
 
     "unit_expression": {
       "comment": "Unit string inside a type annotation.",
-      "match": "[A-Za-z_$%(‰‱µΩΩ°Å][A-Za-z0-9_$()+~\\.\\-/:\\^\\*%‰‱µΩΩ°Å·¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]*",
+      "match": "[A-Za-z_$%(‰‱µΩΩ°ÅΔ][A-Za-z0-9_$()+~\\.\\-/:\\^\\*%‰‱µΩΩ°ÅΔ·⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]*",
       "name": "support.type.unit.bovnar"
     }
 

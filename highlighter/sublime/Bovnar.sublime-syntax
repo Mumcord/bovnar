@@ -267,7 +267,7 @@ contexts:
   # The lookbehind fires after a digit or a closing string quote. (Special-number
   # keywords nan/inf/ninf take no inline unit — a unit is given via the annotation.)
   inline_unit:
-    - match: '(?<=[\d"])(\s+)([A-Za-z_$%(‰‱µΩΩ°Å][A-Za-z0-9_$()+~\.\-/:\^\*%‰‱µΩΩ°Å·¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻\[\]{}'']*)'
+    - match: '(?<=[\d"])(\s+)([A-Za-z_$%(‰‱µΩΩ°ÅΔ][A-Za-z0-9_$()+~\.\-/:\^\*%‰‱µΩΩ°ÅΔ·⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻\[\]{}'']*)'
       captures:
         1: punctuation.separator.inline-unit.bovnar
         2: support.type.unit.inline.bovnar
@@ -440,5 +440,5 @@ contexts:
 
   # Unit string inside a type annotation.
   unit_expression:
-    - match: '[A-Za-z_$%(‰‱µΩΩ°Å][A-Za-z0-9_$()+~\.\-/:\^\*%‰‱µΩΩ°Å·¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]*'
+    - match: '[A-Za-z_$%(‰‱µΩΩ°ÅΔ][A-Za-z0-9_$()+~\.\-/:\^\*%‰‱µΩΩ°ÅΔ·⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]*'
       scope: support.type.unit.bovnar

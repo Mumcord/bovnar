@@ -290,7 +290,18 @@ def mux_load(data, *, max_message: int = 0, key: str | None = None) -> list:
             raise state['exc']
         derr = lib.bvnr_demux_error(dm)
         if derr != int(ErrorCode.NONE):
-            raise BovnarParseError(ErrorCode(derr), message="demux desync")
+            # Name the error the demultiplexer reported. Every code used to be
+            # called a "demux desync", including a stream that ended part-way
+            # through a message (octet_stream_truncated) and an oversized one
+            # (value_out_of_range); only octet_stream_out_of_sync is a desync.
+            code = ErrorCode(derr)
+            msg_b = lib.bvn_error_to_string(int(code))
+            what = msg_b.decode('utf-8') if msg_b else code.name.lower()
+            if code == ErrorCode.OCTET_STREAM_OUT_OF_SYNC:
+                what = f"demux desync ({what})"
+            else:
+                what = f"demux error: {what}"
+            raise BovnarParseError(code, message=what)
         if not ok:
             raise BovnarParseError(
                 ErrorCode(lib.bvnr_reader_get_error(rptr)),

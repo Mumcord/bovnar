@@ -440,6 +440,24 @@ static void test_round_trip(void)
 	}
 }
 
+/* The 2026-11-03 review: OM's measurement scales were mapped to K (and the
+ * Reaumur scale to the temperature DIFFERENCE), so om:CelsiusScale 20 read as
+ * 20 K. A scale is related to its unit by a factor and an offset; it is not a
+ * unit to read a value in. */
+static void test_scales_are_not_units(void)
+{
+	chk_error("om:CelsiusScale",    error_unit_profile_unsupported);
+	chk_error("om:FahrenheitScale", error_unit_profile_unsupported);
+	chk_error("om:KelvinScale",     error_unit_profile_unsupported);
+	chk_error("om:RankineScale",    error_unit_profile_unsupported);
+	chk_error("om:ReaumurScale",    error_unit_profile_unsupported);
+	/* ...and the units of those scales are still the units. */
+	chk_str("om:degreeCelsius", "°C");
+	char buf[64];
+	ASSERT_TRUE(bvn_unit_to_profile("om", U("Δ°Re"), buf, sizeof buf) < 0,
+		    "Δ°Re is not written back as a scale");
+}
+
 int main(void)
 {
 	printf("OM 2 unit profile\n");
@@ -447,6 +465,7 @@ int main(void)
 	test_atoms();
 	test_composition();
 	test_flatness();
+	test_scales_are_not_units();
 	test_refusals();
 	test_to_om();
 	test_cross_vocabulary();

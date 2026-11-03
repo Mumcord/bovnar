@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 check_doc_layout.py — every document in doc/ has the same shape, and its Table
 of Contents is the list of sections it actually contains.

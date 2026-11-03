@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 `units_convertible` is a screen, and the gap between it and the conversion is
 exactly one shape wide.

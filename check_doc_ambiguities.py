@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """
 check_doc_ambiguities.py — every claim doc/07 makes, put to the reference parser.
 

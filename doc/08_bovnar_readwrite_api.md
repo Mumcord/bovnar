@@ -825,7 +825,9 @@ stays transport-safe.
 The refusal fires at the stream's **opening `0x00`**, before any payload is read
 — the point is that such a document should not have reached this reader at all,
 so the earliest refusal is the useful one, and a large binary region is never
-touched. The flag changes nothing else: a document without an octet stream parses
+touched. It ends the read even under `continue_on_error` (doc/03 §13.2): recovery
+cannot read the payload's framing and would scan the binary bytes as text. The
+flag changes nothing else: a document without an octet stream parses
 identically with it set.
 
 Available on the CLI for `validate` and `events`. `query` refuses the option
@@ -1170,7 +1172,7 @@ bool bvnr_write_finish(bvnr_writer_t *w);
 
 Flush any buffered output and finalise the stream. Must be called after all `bvnr_write_event` calls and before `bvnr_writer_destroy`. Returns `false` if any struct or array is still open, or an assignment, a type annotation or a `/` row separator was left with nothing after it (`error_got_incomplete_bvnr_stream`), if writing the trailing semicolon fails, or if flushing the write buffer to the sink fails.
 
-**64 KiB write buffer.** The writer accumulates output into an internal 64 KiB buffer. Individual `bvnr_write_event` calls do not push bytes to the sink immediately; instead bytes accumulate in the buffer and are forwarded to the sink only when the buffer is full or when `bvnr_write_finish` is called. This means the sink receives large contiguous writes rather than one tiny push per token, which is important for fd-based sinks. `bvnr_writer_bytes_written` always reflects the true total of bytes handed off to the sink plus bytes still in the buffer, so the count is accurate at any point during writing.
+**64 KiB write buffer.** For an fd or a custom sink the writer accumulates output into an internal 64 KiB buffer. Individual `bvnr_write_event` calls do not push bytes to the sink immediately; instead bytes accumulate in the buffer and are forwarded to the sink only when the buffer is full or when `bvnr_write_finish` is called. A memory sink (`bvnr_open_write_mem`) is written through directly — there is no point buffering a buffer — so its bytes are in the caller's buffer as soon as each event returns. This means the sink receives large contiguous writes rather than one tiny push per token, which is important for fd-based sinks. `bvnr_writer_bytes_written` always reflects the true total of bytes handed off to the sink plus bytes still in the buffer, so the count is accurate at any point during writing.
 
 ```c
 if (!bvnr_write_finish(w)) {
@@ -1791,6 +1793,11 @@ flush the trailing state, then `bvnr_canon_observer_destroy`.
 
 **It does not re-validate.** The events already came from a validating reader, so the
 observer reproduces faithfully what it is fed rather than checking it a second time.
+That includes the gaps of a read under `continue_on_error`: a recovered error leaves
+a statement without its value (`.a=[1,2,{.b=@;},3]` delivers the key `.b` and nothing
+after it), and the observer writes it as it arrived — `{.b=}` — so its output is not
+a readable document when any error was recovered from. Check
+`bvnr_reader_get_recovery_count` before using it as one.
 For the same reason its array-nesting cap is set to the maximum: the reader has already
 enforced its own limit, and a second, stricter cap here would reject a document the
 reader accepted.

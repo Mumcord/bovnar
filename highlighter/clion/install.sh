@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # Register the Bovnar VS Code grammar as a TextMate bundle in CLion (and other
 # JetBrains IDEs). This gives full regex-level highlighting via the shared
 # source.bovnar grammar, unlike the keyword-based native file type (install.sh).

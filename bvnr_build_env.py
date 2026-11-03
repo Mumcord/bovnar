@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """Where the documentation gates find the build they are checking.
 
 The check_doc_*.py gates put claims in the documents to the reference

@@ -143,10 +143,11 @@ version-int  = "0"
 (* Whitespace: blank characters and comments, freely intermixed.     *)
 (* ONE RESTRICTION this production cannot carry: "#" is not a          *)
 (* terminator of a bare token. A comment may not start immediately     *)
-(* after a key, a number, a symbol, a reserved word, a reference or a  *)
-(* datetime literal -- there "#" is error_unexpected_input_byte, and   *)
-(* at least one ws-char must come first. After a string, "]", "}",     *)
-(* ">", "=", ";" or an inline unit, "#" may follow directly.           *)
+(* after a key, a number, a symbol, a reserved word, a reference, a    *)
+(* datetime literal or a type-annotation parameter -- there "#" is     *)
+(* error_unexpected_input_byte, and at least one ws-char must come     *)
+(* first. After a string, "]", "}", ">", "=", ";" or an inline unit,  *)
+(* "#" may follow directly.                                           *)
 ws           = {ws-char | comment} ;
 
 (* At least one whitespace character, followed by optional further    *)
@@ -417,7 +418,8 @@ param-type   = ("uint" | "sint" | "float" | "float_fix" | "float_dec" | "utf8"
 (* that does NOT open a namespace: only a later ":" at bracket depth 0 *)
 (* does, which is what keeps "<uint:6 4>" an error. Trailing           *)
 (* whitespace is trimmed (it is beside the separator that ends the     *)
-(* parameter), and a line break is an error even there.               *)
+(* parameter); a line break inside the code is an error, one after it  *)
+(* is trailing whitespace.                                            *)
 (* ">" always terminates the annotation.                              *)
 type-param-list = type-param , {ws , "," , ws , type-param} ;
 

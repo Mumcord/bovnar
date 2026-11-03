@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
+#
 # CTest driver for the unit-profile build configurations the ordinary build
 # cannot reach.
 #

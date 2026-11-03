@@ -440,8 +440,14 @@ static bool bvn_enter_resync(bvnr_reader_t* p)
 		 * just been consumed and OPENS a string, so plain resync would read its
 		 * closing quote as another opening one — inverting the parity and
 		 * swallowing every following assignment to the next quote or EOF.
-		 * ".a = 1 \"x\"; .b = 2;" lost .b and everything after it. */
-		l->next_state = (l->byte == '"') ? resync_string : resync;
+		 * ".a = 1 \"x\"; .b = 2;" lost .b and everything after it.
+		 *
+		 * Likewise a '#' that is itself the offending byte ("42# note", the
+		 * slip doc/03 §4.1 names) has opened a comment: plain resync read the
+		 * comment's body as document text and delivered ".a = 41" out of
+		 * "42# was: .a = 41;" (§13.2: the rest of a comment is never read). */
+		l->next_state = (l->byte == '"') ? resync_string
+			      : (l->byte == '#') ? resync_comment : resync;
 		break;
 	}
 	++l->recovery_count;
@@ -2034,6 +2040,15 @@ static inline void bvn_capture_os_error(bvnr_reader_t* p, error_code_t err,
 	p->val.error_byte   = 0;
 	p->val.error_offset = l->processed_bytes - (uint64_t)resid_left;
 }
+/* A consumer callback that returned false while the octet stream was being
+ * read: an abort, reported through on_error like every other one (doc/03
+ * §13.1) -- these sites used to return without it, at offset 0. */
+static inline bool bvn_os_abort(bvnr_reader_t* p, uint32_t resid_left)
+{
+	bvn_capture_os_error(p, p->val.last_error, resid_left);
+	bvn_notify_error(p);
+	return false;
+}
 /*
  * ---------------------------------------------------------------------------
  * Octet-stream reading
@@ -2091,10 +2106,14 @@ static bool bvn_os_read_exact(
 			bvn_notify_error(p);
 			return false;
 		}
-		if (!bvn_source_pull(&p->lex.src, buf + from_resid + total,
-						  need - total, &got) || !got) {
-			bvn_capture_os_error(p,
-				error_read_complete_chunk_failed,
+		bool pulled = bvn_source_pull(&p->lex.src,
+				buf + from_resid + total, need - total, &got);
+		if (!pulled || !got) {
+			/* A source that FAILED is an I/O error, as it is outside a
+			 * stream; only end of input is a truncated stream. */
+			bvn_capture_os_error(p, pulled
+				? error_read_complete_chunk_failed
+				: error_reading_from_source_fd,
 				src->resid_left);
 			bvn_notify_error(p);
 			return false;
@@ -2149,7 +2168,7 @@ static bool bvn_read_octet_stream(
 			p->lex.token_type = token_is_unknown;
 			p->lex.str_len    = 0;
 			if (!bvn_val_receive_event(p, ev_octet_stream_end))
-				return false;
+				return bvn_os_abort(p, src.resid_left);
 			p->lex.next_state = octet_stream_outro;
 			*out_leftover = src.resid_left;
 			return true;
@@ -2176,7 +2195,7 @@ static bool bvn_read_octet_stream(
 		if (!bvn_os_read_exact(&src, p->lex.str_data, chunklen))
 			return false;
 		if (!bvn_val_receive_octet_chunk(p, p->lex.str_data, chunklen))
-			return false;
+			return bvn_os_abort(p, src.resid_left);
 	}
 }
 /*
@@ -2672,6 +2691,12 @@ static bool bvn_interpret_input_buffer(
 			    (l->strict_version &&
 			     p->val.last_error == error_invalid_spec_version))
 				return false;
+			/* text_only refuses the document, not one value in it: the
+			 * payload after the refused 0x00 is binary, and recovery,
+			 * which cannot read its framing, scanned it as text and
+			 * delivered assignments out of it. */
+			if (p->val.last_error == error_octet_stream_forbidden)
+				return false;
 			if (l->continue_on_error) {
 				if (bvn_recover_in_comment(p, false))
 					continue;
@@ -2716,6 +2741,21 @@ static bool bvn_interpret_input_buffer(
 					 l->byte == (uint8_t)'}' &&
 					 !bvn_action_resync_close_bracket(p))
 					return false;
+				/*
+				 * And the converse: a '{' or '[' that was the offending byte
+				 * opened nothing (struct_intro / array_intro refuse before
+				 * counting a level), but its closing bracket is still ahead.
+				 * Recovery counts it as a bracket it skipped, or that close
+				 * shut the ENCLOSING struct: in
+				 * ".s = {.x = <utf8> {.a = 1;}; .y = 2;};" the inner '}'
+				 * closed .s, .a was delivered into .s and .y at top level.
+				 */
+				else if (l->next_state == resync &&
+					 l->byte == (uint8_t)'{')
+					l->resync_struct_depth = 1;
+				else if (l->next_state == resync &&
+					 l->byte == (uint8_t)'[')
+					l->resync_array_depth = 1;
 			} else {
 				return false;
 			}
@@ -2838,8 +2878,13 @@ bool bvn_lex_run(bvnr_reader_t* r)
 	uint32_t os_leftover;
 	bvn_source_impl_t* src_impl = bvn_source_impl(&l->src);
 	bool is_mem_src = (src_impl->pull == bvn_pull_mem);
-	if (!bvn_val_receive_event(r, ev_stream_start))
+	/* An abort from the consumer at the first or the last event is reported
+	 * like any other (doc/03 §13.1); it used to skip on_error. */
+	if (!bvn_val_receive_event(r, ev_stream_start)) {
+		bvn_set_error_pos(r, 0, 0);
+		bvn_notify_error(r);
 		return false;
+	}
 	for (;;) {
 		if (is_mem_src) {
 			uint64_t avail = src_impl->mem_left;
@@ -3006,7 +3051,10 @@ bool bvn_lex_run(bvnr_reader_t* r)
 			return false;
 		}
 	}
-	if (!bvn_val_receive_event(r, ev_stream_end))
+	if (!bvn_val_receive_event(r, ev_stream_end)) {
+		bvn_set_error_pos(r, 0, l->processed_bytes);
+		bvn_notify_error(r);
 		return false;
+	}
 	return true;
 }

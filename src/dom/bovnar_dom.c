@@ -941,6 +941,29 @@ bvn_dom_node_t *bvn_dom_node_from_bigint(bvn_int_t     *bigint,
 	if (!bigint) return NULL;
 	if (vt.width <= 64u) return NULL;
 	if (vt.family != vt_sint && vt.family != vt_uint) return NULL;
+	/* The value has to fit the type it is declared as, as it does for every
+	 * other way into an integer node: a negative uint:128 answered -5 from
+	 * bvn_dom_get_i64, and a 4000-bit value under uint:128 made
+	 * bvn_dom_int_to_str (which sizes its buffer from the width) fail. */
+	{
+		int  bl  = bvn_int_bitlen(bigint);
+		bool neg = bigint->negative && !bvn_int_is_zero(bigint);
+		if (bl < 0) return NULL;
+		if (vt.family == vt_uint) {
+			if (neg || (uint32_t)bl > vt.width) return NULL;
+		} else if (!neg) {
+			if ((uint32_t)bl > vt.width - 1u) return NULL;
+		} else if ((uint32_t)bl > vt.width) {
+			return NULL;
+		} else if ((uint32_t)bl == vt.width) {
+			/* only -2^(width-1) has a magnitude of `width` bits */
+			uint32_t ones = 0;
+			for (uint32_t i = 0; i < bigint->nused; i++)
+				for (uint32_t x = bigint->limbs[i]; x; x &= x - 1u)
+					ones++;
+			if (ones != 1u) return NULL;
+		}
+	}
 	bvn_dom_node_t *n = bvn_dom_node_alloc(BVN_DOM_INT);
 	if (!n) return NULL;
 	n->value_type = vt;

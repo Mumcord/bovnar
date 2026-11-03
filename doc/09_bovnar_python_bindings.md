@@ -263,9 +263,17 @@ The `BvnrData` payload passed to a callback exposes:
 | `data.converted_in_base(base)` | `str \| None` | The exact conversion re-rendered in `base` |
 | `data.converted_rational()` | `tuple[int, int] \| None` | The exact conversion as `(numerator, denominator)` |
 | `data.frac_str()` | `str \| None` | Verbatim ISO sub-second digits of a `datetime` literal (spec 1.1), or `None` |
-| `data.unit_source_str()` | `str \| None` | The unit exactly as the document spelled it (library 2.0), or `None` when the value carries no unit. Read it inside the callback |
+| `data.unit_source_str()` | `str \| None` | The unit exactly as the document spelled it (library 2.0), or `None` when the value carries no unit |
 
 It also carries the `converted` (bool) and `value_type` / `value_unit` fields directly.
+
+**A payload may outlive its callback.** The `BvnrData` a callback (or a
+`want_unit` hook) receives is a copy the binding owns, not a view of the
+reader's memory: the token bytes, the sub-second digits, the unit spelling and
+the exact conversion (`conv.num`/`conv.den`) are all copied out before the
+callback runs. A callback can keep the object, and every method in the table
+above returns the same answer after the callback has returned and after the
+reader is closed.
 
 ### 4.3 Generator / iterator interface
 
@@ -670,9 +678,10 @@ doc.lookup(".inlet.temperature").as_float()    # 100.0, from a document in °F
 
 A value the policy converted is STORED converted — digits, unit and base — and
 an integer that converts to a fraction (5 g in kilograms is 0.005) is stored as
-a float. A policy the library refuses raises ``INVALID_ARGUMENT`` rather than a
-parse error, so a mistake in the policy is never mistaken for a fault in the
-document.
+a float. A policy the library refuses raises `BovnarArgumentError` — the same
+error, naming the same entry, as `Reader.set_unit_policy` — before anything is
+parsed, rather than a parse error, so a mistake in the policy is never mistaken
+for a fault in the document.
 
 **The writer takes the same policy, validation half only.** A reader can only
 reject a document somebody already wrote; `Writer.set_unit_policy` is what stops
@@ -1308,8 +1317,8 @@ Parse BVNR from a `bytes`, `bytearray`, or `memoryview` object.
 | `continue_on_error` | `bool` | `False` | Enable resync mode |
 | `strict_version` | `bool` | `False` | Reject a declared spec version newer than this build (`error_unsupported_spec_version`) |
 | `text_only` | `bool` | `False` | Refuse a document that contains an octet stream (`error_octet_stream_forbidden`), for a channel that is not byte-transparent |
-| `want_unit` | `Callable[[BvnrData], tuple \| None] \| None` | `None` | Optional read-time lossless unit/base conversion hook. Called per numeric value; return `(unit, base)` to request a conversion (the exact result arrives on the payload as `converted`/`converted_text`), or `None` to leave the value untouched. An inexact conversion aborts the parse (`error_unit_inexact`). |
-| `want_unit_allow_nonterminating` | `bool` | `False` | Deliver an exact-rational-but-non-terminating conversion (e.g. km/h→m/s) as a rational with `converted_text` `None` instead of aborting with `error_unit_inexact` |
+| `want_unit` | `Callable[[BvnrData], tuple \| None] \| None` | `None` | Optional read-time lossless unit/base conversion hook. Called per numeric value; return `(unit, base)` to request a conversion (the exact result arrives on the payload as `converted` and `converted_str()`, with `converted_rational()` / `converted_in_base()` beside it — see §4.2), or `None` to leave the value untouched. An inexact conversion aborts the parse (`error_unit_inexact`). |
+| `want_unit_allow_nonterminating` | `bool` | `False` | Deliver an exact-rational-but-non-terminating conversion (e.g. km/h→m/s) as a rational — `converted_str()` returns `None`, `converted_rational()` the exact pair — instead of aborting with `error_unit_inexact` |
 | `max_conversion_length` | `int` | `0` (default 1024) | Longest converted text a conversion may produce, in characters; a longer exact result aborts with `error_value_out_of_range` |
 
 ### 11.3 `read_fd`
@@ -1534,8 +1543,10 @@ tree; any `DomNode` derived from it becomes invalid after that point.
 
 > **File-size limits:** `DomDoc.parse_fd` and `DomDoc.parse_file` apply an internal
 > ceiling of `BVN_DOM_FD_MAX_BYTES` (256 MiB). This is 16× larger than
-> `Reader.read_file`'s `MAX_FILESIZE_BYTES` (16 MiB). Use `bvn_dom_parse_fd_ex`
-> directly if you need a different limit.
+> `Reader.read_file`'s `MAX_FILESIZE_BYTES` (16 MiB). The C library's
+> `bvn_dom_parse_fd_ex` can lower that ceiling (never raise it), but it is
+> C-only — the binding does not wrap it. From Python, to bound the input
+> yourself, read at most the bytes you allow and pass them to `DomDoc.parse`.
 | `DomDoc.parse_file(path)` | Class method. Open path and parse (fd closed in `finally`). Applies an internal hard cap of `BVN_DOM_FD_MAX_BYTES` (256 MiB) via the C function `bvn_dom_parse_fd`. This ceiling is distinct from `Reader.read_file`'s `MAX_FILESIZE_BYTES` (16 MiB). |
 | `doc.parse_error` | `ErrorCode` — `NONE` on success. |
 | `doc[key]` | Return a `DomNode` by key; raises `KeyError` when absent. `key` goes to the path lookup, so `doc["server"]` is a top-level entry and a dotted or indexed path reaches below it: `doc["server.tls"]` is `doc["server"]["tls"]`, `doc["matrix[1][0]"]` an element. A key cannot contain `.` or `[`, so the two readings never collide. |
@@ -1556,7 +1567,7 @@ for as long as any derived `DomNode` is in use.
 | `node.dom_type` | `DomType` enum value |
 | `node.value_type` | `ValueTypeSpec` |
 | `node.unit` | `ValueUnit` |
-| `node.unit_str` | Unit as a string via `bvn_dom_get_unit_string`, or `''` |
+| `node.unit_str` | Unit as a canonical string via `bvn_dom_get_unit_string`, or `''` when the value carries no unit — the same contract as `Quantity.unit_str` (the C formatter's `no_unit` spelling is never returned) |
 | `node.is_null()` | `True` for null values |
 | `node.value_in_base_units()` | Numeric value scaled to SI base units (`float`); an affine unit gets its offset applied (`25 °C` → `298.15`). Returns `0.0` for *any* failure — non-numeric node, currency, affine-in-compound — which is indistinguishable from a genuine zero, and it rounds to `double`. Use `units.unit_to_si_factor()` (which reports `ok`) or the `want_unit` hook when either matters |
 | `node.as_i64()` / `as_u64()` | Signed / unsigned 64-bit integer |
@@ -1615,6 +1626,7 @@ are skipped automatically when `numpy` / `pint` is not installed. Install
 bovnar/
 ├── __init__.py      # loads() / dumps() / dom_parse() / unit helpers — public API
 ├── _ffi.py          # ctypes FFI: library discovery + argtypes/restype
+├── _bigint.py       # int <-> digit text past CPython's 4300-digit int_max_str_digits limit
 ├── _bvnfloat.py     # BvnFloat: arbitrary-precision float + IEEE binary/decimal/fixed encoders
 ├── _numpy.py        # NumPy bridge: to_numpy/from_numpy/to_pint_array/array_to_bvnr (numpy optional)
 ├── _pint_bridge.py  # pint bridge: to_pint/from_pint/to_pint_unit/from_pint_unit (pint optional)
@@ -1644,6 +1656,7 @@ tests/
 ├── test_escapes.py, test_unicode_normalisation.py
 ├── test_datetime.py, test_datetime_oracle.py
 ├── test_lossless_floats.py, test_hex_float_decode.py, test_decimal_tie_rounding.py
+├── test_bigint_digits.py                # integers past the 4300-digit str limit
 ├── test_units.py, test_unit_object.py, test_unit_physics.py, test_unit_source.py
 ├── test_unit_policy.py, test_unit_factors_derived.py
 ├── test_base_rendering_property.py, test_convertible_implies_convertible.py
@@ -1672,7 +1685,7 @@ All errors surface as subclasses of `BovnarError`:
 | ok | requires_affine | Meaning |
 |---|---|---|
 | `True` | `False` | Multiplicative conversion; `factor` is ready to use |
-| `True` | `True` | Both sides are affine and share their zero (e.g. °C ↔ °Ré), so `factor` alone is correct |
+| `True` | `True` | Both sides are affine and share their zero (e.g. °C ↔ °Re, Réaumur), so `factor` alone is correct |
 | `False` | `True` | Affine conversion the offsets do not cancel (e.g. °C ↔ K). **`factor` is `0.0`** — not a usable multiplier |
 | `False` | `False` | Units are dimensionally incompatible → `BovnarArgumentError` |
 
@@ -1730,7 +1743,8 @@ ON_ERROR_FUNC = ctypes.CFUNCTYPE(
 ### 17.2 `BvnrWriteFlags` layout
 
 `BvnrWriteFlags` mirrors the C `bvnr_write_flags_s` struct in full, including
-the trailing `unit_flags` field (`bvn_unit_flags_t`, a `uint32_t`):
+its `unit_flags` field (`bvn_unit_flags_t`, a `uint32_t`) and the
+`emit_version` flag and `_reserved[4]` words that follow it:
 
 | Flag constant (C) | Value | Effect |
 |---|---|---|
@@ -1854,8 +1868,10 @@ only invite the bounds check it can no longer support. Use `UNIT_NATIVE_FIRST`
 `bovnar.currency.is_currency`.
 
 > **The profiles' opaque units are not in this enum.** The C
-> `value_base_unit_t` also has blocks 20–60 for the profile-only units — UCUM's
-> arbitrary atoms and UN/ECE's package and count codes (doc/11 §7.1) — and
+> `value_base_unit_t` also has a block per profile for the profile-only units,
+> and as shipped only two of them have members — UCUM's arbitrary atoms
+> (200000–200040) and UN/ECE's package and count codes (300000–300024),
+> doc/11 §7.1 — and
 > `BaseUnit` deliberately omits them, because they have no native spelling for a
 > Python name to mirror. A unit carrying one is still fully usable: `parse_unit`, `unit_to_str`,
 > `unit_is_profile_only` and the comparison helpers all handle it, and

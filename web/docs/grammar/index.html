@@ -184,10 +184,11 @@ version-int  = &quot;0&quot;
 (* Whitespace: blank characters and comments, freely intermixed.     *)
 (* ONE RESTRICTION this production cannot carry: &quot;#&quot; is not a          *)
 (* terminator of a bare token. A comment may not start immediately     *)
-(* after a key, a number, a symbol, a reserved word, a reference or a  *)
-(* datetime literal -- there &quot;#&quot; is error_unexpected_input_byte, and   *)
-(* at least one ws-char must come first. After a string, &quot;]&quot;, &quot;}&quot;,     *)
-(* &quot;&gt;&quot;, &quot;=&quot;, &quot;;&quot; or an inline unit, &quot;#&quot; may follow directly.           *)
+(* after a key, a number, a symbol, a reserved word, a reference, a    *)
+(* datetime literal or a type-annotation parameter -- there &quot;#&quot; is     *)
+(* error_unexpected_input_byte, and at least one ws-char must come     *)
+(* first. After a string, &quot;]&quot;, &quot;}&quot;, &quot;&gt;&quot;, &quot;=&quot;, &quot;;&quot; or an inline unit,  *)
+(* &quot;#&quot; may follow directly.                                           *)
 ws           = {ws-char | comment} ;
 
 (* At least one whitespace character, followed by optional further    *)
@@ -458,7 +459,8 @@ param-type   = (&quot;uint&quot; | &quot;sint&quot; | &quot;float&quot; | &quot;
 (* that does NOT open a namespace: only a later &quot;:&quot; at bracket depth 0 *)
 (* does, which is what keeps &quot;&lt;uint:6 4&gt;&quot; an error. Trailing           *)
 (* whitespace is trimmed (it is beside the separator that ends the     *)
-(* parameter), and a line break is an error even there.               *)
+(* parameter); a line break inside the code is an error, one after it  *)
+(* is trailing whitespace.                                            *)
 (* &quot;&gt;&quot; always terminates the annotation.                              *)
 type-param-list = type-param , {ws , &quot;,&quot; , ws , type-param} ;
 

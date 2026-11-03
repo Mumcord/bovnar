@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """Render the Bovnar documentation as standalone, SEO-optimized HTML pages.
 
 The canonical docs are Markdown (doc/*.md). They are already published as raw

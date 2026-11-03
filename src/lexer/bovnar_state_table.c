@@ -221,16 +221,21 @@
 #	pragma GCC diagnostic ignored "-Woverride-init"
 #endif
 const uint8_t bvn_after_state_idx_table[dimension_state][256] = {
+	/* A '}' before the first statement is an unmatched close like any other
+	 * (doc/03 §8.5: error_illegal_struct_close at nesting level 0); it was
+	 * error_unexpected_input_byte here and illegal_struct_close after ".a=1;". */
 	[undefined] = {
 		BVN_WHITESPACE(ACT_ignore_whitespace),
 		[0x23] = ACT_first_comment_intro,
 		[0x2e] = ACT_identifier_intro,
+		[0x7d] = ACT_struct_outro,
 		[0xef] = ACT_copy_utf8bom_byte,
 	},
 	[first_bom] = {
 		BVN_WHITESPACE(ACT_ignore_whitespace),
 		[0x23] = ACT_first_comment_intro,
 		[0x2e] = ACT_identifier_intro,
+		[0x7d] = ACT_struct_outro,
 	},
 	[utf8bom_intro] = {
 		BVN_EACH_256(ACT_copy_utf8bom_byte),

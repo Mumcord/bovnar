@@ -395,7 +395,7 @@ HT (0x09), LF (0x0A), VT (0x0B), FF (0x0C), CR (0x0D), SP (0x20)
 .foo = 42;  # an inline comment
 ```
 
-**`#` is not a terminator of a bare token.** A comment may not start immediately after a key, a number, a symbol, a reserved word, a reference or a datetime literal: there `#` is `error_unexpected_input_byte`, and at least one whitespace byte must come first. After a string, `]`, `}`, `>`, `=`, `;` or an inline unit, `#` may follow directly.
+**`#` is not a terminator of a bare token.** A comment may not start immediately after a key, a number, a symbol, a reserved word, a reference, a datetime literal or a type-annotation parameter (`<uint:8# c` — after the family keyword itself, `<uint# c`, it may): there `#` is `error_unexpected_input_byte`, and at least one whitespace byte must come first. After a string, `]`, `}`, `>`, `=`, `;` or an inline unit, `#` may follow directly.
 
 <!-- bovnar-example: rejected -->
 ```bovnar
@@ -1040,10 +1040,11 @@ Four details of that exception:
   is not a code byte: `<float:64,ucum:kg # note⏎>` is
   `error_unexpected_input_byte`, where `<float:64,kg # note⏎>` is fine. Put the
   comment before the parameter, or beside its namespace colon.
-- **A line break is still an error**, even in a namespaced parameter —
-  `error_type_param_whitespace`, as it would be in a native one. No
-  vocabulary spells a unit across a line, and admitting one would let a
-  malformed code consume a document's layout.
+- **A line break inside the code is still an error**, even in a namespaced
+  parameter — `error_type_param_whitespace`, as it would be in a native one.
+  No vocabulary spells a unit across a line, and admitting one would let a
+  malformed code consume a document's layout. A line break *after* the code,
+  before its `,` or `>`, is trailing whitespace like any other.
 
 An **inline** unit suffix cannot carry a space and never will — whitespace is
 what terminates that token, so `1.0 k g` has always been
@@ -1428,7 +1429,10 @@ Individual elements may carry type annotations. The annotation appears **before*
 **The one exception is `datetime` (spec 1.1).** After an element annotated
 `datetime`, a following **bare integer** is read as a datetime of the same width
 and epoch — `[<datetime:64,tai> 1, 2]` is two `tai` instants, and
-`[<datetime:8> 1, 300]` is `error_value_out_of_range`. Without that, the second
+`[<datetime:8> 1, 300]` is `error_value_out_of_range`. "Following" is in document
+order across the whole array, not only within the row: bare integers in later
+sibling sub-arrays and later `/`-rows inherit it too — `[[<datetime:8> 1], [300]]`
+is `error_value_out_of_range` and `[<datetime:8> 1]/[2]` is two datetimes. Without that, the second
 element would be a `uint` beside a `datetime` and the array could never be
 homogeneous (§7.4). It reaches integers only: a bare ISO literal still infers
 `<datetime:64,unix>` (§10.1), so `[<datetime:64,tai> 1, 2026-06-15]` mixes
@@ -2031,7 +2035,7 @@ Setting most fields to `0` in `bvnr_read_flags_t` substitutes an internal defaul
 
 | Check | Error |
 |-------|-------|
-| Empty key (`.` followed by `=` or by whitespace) | `error_empty_identifier` |
+| Empty key (`.` followed by `=`, with or without whitespace between) | `error_empty_identifier` |
 | `.` followed by any other byte that cannot start an identifier (`.1`, `.;`, `.-a`) | `error_unexpected_input_byte` |
 | Invalid character in identifier | `error_unexpected_input_byte` |
 
@@ -2082,7 +2086,7 @@ typedef void (*bvnr_on_error_fn)(
 
 ### 13.2 Recovery Mode
 
-When `bvnr_read_flags_t.continue_on_error` is `true`, the parser enters **resync mode** after an error in the text — any error but one inside a comment (below). A few errors end the read even so: a fault in an octet stream's framing (`error_octet_stream_out_of_sync`, `error_read_complete_chunk_failed`), `error_text_data_too_long`, `error_file_too_long`, a version directive refused under `strict_version` (§3.4), and a callback that returns `false`. The other limits of §12.2 — the five lengths, `max_array_items`, both nesting depths — are recovered from like any other error.
+When `bvnr_read_flags_t.continue_on_error` is `true`, the parser enters **resync mode** after an error in the text — any error but one inside a comment (below). A few errors end the read even so: a fault in an octet stream's framing (`error_octet_stream_out_of_sync`, `error_read_complete_chunk_failed`), `error_text_data_too_long`, `error_file_too_long`, a version directive refused under `strict_version` (§3.4), an octet stream refused under `text_only` (`error_octet_stream_forbidden`, §9), and a callback that returns `false`. The other limits of §12.2 — the five lengths, `max_array_items`, both nesting depths — are recovered from like any other error.
 
 1. The `on_error` callback is invoked with error details
 2. A **resync state machine** (`state_t: resync, resync_dot, resync_string, resync_string_escape, resync_comment`) skips bytes
@@ -2115,7 +2119,11 @@ so parsing restarts there, usually to report a further error, which
 struct, the ones the broken statement itself was in. An array that struct is an
 *element of* stays open, with its row and element counts, so the struct's own
 `}` and the array's `,` or `]` are read normally afterwards and the start/end
-events a consumer sees always nest. A `}` that is itself the offending byte
+events a consumer sees always nest — when recovery resumes inside that struct.
+When the struct's `}` is skipped instead (the error was its last member, with no
+`;` or `.name` after it), recovery runs on past the array's `,` and `]` to the
+next boundary, and the array's remaining elements are lost with the struct:
+`.a=[{.x=1 @},{.x=2;}];` delivers `.a` as one struct whose member `.x` has no value. A `}` that is itself the offending byte
 (`.s = {.a = 1 };`, a member missing its `;`) is not discarded: it closes its
 struct.
 
@@ -2139,7 +2147,18 @@ of the comment is never read as document text.
 
 The two counters are independent: a `}` does not balance a junk `[`, so a
 statement that opens a bracket it never closes keeps recovery from resuming
-until the bracket is closed or the input ends (§13.3).
+until the bracket is closed or the input ends (§13.3). A `[` or `{` that is
+itself the offending byte opened nothing, and counts as a bracket opened since
+recovery began, so its own closing bracket does not close the enclosing
+container. A `#` that is the offending byte (`42# note`, §4.1) opens a comment,
+which recovery skips as such.
+
+**Recovery cannot read an octet stream's framing.** When recovery skips over an
+octet stream — the error came before its `0x00`, or inside the value that
+holds it — the payload is scanned as text like any other skipped bytes, and a
+`;` or `.name` inside the payload can end recovery there. A consumer that needs
+`continue_on_error` and reads documents with octet streams should treat values
+delivered after a recovery as untrusted (`recovery_count` says one happened).
 
 ### 13.3 EOF in Resync
 
@@ -2154,7 +2173,8 @@ nowhere else:
 - **`bvnr_read` returned `false`:** the getters hold the error that stopped it.
   Under `continue_on_error` that is one of the errors recovery does not continue
   past (§13.2: `max_text_bytes`, `max_file_size`, an octet-stream framing error, a
-  directive refused under `strict_version`, a callback that returned `false`) or the `error_got_incomplete_bvnr_stream` of
+  directive refused under `strict_version`, an octet stream refused under
+  `text_only`, a callback that returned `false`) or the `error_got_incomplete_bvnr_stream` of
   §13.3, positioned at the end of the input.
 - **`bvnr_read` returned `true`:** `bvnr_reader_get_error` returns `error_none`
   and the line, column, byte and offset getters return `0`, however many errors
@@ -3147,6 +3167,10 @@ conversion factors — and each of those entries says so:
   before the suffix (`<float _fix:32,q8>`) is `error_type_param_whitespace`,
   for the reason given above for whitespace inside a parameter; it was read
   as `float_fix`.
+- *A `float_fix` literal too large for any float* (`<float_fix:16,q8> 1e9862`,
+  or a 9862-digit integer) is `error_value_out_of_range` (§6.2). Its parse
+  overflowed to infinity, and infinity — range-exempt as the keyword `inf`
+  (§6.4) — passed the range check, so it was accepted, and read as `inf`.
 - *After a reference index only `.`, `[` or the end of the reference may
   follow* (§4.5). `&.a[0]b` is `error_unexpected_input_byte`; it was accepted
   as the path `.a[0]b`, which the grammar does not derive and no lookup

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Janos Sonntag
 """Compute and stamp a hash-based Content-Security-Policy into the served pages.
 
 The Bovnar site is static and self-hosted, with no server-side templating, so a

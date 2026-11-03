@@ -650,7 +650,9 @@ typedef struct bvnr_read_flags_s {
 	 * consumers that must not silently misread a future document should set it. */
 	bool		strict_version;
 	/* Refuse a document that contains an octet stream, with
-	 * error_octet_stream_forbidden at the stream's opening 0x00.
+	 * error_octet_stream_forbidden at the stream's opening 0x00. The refusal
+	 * ends the read even under continue_on_error: it is about the document,
+	 * and recovery cannot read the binary payload that follows.
 	 *
 	 * The binary region is the one part of a Bovnar document that is not text,
 	 * and it is the one part a text-shaped pipeline destroys silently: LF
