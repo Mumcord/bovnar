@@ -53,13 +53,21 @@ memory). Errors carry the library's error code and its C name
 | `src/dom.rs`    | `dom.py`        |
 | `src/enums.rs`  | `enums.py`      |
 | `src/error.rs`  | `exceptions.py` |
+| `src/unit.rs`   | `unit.py`       |
+| `src/units.rs`  | `units.py` and the unit functions of `__init__.py` |
+| `src/quantity.rs` | `quantity.py` |
+| `src/currency.rs` | `currency.py` (read from the C catalogue) |
+| `src/stream.rs` | `stream.py`     |
 | `src/json.rs`   | none (mirrors the CLI's `bovnar convert` JSON <-> BVNR) |
-| `src/lib.rs`    | `__init__.py` (`parse`/`to_string` = `loads`/`dumps`) |
+| `src/lib.rs`    | `__init__.py` (`parse`/`parse_typed`/`to_string` = `loads`/`loads(typed=True)`/`dumps`, `write_array`) |
 
-## Not yet bound
+## Not mirrored
 
-Units and quantities, currencies, streams, unit policies, typed loads, and
-arrays / integers wider than 64 bits in `to_string`.
+The pint and NumPy bridges (Python-only libraries), `BvnFloat`
+and the `Quantity` accessors built on it or on `Decimal`/`Fraction`
+(`decimal`, `fraction`, `fixed_point`, `stored_value`, `ieee_bits`), and the
+file-descriptor entry points (`to_fd`, `read_fd`, ...): read the file with
+`std::fs` and use the in-memory functions.
 
 ## License
 
