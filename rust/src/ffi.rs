@@ -192,6 +192,15 @@ pub struct BvnDomEntry {
     pub value: *mut c_void,
 }
 
+#[repr(C)]
+pub struct BvnCurrencyInfo {
+    pub code: [c_char; 5],
+    pub numeric_code: u16,
+    pub minor_unit: u8,
+    pub is_crypto: bool,
+    pub name: [c_char; 48],
+}
+
 /// Implements `zeroed()` for the plain-data structs above.
 macro_rules! zeroed {
     ($($t:ty),*) => {$(
@@ -498,6 +507,12 @@ unsafe extern "C" {
     pub fn bvn_float_is_inf(f: *mut c_void) -> bool;
     pub fn bvn_float_is_zero(f: *mut c_void) -> bool;
     pub fn bvn_float_is_neg(f: *mut c_void) -> bool;
+    // Not in _ffi.py: Python keeps its own copy of the currency table.
+    pub fn bvn_unit_is_currency(base: c_int) -> bool;
+    pub fn bvn_unit_is_fiat(base: c_int) -> bool;
+    pub fn bvn_unit_is_crypto(base: c_int) -> bool;
+    pub fn bvn_currency_info(base: c_int) -> *const BvnCurrencyInfo;
+    pub fn bvn_parse_currency_str(s: *const u8, len: u32) -> c_int;
 }
 
 /// `bvn_error_to_string`: the C name of an error code, such as
@@ -1146,6 +1161,49 @@ pub mod unit_fns {
         let r = unsafe { bvn_unit_reduce(u, &mut scale, &mut overflow) };
         (!overflow).then_some((r, scale))
     }
+}
+
+// ---------------------------------------------------------------------------
+// Currencies.
+
+/// `bvn_unit_is_currency`, `bvn_unit_is_fiat`, `bvn_unit_is_crypto`.
+pub fn currency_kind(base: c_int) -> (bool, bool, bool) {
+    // SAFETY: plain value in, plain value out, for any id.
+    unsafe {
+        (
+            bvn_unit_is_currency(base),
+            bvn_unit_is_fiat(base),
+            bvn_unit_is_crypto(base),
+        )
+    }
+}
+
+/// `bvn_currency_info`: (code, numeric code, minor unit, is crypto, name).
+pub fn currency_info(base: c_int) -> Option<(String, u16, u8, bool, String)> {
+    // SAFETY: the result is NULL or a row of the static catalogue.
+    let row = unsafe { bvn_currency_info(base).as_ref() }?;
+    let text = |chars: &[c_char]| {
+        let bytes: Vec<u8> = chars
+            .iter()
+            .take_while(|&&c| c != 0)
+            .map(|&c| c as u8)
+            .collect();
+        String::from_utf8_lossy(&bytes).into_owned()
+    };
+    Some((
+        text(&row.code),
+        row.numeric_code,
+        row.minor_unit,
+        row.is_crypto,
+        text(&row.name),
+    ))
+}
+
+/// `bvn_parse_currency_str`: the base-unit id of a code, 0 when unknown.
+pub fn parse_currency(code: &str) -> c_int {
+    let len = u32::try_from(code.len()).unwrap_or(u32::MAX);
+    // SAFETY: `code` has at least `len` readable bytes for the call.
+    unsafe { bvn_parse_currency_str(code.as_ptr(), len) }
 }
 
 /// Checks every mirrored struct against the compiler's own layout, as printed

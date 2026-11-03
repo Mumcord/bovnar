@@ -6,6 +6,7 @@
 
 #![deny(unsafe_code)]
 
+pub mod currency;
 pub mod dom;
 pub mod enums;
 pub mod error;
