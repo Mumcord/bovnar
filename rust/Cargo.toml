@@ -10,7 +10,7 @@ publish = false
 build = "build.rs"
 
 [dependencies]
-# Python's int, Fraction and Decimal: the exact numbers behind `BvnFloat` and
+# Arbitrary-precision integers, fractions and decimals: the exact numbers behind `BvnFloat` and
 # the lossless `Quantity` accessors.
 num-bigint = "0.4.6"
 num-integer = "0.1.46"

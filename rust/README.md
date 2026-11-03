@@ -21,7 +21,7 @@ top-level `CMakeLists.txt`, and CI fails when the two differ. A release tag
 
 ## Building
 
-Requirements: Rust 1.88 or later, a C compiler, and `python3` on `PATH` (the
+Requirements: Rust 1.88 or later, a C compiler, and Python 3 at build time (the
 build runs the upstream table generators, exactly as CMake does).
 
 The crate depends on `num-bigint`, `num-rational`, `num-integer` and
@@ -176,10 +176,10 @@ fn main() -> Result<(), bovnar::Error> {
     let Value::Quantity(p) = &fields[0].1 else { unreachable!() };
     // The literal, every digit of it...
     let literal: Decimal = "3.141592653589793238462643383279503".parse()?;
-    assert_eq!(Quantity::decimal(p)?, Some(literal));
+    assert_eq!(p.decimal()?, Some(literal));
     // ...and the value decimal64 stores: 16 digits, rounded half to even.
-    assert_eq!(Quantity::stored_value(p)?.map(|d| d.to_string()), Some("3.141592653589793".into()));
-    assert_eq!(Quantity::ieee_bits(p)?.len(), 8);
+    assert_eq!(p.stored_value()?.map(|d| d.to_string()), Some("3.141592653589793".into()));
+    assert_eq!(p.ieee_bits()?.len(), 8);
 
     // Decimal and Fraction values are written exactly, as float_dec:64.
     let half = num_rational::BigRational::new(1.into(), 2.into());
@@ -351,11 +351,11 @@ never depend on the Rust jobs.
 The crate is **not published to crates.io**, and `Cargo.toml` keeps
 `publish = false`: as it stands it cannot be packaged. `cargo publish` packs
 only `rust/`, while `build.rs` compiles `../src` and `../include` and runs the
-`../gen_*.py` generators with Python. Publishing would take:
+`../gen_*.py` generators. Publishing would take:
 
 - the C sources, headers and generated tables inside the package (vendored
   into `rust/` at package time, or the generated files committed so the build
-  needs no Python);
+  needs no table generators);
 - `build.rs` reading them from inside the package;
 - a release step, under the same tag == version gate as the GitHub release,
   with a crates.io token, and `publish = false` removed.
