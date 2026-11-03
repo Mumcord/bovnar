@@ -139,6 +139,25 @@ the docs, build and packaging — each finding reproduced before it was fixed.
   `gen_profiles.py` resolves. UCUM's opaque block is 40 ids, 200000–200039;
   `bu_ucum_iu_i` is gone and the 39 UCUM ids after it are one lower. Every
   other pair of arbitrary units stays incommensurable (doc/11 §3.6).
+- **`qudt-qk:CostPerEnergy` and `CostPerPower` dropped the currency.** They
+  mapped to J⁻¹ and W⁻¹, so an energy price of 0.30 EUR/kWh read as
+  0.30 J⁻¹; every applicable unit QUDT lists for them is a currency
+  compound, which `CostPerArea`, `CostPerMass` and the `CCY_*` units were
+  already refused for. They are refused now.
+- **The 53 refusals an existing native unit would cover, read one by one.**
+  Eleven map now: `qudt-qk:AreaBitDensity` (b/m²), `VolumetricBitDensity`
+  (b/m³), `ParticleCurrentDensity` (m⁻²·s⁻¹), `PhotonLuminance`
+  (s⁻¹·m⁻²·sr⁻¹), `VolumetricEntityDensity` (m⁻³), `MolarDensity` (mol⁻¹)
+  and `ThermalCoefficientOfLinearExpansion` (K⁻¹), each like its mapped
+  sibling; `qudt:PERCENT-PER-DecaK` and `unece:H73` (%/da~K); `unece:E97`
+  (m~m/(K·m)); and `unece:B32`, refused as "kilogram per metre" though QUDT's
+  claimant is the kilogram metre squared. The other 42 stay refused — a
+  currency, an analyte annotation, a temperature scale, a publisher
+  contradicting itself, a logarithmic information rate, bit against octet, or
+  a dimension that only coincides (a salinity tendency is not a becquerel) —
+  and `check_profile_factors.py` holds them in `REVIEWED_STALE`, with a
+  reason each, so the sweep lists only refusals no one has read. Five
+  refusal reasons were wrong and say what they are about now.
 
 **Bindings.**
 

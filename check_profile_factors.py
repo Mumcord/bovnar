@@ -491,6 +491,67 @@ WAIVED_UPSTREAM = {
 }
 
 
+# Refusals the STALE REFUSALS sweep in check_profile matches, read one by one
+# (2026-11-03) and kept. The sweep matches on value and dimension only, so it
+# cannot see what each refusal is about; these are the ones where the match is
+# a coincidence or drops what the refusal protects. A reviewed refusal is still
+# listed under --verbose, and an entry the sweep no longer matches is reported,
+# so a review cannot outlive the reason it was written for.
+_R_SALINITY = ("CF's 1e-3 is a salinity scale (practical or absolute), not a "
+               "mass fraction; the match would state a mass of salt CF does not")
+_R_SALINITY_RATE = ("the match is the becquerel, an activity; this is a "
+                    "salinity scale factor per second")
+_R_SCALE = "a scale with an offset; the match is its unit, not the scale"
+_R_CURRENCY = "a currency compound; the match drops the currency"
+_R_ANNOTATION = "the ucumCode's annotation names the analyte; the match drops it"
+_R_CONTRADICTS = "the publisher contradicts itself; the match follows one side"
+_R_LOG_RATE = ("an information rate in a logarithmic base bovnar has no unit "
+               "for; the match is the hertz")
+_R_BIT_OCTET = "bit or octet is not settled; the match takes one"
+_R_ROTATION = ("hertz and revolution per second are pooled; bovnar holds them "
+               "2π apart")
+REVIEWED_STALE = {
+    **{("cf", c): _R_SALINITY for c in (
+        "integral_wrt_depth_of_product_of_salinity_and_sea_water_density",
+        "ocean_salt_x_transport", "ocean_salt_y_transport")},
+    **{("cf", c): _R_SALINITY_RATE for c in (
+        "tendency_of_sea_water_salinity",
+        "tendency_of_sea_water_salinity_due_to_advection",
+        "tendency_of_sea_water_salinity_due_to_horizontal_mixing",
+        "tendency_of_sea_water_salinity_due_to_parameterized_eddy_advection",
+        "tendency_of_sea_water_salinity_due_to_sea_ice_thermodynamics",
+        "tendency_of_sea_water_salinity_due_to_vertical_mixing")},
+    **{("om", c): _R_SCALE for c in (
+        "CelsiusScale", "FahrenheitScale", "KelvinScale", "RankineScale",
+        "ReaumurScale")},
+    ("qudt-qk", "CelsiusTemperature"): _R_SCALE,
+    **{("qudt", c): _R_CURRENCY for c in (
+        "CCY_EUR-PER-KiloW-HR", "CCY_EUR-PER-M2", "CHF-PER-KiloGM")},
+    **{("qudt-qk", c): _R_CURRENCY for c in (
+        "CostPerArea", "CostPerMass", "CostPerEnergy", "CostPerPower")},
+    **{("qudt", c): _R_ANNOTATION for c in (
+        "GM_Carbon-PER-M2-DAY", "GM_Nitrogen-PER-M2-DAY", "M2-PER-GM_DRY")},
+    ("qudt", "IU-PER-MilliGM"):
+        "an international unit is assay-defined, not an amount of substance",
+    **{("qudt", c): _R_CONTRADICTS for c in (
+        "HP_Brake", "MI2", "MicroM-PER-MilliL")},
+    **{("unece", c): _R_CONTRADICTS for c in ("M48", "MIK", "P30")},
+    **{(ns, c): _R_LOG_RATE for ns, c in (
+        ("qudt", "NAT-PER-SEC"), ("unece", "Q19"),
+        ("qudt-qk", "InformationFlowRate"),
+        ("qudt-qk", "LogarithmicMedianInformationFlow_SourceToBase10"),
+        ("qudt-qk", "LogarithmicMedianInformationFlow_SourceToBaseE"))},
+    **{("qudt-qk", c): _R_BIT_OCTET for c in (
+        "BitRate", "BitTransmissionRate", "AreicDataVolume",
+        "VolumicDataQuantity")},
+    **{("qudt-qk", c): _R_ROTATION for c in (
+        "RotationalFrequency", "RotationalVelocity")},
+    ("udunits", "astronomical_unit_BIPM_2006"):
+        "unreadable: the trailing digits scan as an exponent",
+}
+REVIEWED_STALE_SEEN = set()
+
+
 # QUDT unit -> quantity kind links that QUDT itself has filed under the wrong
 # kind, checked by check_quantity_kinds below. Same standing as WAIVED_UPSTREAM
 # and reported the same way: a note on every run, never a silent skip.
@@ -2194,6 +2255,12 @@ def check_profile(ns, vocab, native, native_index, verbose):
             continue
         hit = native_index.match(vocab, up)
         if hit:
+            if (ns, code) in REVIEWED_STALE:
+                REVIEWED_STALE_SEEN.add((ns, code))
+                if verbose:
+                    print("    reviewed %-26s == native %-14s kept: %s"
+                          % (code, hit[0], REVIEWED_STALE[(ns, code)]))
+                continue
             stale.append("  %-28s == native %-16s (refused: %s)"
                          % (code, hit[0], r.get("why", "")[:44]))
 
@@ -2500,9 +2567,20 @@ def main(argv):
           % (total_checked, ", ".join(available), total_mismatch, total_dead,
              total_missing, "" if args.verbose else
              " (--verbose to list the last two)"))
+    reviewed_here = {k for k in REVIEWED_STALE if k[0] in available}
     print("check_profile_factors: %d refusal(s) an existing native expression "
-          "would now cover%s" % (total_stale, "" if args.verbose else
-          " (--verbose to list them)"))
+          "would now cover%s; %d more reviewed and kept (REVIEWED_STALE)"
+          % (total_stale, "" if args.verbose else " (--verbose to list them)",
+             len(REVIEWED_STALE_SEEN)))
+    outdated = sorted(reviewed_here - REVIEWED_STALE_SEEN)
+    if outdated:
+        print("check_profile_factors: %d REVIEWED_STALE entr%s no longer "
+              "match%s a refusal — remove %s:"
+              % (len(outdated), "y" if len(outdated) == 1 else "ies",
+                 "es" if len(outdated) == 1 else "",
+                 "it" if len(outdated) == 1 else "them"))
+        for ns, code in outdated:
+            print("  %s:%s" % (ns, code))
     if prefixed_bad:
         print("\ncheck_profile_factors: refusal(s) the table's OWN mapped rows "
               "already answer — the code names a prefix, the bare sibling is "

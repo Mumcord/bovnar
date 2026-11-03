@@ -55,9 +55,12 @@ To pick it up on a new machine:
 5. **`-2026-06-15` under `#!bovnar 1.1`** — decided 2026-11-03: the reader's
    `error_invalid_datetime_literal` where the value ends stays; doc/03 §5.1
    and the IETF draft now say a leading `-` keeps the skeleton.
-6. **Profile coverage.** After the eight mapped in this round,
-   `check_profile_factors.py` still lists 53 refusals an existing native
-   expression would cover. They are coverage to review, not errors.
+6. **Profile coverage** — done 2026-11-03: of the 53, eleven map, 42 stay
+   refused with a reason each in `REVIEWED_STALE` (check_profile_factors.py),
+   and `qudt-qk:CostPerEnergy`/`CostPerPower` are refused (they dropped the
+   currency). The sweep lists 0. Left open: `qudt:LA` maps to the apostilb,
+   following QUDT's multiplier against its own label and ucumCode (Lambert,
+   `Lmb`); `unece:P30` is refused for the same contradiction.
 
 ## Closed 2026-11-03 — the open items of the 2026-10-12 spec review
 

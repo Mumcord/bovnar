@@ -161,8 +161,8 @@ static void test_codes_unblocked_by_the_new_units(void)
 	 * Three neighbours in the same sweep stay refused, and the reason is the
 	 * cross-reference rather than the registry. M48's only claimant, QUDT's
 	 * MI2, is labelled "Square Mile" with ucumCode [mi_i]2 -- the
-	 * INTERNATIONAL mile -- while stating the SURVEY multiplier; MIK has no
-	 * QUDT claimant at all, so there is no evidence either way; and P30's
+	 * INTERNATIONAL mile -- while stating the SURVEY multiplier; MI2 claims
+	 * MIK too, so the same contradiction leaves both open; and P30's
 	 * claimant LA is labelled "Lambert" while stating 0.3183098862, which is
 	 * the APOSTILB. The lambert is 1e4/pi, four decades from that.
 	 *
@@ -172,6 +172,14 @@ static void test_codes_unblocked_by_the_new_units(void)
 	chk_error("unece:M48", error_unit_profile_unsupported);
 	chk_error("unece:MIK", error_unit_profile_unsupported);
 	chk_error("unece:P30", error_unit_profile_unsupported);
+
+	/* The 2026-11-03 coverage review, each via the QUDT row that carries the
+	 * code. B32 was refused as "kilogram per metre", which is KL; QUDT's
+	 * claimant is KiloGM-M2 (kg·m², ucumCode kg.m2), between B31 and B33. */
+	chk_str("unece:B32", "k~g·m²");
+	chk_factor("unece:B32", 1.0);
+	chk_factor("unece:E97", 1e-3);   /* mm/(°C·m) */
+	chk_factor("unece:H73", 1e-3);   /* %/daK */
 }
 
 static void test_outcomes(void)

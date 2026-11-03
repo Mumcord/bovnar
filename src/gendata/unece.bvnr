@@ -693,6 +693,7 @@
   { .code = "B27";   .bovnar = "k~C/m^3";             .reverse = false; },  # via qudt:KiloC-PER-M3
   { .code = "B28";   .bovnar = "k~C/m^2";             .reverse = false; },  # via qudt:KiloC-PER-M2
   { .code = "B29";   .bovnar = "k~eV";                },  # via qudt:KiloEV
+  { .code = "B32";   .bovnar = "k~g·m^2";             .reverse = false; },  # via qudt:KiloGM-M2
   { .code = "B33";   .bovnar = "k~g·m^2/s";           .reverse = false; },  # via qudt:KiloGM-M2-PER-SEC
   { .code = "B34";   .bovnar = "k~g/d~m^3";           .reverse = false; },  # via qudt:KiloGM-PER-DeciM3
   { .code = "B35";   .bovnar = "k~g/L";               .reverse = false; },  # via qudt:KiloGM-PER-L
@@ -928,6 +929,7 @@
   { .code = "E93";   .bovnar = "k~g/h";               .reverse = false; },  # via qudt:KiloGM-PER-HR
   { .code = "E94";   .bovnar = "k~mol/s";             .reverse = false; },  # via qudt:KiloMOL-PER-SEC
   { .code = "E96";   .bovnar = "°/s";                 .reverse = false; },  # via qudt:DEG-PER-SEC
+  { .code = "E97";   .bovnar = "m~m/(K·m)";           .reverse = false; },  # via qudt:MilliM-PER-DEG_C-M
   { .code = "E99";   .bovnar = "h~Pa/bar";            .reverse = false; },  # via qudt:HectoPA-PER-BAR
   { .code = "F02";   .bovnar = "K/K";                 .reverse = false; },  # via qudt:K-PER-K
   { .code = "F03";   .bovnar = "k~Pa/bar";            .reverse = false; },  # via qudt:KiloPA-PER-BAR
@@ -1183,6 +1185,7 @@
   { .code = "H68";   .bovnar = "m~mol/g";             .reverse = false; },  # via qudt:MilliMOL-PER-GM
   { .code = "H69";   .bovnar = "p~Pa/k~m";            .reverse = false; },  # via qudt:PicoPA-PER-KiloM
   { .code = "H72";   .bovnar = "%/h~bar";             .reverse = false; },  # via qudt:PERCENT-PER-HectoBAR
+  { .code = "H73";   .bovnar = "%/da~K";              .reverse = false; },  # via qudt:PERCENT-PER-DecaK
   { .code = "H74";   .bovnar = "W/m";                 .reverse = false; },  # via qudt:W-PER-M
   { .code = "H75";   .bovnar = "da~Pa";               },  # via qudt:DecaPA
   { .code = "H76";   .bovnar = "g/m~m";               .reverse = false; },  # via qudt:GM-PER-MilliM
@@ -1630,9 +1633,6 @@
   { .code = "DPC"; .why = "dozen piece — a scaled count"; },
   { .code = "DZP"; .why = "dozen pack — a scaled count"; },
 
-  # Units whose value depends on the commodity being measured.
-  { .code = "B32"; .why = "kilogram per metre — ambiguous in Rec 20's own annex without the sector qualifier"; },
-
   # Rec 21 codes naming packaging MATERIAL rather than a countable package.
   # "wooden" is not a quantity.
   { .code = "XWD"; .why = "packaging material, not a countable package"; },
@@ -1660,7 +1660,6 @@
   { .code = "C69";   .why = "dimensionless through QUDT's cross-reference — every native ratio has the same dimension vector and nothing here can say which one Rec 20 means"; },
   { .code = "D15";   .why = "dimensionless through QUDT's cross-reference — every native ratio has the same dimension vector and nothing here can say which one Rec 20 means"; },
   { .code = "E15";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (1.162230556)"; },
-  { .code = "E97";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (0.001)"; },
   { .code = "E98";   .why = "dimensionless through QUDT's cross-reference — every native ratio has the same dimension vector and nothing here can say which one Rec 20 means"; },
   { .code = "F22";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (1355.818009)"; },
   { .code = "F78";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (249.080024)"; },
@@ -1671,7 +1670,6 @@
   { .code = "GT";    .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (0)"; },
   { .code = "H11";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (3.91935077e-07)"; },
   { .code = "H71";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (3.919350773e-09)"; },
-  { .code = "H73";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (0.001)"; },
   { .code = "H79";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (0.0003333333)"; },
   { .code = "H91";   .why = "dimensionless through QUDT's cross-reference — every native ratio has the same dimension vector and nothing here can say which one Rec 20 means"; },
   { .code = "H92";   .why = "dimensionless through QUDT's cross-reference — every native ratio has the same dimension vector and nothing here can say which one Rec 20 means"; },
@@ -1761,7 +1759,7 @@
   { .code = "M58";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (1609.344)"; },
   { .code = "M68";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (3.62)"; },
   { .code = "M88";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (0.0003919350773)"; },
-  { .code = "MIK";   .why = "no QUDT unit claims this code, so the cross-reference offers no evidence for it at all"; },
+  { .code = "MIK";   .why = "QUDT's only claimant, MI2, claims M48 as well and contradicts itself (see M48), so the cross-reference cannot say which square mile this is"; },
   { .code = "N27";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (0.008630974841)"; },
   { .code = "N70";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (1.055e+18)"; },
   { .code = "N84";   .why = "no native unit is a decade away from what QUDT's cross-reference makes this worth (1.895634241)"; },

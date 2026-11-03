@@ -292,6 +292,23 @@ static void test_quantity_kinds(void)
 	};
 	for (size_t i = 0; i < sizeof(kinds) / sizeof(kinds[0]); i++)
 		chk_factor(kinds[i], 1.0);
+
+	/* The 2026-11-03 coverage review: refused as "no native unit of this
+	 * dimension", though the registry spells each one. The bit densities are
+	 * the bit because QUDT lists only bit units for them; the rest follow
+	 * their mapped siblings (ParticleFluenceRate, PhotonRadiance,
+	 * NumberDensity, InverseAmountOfSubstance, LinearExpansionCoefficient). */
+	chk_str("qudt-qk:AreaBitDensity",         "b/m²");
+	chk_str("qudt-qk:VolumetricBitDensity",   "b/m³");
+	chk_str("qudt-qk:ParticleCurrentDensity", "m⁻²·s⁻¹");
+	chk_str("qudt-qk:PhotonLuminance",        "s⁻¹·m⁻²·sr⁻¹");
+	chk_str("qudt-qk:VolumetricEntityDensity", "m⁻³");
+	chk_str("qudt-qk:MolarDensity",           "mol⁻¹");
+	chk_str("qudt-qk:ThermalCoefficientOfLinearExpansion", "K⁻¹");
+	chk_factor("qudt-qk:ThermalCoefficientOfLinearExpansion", 1.0);
+
+	/* And one QUDT unit: a percent per decakelvin is 0.001 K^-1. */
+	chk_factor("qudt:PERCENT-PER-DecaK", 1e-3);
 }
 
 static void test_kind_agrees_with_unit(void)
@@ -337,6 +354,17 @@ static void test_kind_refusals(void)
 	chk_error("qudt-qk:CelsiusTemperature", error_unit_profile_unsupported);
 	chk_error("qudt-qk:LogarithmicRatio",   error_unit_profile_unsupported);
 	chk_error("qudt-qk:Currency",           error_unit_profile_unsupported);
+
+	/* A cost is a currency compound, and every applicable unit QUDT lists for
+	 * these four is one (CCY_EUR-PER-KiloW-HR, ...). The coherent SI unit of
+	 * the bare dimension would read 0.30 EUR/kWh as 0.30 J^-1. */
+	chk_error("qudt-qk:CostPerEnergy", error_unit_profile_unsupported);
+	chk_error("qudt-qk:CostPerPower",  error_unit_profile_unsupported);
+	chk_error("qudt-qk:CostPerArea",   error_unit_profile_unsupported);
+	chk_error("qudt-qk:CostPerMass",   error_unit_profile_unsupported);
+	/* A data volume in no stated unit: bit or octet is not settled. */
+	chk_error("qudt-qk:AreicDataVolume",     error_unit_profile_unsupported);
+	chk_error("qudt-qk:VolumicDataQuantity", error_unit_profile_unsupported);
 
 	/* Not a kind at all. */
 	chk_error("qudt-qk:Lenght",  error_unit_illegal);   /* a plausible typo */
