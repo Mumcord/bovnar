@@ -304,9 +304,10 @@ match Unit::parse("furlong per fortnight") {
 
 - `cargo test` runs the Rust tests: 33 of Python's 38 test files are ported
   one to one, one `tests/*.rs` file each with the Python test names; the ABI
-  check (`test_abi.py`) is a unit test in `src/ffi.rs`, because the mirrored
-  structs are private. Tests that could not be ported are listed at the top
-  of each port, with the reason.
+  check (`test_abi.py`) is three unit tests of the same names in
+  `src/ffi.rs`, because the mirrored structs are private. Tests that could
+  not be ported are listed at the top of each port, with the reason, and
+  summed up under "Not mirrored" below.
 - `test_writers_agree` compares `to_string` with the C CLI's `pretty-print`,
   so it is `#[ignore]`d unless the CLI is built at `<repo>/build/bovnar`:
   `cmake -B build . && cmake --build build --target bovnar`, then
@@ -379,6 +380,31 @@ The pint and NumPy bridges (Python-only libraries, so `test_numpy_bridge`,
 fd entry points are `std::io::Read` / `std::io::Write` ones (see "Files and
 I/O streams" above), and the path ones (`read_file`, `parse_file`,
 `to_file`) are those over an opened `std::fs::File`.
+
+Of Python's 1409 test functions, 1240 are ported; the 169 left out are:
+
+- The NumPy and pint bridges (120): the four files above (105), and the
+  NumPy or pint tests inside other files (15): 11 in `test_lossless_floats`,
+  one each in `test_array_roundtrip_fidelity`, `test_bigint_digits`,
+  `test_unit_source` and `test_unit_factors_derived`.
+- The ctypes mirrors (24, `test_structs`): sizes, zero-initialised raw
+  structs, the prefix-id union, `repr`, the opaque blobs and the
+  `make_data_*` helpers, all of which are private here. Their layout is
+  checked against the C compiler by the `test_abi` tests in `src/ffi.rs`.
+- Python typing, dunder and object behaviour Rust rules out at compile time
+  (24): a wrong argument type (`Unit(42)`, a non-`str` key, a non-`bytes`
+  input, a non-`ValueTypeSpec` type, `int` where `str` is expected,
+  `10**5000` passed to `write_uint`'s `u64`), `repr`, negative indexing,
+  `with` / `close` / `destroy` lifecycles, a frozen dataclass, a
+  property called as a method, a one-shot generator argument, buffer types
+  (`bytearray`, `memoryview`), the ctypes library loader and garbage
+  collection of a half-built object.
+- CPython's `int_max_str_digits` (1): the private `_bigint` helpers that
+  work around it; Rust has no such limit.
+
+Integers wider than `i128` (`Value::Int`) are ported through `Quantity`:
+the exact literal under a `uint` / `sint` annotation, read back exactly with
+`parse_typed` or `DomNode::as_int_str`.
 
 ## License
 
