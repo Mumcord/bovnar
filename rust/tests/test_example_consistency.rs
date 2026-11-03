@@ -100,7 +100,7 @@ fn test_units_example_derived_count_matches_its_own_header() {
     let mut claimed = None;
     let mut counted = 0;
     for (i, line) in lines.iter().enumerate() {
-        // Python: re.search(r"\((\d+) named SI-derived units\)", line)
+        // Find "(<digits> named SI-derived units)" in the line.
         let Some(end) = line.find(marker) else {
             continue;
         };

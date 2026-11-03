@@ -170,7 +170,7 @@ fn units() -> Vec<Value> {
     }
 }
 
-/// Alias -> factor, like the Python `factors` fixture.
+/// Alias -> factor for every unit.
 fn factors() -> Vec<(String, f64)> {
     units()
         .iter()
