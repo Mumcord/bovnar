@@ -12,6 +12,11 @@ repository.workspace = true
 name = "bovnar-diff"
 path = "src/main.rs"
 
+[[bin]]
+name = "bovnar-json-diff"
+path = "src/json_diff.rs"
+
 [dependencies]
+bovnar-rs = { path = ".." }
 serde_json = "1"
 base64 = "0.23"

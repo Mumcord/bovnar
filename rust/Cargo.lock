@@ -13,6 +13,7 @@ name = "bovnar-diff"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "bovnar-rs",
  "serde_json",
 ]
 
