@@ -1,0 +1,56 @@
+[package]
+name = "bovnar-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+# Kept out of the main workspace: it needs a nightly toolchain and libFuzzer.
+[workspace]
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+libfuzzer-sys = "0.4"
+bovnar-rs = { path = ".." }
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "reader"
+path = "fuzz_targets/reader.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dom"
+path = "fuzz_targets/dom.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "roundtrip"
+path = "fuzz_targets/roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "writer"
+path = "fuzz_targets/writer.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "units"
+path = "fuzz_targets/units.rs"
+test = false
+doc = false
+bench = false
