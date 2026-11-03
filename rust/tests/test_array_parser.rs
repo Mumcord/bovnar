@@ -2,7 +2,7 @@
 //! hand-built event sequences, without the C reader.
 
 use bovnar::dict_parser::{ArrScope, DictParser};
-use bovnar::{Event, EventData, Unit, Value, ValueTypeFamily, ValueTypeSpec};
+use bovnar::{Event, EventData, Value, ValueTypeFamily, ValueTypeSpec};
 
 /// One fake event: its kind and the raw payload with its type family/base.
 type Ev = (Event, Option<(String, ValueTypeFamily, u32)>);
@@ -40,23 +40,15 @@ fn run(events: Vec<Ev>) -> Value {
     let mut p = DictParser::new(false);
     for (event, data) in events {
         let (raw, family, base) = data.unwrap_or((String::new(), ValueTypeFamily::Plain, 0));
-        p.on_event(&EventData {
+        p.on_event(&EventData::plain(
             event,
-            token_type: None,
-            value_type: ValueTypeSpec {
+            ValueTypeSpec {
                 family: family as i32,
                 width: 0,
                 base,
             },
-            value_unit: Unit::default(),
-            raw: raw.as_bytes(),
-            frac: b"",
-            unit_source: b"",
-            converted: false,
-            converted_text: b"",
-            converted_base: 0,
-            converted_unit: Unit::default(),
-        });
+            raw.as_bytes(),
+        ));
     }
     p.result()
 }

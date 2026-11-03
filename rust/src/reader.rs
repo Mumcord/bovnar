@@ -115,6 +115,26 @@ pub struct EventData<'a> {
 }
 
 impl<'a> EventData<'a> {
+    /// A plain, unconverted event, so the dict parser can be driven by
+    /// hand-built event sequences (like Python's `_DictParser` tests).
+    #[doc(hidden)]
+    pub fn plain(event: Event, value_type: ValueTypeSpec, raw: &'a [u8]) -> Self {
+        Self {
+            event,
+            token_type: None,
+            value_type,
+            value_unit: Unit::default(),
+            raw,
+            frac: b"",
+            unit_source: b"",
+            converted: false,
+            converted_text: b"",
+            converted_base: 0,
+            converted_unit: Unit::default(),
+            conv_exact: None,
+        }
+    }
+
     /// The public view of a raw event; `None` for an event this binding does
     /// not know.
     pub(crate) fn from_view(view: &ffi::EventView<'a>) -> Option<Self> {
