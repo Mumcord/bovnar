@@ -277,7 +277,19 @@ def property_calls(repo):
                 continue
             path = os.path.join(root, name)
             with open(path, encoding="utf-8", errors="replace") as f:
+                # Rust bindings call these as methods (`q.decimal()`), so a
+                # fenced block tagged ```rust (also ```rust,ignore and the
+                # like) is not Python and is not checked. Every other line,
+                # Python and untagged blocks included, is checked as before.
+                in_rust = False
                 for lineno, line in enumerate(f, start=1):
+                    fence = line.strip()
+                    if fence.startswith("```"):
+                        tag = fence[3:].split(",")[0].strip()
+                        in_rust = not in_rust and tag == "rust"
+                        continue
+                    if in_rust:
+                        continue
                     m = pattern.search(line)
                     if m:
                         problems.append(
