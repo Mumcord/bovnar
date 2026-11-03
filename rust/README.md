@@ -117,6 +117,31 @@ fn main() -> Result<(), bovnar::Error> {
 }
 ```
 
+### Files and I/O streams
+
+Python's `read_fd`, `parse_fd` and `to_fd` take any `std::io::Read` or
+`std::io::Write` here: a `File`, a pipe, a socket, a `Cursor`.
+
+```rust
+use std::io::Cursor;
+use bovnar::{Base, DomDoc, ReadOptions, Reader, Writer};
+
+fn main() -> Result<(), bovnar::Error> {
+    let path = std::env::temp_dir().join(format!("bovnar-readme-{}.bvnr", std::process::id()));
+    let mut w = Writer::to_writer(std::fs::File::create(&path).unwrap(), false)?;
+    w.write_uint("port", 443, 16, Base::DECIMAL)?;
+    w.finish()?; // the document reaches the file here
+    drop(w);
+
+    let dom = DomDoc::parse_reader(std::fs::File::open(&path).unwrap())?;
+    assert_eq!(dom.lookup("port").and_then(|n| n.as_u64()), Some(443));
+    std::fs::remove_file(&path).unwrap();
+
+    Reader::new()?.read_reader(Cursor::new(b".a = 1;"), &ReadOptions::default(), None, None)?;
+    Ok(())
+}
+```
+
 ### JSON
 
 ```rust
@@ -218,6 +243,21 @@ match Unit::parse("furlong per fortnight") {
   alphabet for, 2..62, 64, 85; `Base::DECIMAL`, `Base::HEX`), `Signedness`
   (`Signed`, `Unsigned`, `Auto` for Python's `signed=True/False/None`) and
   `EmitSpec` (Python's `emit` keyword arguments, with a table in its docs).
+- **Files and I/O streams:** Python's file-descriptor entry points take any
+  `std::io::Read` / `std::io::Write` instead: `Reader::read_reader` and
+  `read_reader_want_unit` (`read_fd`), `DomDoc::parse_reader` and
+  `parse_reader_with_policy` (`parse_fd`), `Writer::to_writer` and
+  `to_writer_with` (`to_fd`). The C library takes no callback source or
+  sink, so they go through memory: the input is read in full (to one byte
+  past `max_file_size` when it is set, and at most 256 MiB for the DOM, the
+  cap of `bvn_dom_parse_fd`), and the writer's document is written out by
+  `finish`, from a memory sink of `DEFAULT_MEM_CAP` bytes unless
+  `to_writer_with` sets another. A failing reader or writer is an
+  `Error::Io` with the code the C fd source or sink gives
+  (`reading_from_source_fd`, `writing_to_sink`). No file descriptor is
+  involved, so they work the same on Windows. Python's `loads`, `dumps`
+  and the stream helpers have no fd form, so neither do `parse`,
+  `to_string` and `stream`.
 - **Exact numbers:** the `Quantity` accessors `decimal`, `fraction`,
   `fixed_point`, `stored_value` and `ieee_bits`; `Decimal` (Python's
   `Decimal`) and `BigRational` (its `Fraction`), also as the `Value`
@@ -240,7 +280,8 @@ match Unit::parse("furlong per fortnight") {
   profiles' opaque ids (`UcumIu` for `ucum:[IU]`), which Python's leaves out.
   `Exponent` and `Base` are open ranges, so they are checked newtypes.
 - **Errors:** `Error` mirrors Python's exception classes: `Parse`, `Write`,
-  `Argument` and `OutOfMemory` (`MemoryError`). `kind()` is the library's
+  `Argument` and `OutOfMemory` (`MemoryError`), plus `Io` for a failing
+  `std::io::Read` / `Write`. `kind()` is the library's
   error name as an `ErrorKind` wherever it reported one (an unparsable unit
   or a refused policy included), `name()` its C spelling, and `position()`
   the line, column and offset where the input was refused. A `DomDoc::parse`
@@ -334,9 +375,10 @@ only `rust/`, while `build.rs` compiles `../src` and `../include` and runs the
 
 The pint and NumPy bridges (Python-only libraries, so `test_numpy_bridge`,
 `test_pint_bridge`, `test_pint_factor_parity` and
-`test_example_numpy_roundtrip` have no port), and the file-descriptor entry
-points (`to_fd`, `read_fd`, ...): read the file with `std::fs` and use the
-in-memory functions.
+`test_example_numpy_roundtrip` have no port), and raw file descriptors: the
+fd entry points are `std::io::Read` / `std::io::Write` ones (see "Files and
+I/O streams" above), and the path ones (`read_file`, `parse_file`,
+`to_file`) are those over an opened `std::fs::File`.
 
 ## License
 
