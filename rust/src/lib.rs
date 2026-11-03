@@ -12,6 +12,7 @@ pub mod enums;
 pub mod error;
 #[allow(unsafe_code)]
 mod ffi;
+pub mod json;
 pub mod quantity;
 pub mod reader;
 pub mod stream;

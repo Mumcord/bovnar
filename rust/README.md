@@ -53,6 +53,7 @@ memory). Errors carry the library's error code and its C name
 | `src/dom.rs`    | `dom.py`        |
 | `src/enums.rs`  | `enums.py`      |
 | `src/error.rs`  | `exceptions.py` |
+| `src/json.rs`   | none (mirrors the CLI's `bovnar convert` JSON <-> BVNR) |
 | `src/lib.rs`    | `__init__.py` (`parse`/`to_string` = `loads`/`dumps`) |
 
 ## Not yet bound
