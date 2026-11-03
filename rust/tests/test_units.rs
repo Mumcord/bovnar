@@ -1,12 +1,10 @@
-//! Port of `python/tests/test_units.py`: the unit helpers, unit parsing and
-//! formatting, and read-time unit conversion through the `want_unit` hook.
+//! The unit helpers, unit parsing and formatting, and read-time unit
+//! conversion through the `want_unit` hook.
 //!
-//! Every Python test is ported. Python-only spellings map as follows:
-//! `make_unit_si`/`make_unit_iec`/`make_unit_compound`/`make_unit_dimensionless`
-//! are `Unit::si`/`Unit::iec`/`Unit::compound`/`Unit::dimensionless`,
-//! `make_unit_none()` is `Unit::default()`, and `Writer.write_float(...,
-//! unit_str=...)` is `Writer::write_quantity` with a unit. `Reader.read_file`
-//! is `Reader::read_reader_want_unit` over the opened file.
+//! A unit is built with `Unit::si` / `Unit::iec` / `Unit::compound` /
+//! `Unit::dimensionless` / `Unit::default`, a float in a unit is written with
+//! `Writer::write_quantity`, and files are read with
+//! `Reader::read_reader_want_unit` over the opened file.
 
 use bovnar::enums::ValueTypeFamily;
 use bovnar::units::{
@@ -20,7 +18,7 @@ use bovnar::{
     Value, ValueTypeSpec, Writer,
 };
 
-// conftest.py fixtures used here.
+// Shared fixtures.
 const SIMPLE_SCALAR_FLOAT: &[u8] = b".velocity = <float:64,m/s> 9.81;\n";
 const IEC_UNIT_PAYLOAD: &[u8] = b".ram = <uint:64,Gi~B> 8;\n";
 const COMPOUND_UNIT_PAYLOAD: &str = ".force = <float:64,k~g\u{b7}m/s\u{b2}> 9.81;\n";

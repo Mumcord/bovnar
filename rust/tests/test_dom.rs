@@ -1,25 +1,8 @@
-//! Port of `python/tests/test_dom.py`.
+//! The DOM tier: parsing from bytes, files and readers, node types, typed
+//! accessors, lookup paths and conversion to `Value`.
 //!
-// Skipped Python tests:
-// - test_repr_contains_ptr, test_repr_contains_type: Python `repr` output.
-// - test_getitem_negative_index: Python negative indexing; `DomNode::at`
-//   takes a `usize`.
-// - test_null_pointer_leaves_nothing_for_del_to_trip_on: Python garbage
-//   collection of a half-built object; a Rust `DomDoc` cannot hold a null
-//   pointer.
-// - test_non_str_key_is_simply_absent: a Python type check (an int key);
-//   `get` takes a `&str`.
-//
-// Python raises KeyError / IndexError / TypeError / ValueError where the Rust
-// accessors return `None`; those tests assert `None`.
-//
-// Python test names shared by several classes carry the class's subject here,
-// since the port is one flat module: TestDomNodeIntAccessors /
-// TestDomNodeFloatAccessor::test_wrong_type_raises are
-// test_as_i64_wrong_type_raises / test_as_float_wrong_type_raises, and
-// TestDomNodeStructAccess / TestDomNodeArrayAccess::test_getitem_wrong_type_raises
-// are test_struct_getitem_wrong_type_raises /
-// test_array_getitem_wrong_type_raises.
+//! The accessors return `None` for a missing key, an index out of range or a
+//! node of the wrong type; `DomNode::at` takes a `usize` and `get` a `&str`.
 
 use bovnar::{
     DomDoc, DomNode, DomType, Error, ErrorCode, Value, ValueTypeFamily, parse, to_string,
@@ -93,13 +76,13 @@ fn parse_via_file(name: &str, data: &[u8]) -> Result<DomDoc, Error> {
 
 #[test]
 fn test_parse_file() {
-    // Python's parse_file(path) is parse_reader over the opened File.
+    // A file is parsed with parse_reader over the opened File.
     assert_eq!(parse_via_file("dom", SCALAR_INT).unwrap().len(), 1);
 }
 
 #[test]
 fn test_parse_fd() {
-    // Python parses an fd opened on a temporary file; Rust reads the File.
+    // Parses an opened temporary file.
     assert_eq!(parse_via_file("dom-fd", MULTI_KEY).unwrap().len(), 3);
 }
 
@@ -396,9 +379,13 @@ fn test_to_python_uint64_high_bit() {
         assert_eq!(
             d.get("x").unwrap().to_value().unwrap(),
             int(want),
-            "to_python"
+            "node to_value"
         );
-        assert_eq!(d.to_value().unwrap(), obj(&[("x", int(want))]), "to_dict");
+        assert_eq!(
+            d.to_value().unwrap(),
+            obj(&[("x", int(want))]),
+            "doc to_value"
+        );
     }
 }
 
@@ -620,7 +607,7 @@ fn test_getitem_str_key_on_array_raises() {
     assert!(doc(ARRAY_1D).get("arr").unwrap().get("bad").is_none());
 }
 
-// TestDomNodeToPython
+// DomNode::to_value
 
 #[test]
 fn test_int_scalar() {

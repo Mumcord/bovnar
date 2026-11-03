@@ -1,5 +1,4 @@
-//! Port of `python/tests/test_escapes.py`: the spec 1.1 string escapes
-//! (`\u{...}` and `\xHH`).
+//! The spec 1.1 string escapes (`\u{...}` and `\xHH`).
 
 use bovnar::{Error, ErrorCode, Value, parse};
 

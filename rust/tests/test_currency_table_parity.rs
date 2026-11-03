@@ -1,7 +1,6 @@
-//! Port of `python/tests/test_currency_table_parity.py`: the currency
-//! catalogue the binding reads must match `src/gendata/currencies.bvnr`, the
-//! source of truth. The source is read with this crate's own parser, where
-//! Python uses the repository's `bvnr_data` loader.
+//! The currency catalogue the binding reads must match
+//! `src/gendata/currencies.bvnr`, the source of truth, which is read with
+//! this crate's own parser.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -71,19 +70,19 @@ fn tables() -> (BTreeMap<BaseUnit, SrcRow>, BTreeMap<BaseUnit, CurrencyInfo>) {
             },
         );
     }
-    let py = cur::all_currencies().map(|i| (i.base, i)).collect();
-    (src, py)
+    let lib = cur::all_currencies().map(|i| (i.base, i)).collect();
+    (src, lib)
 }
 
 #[test]
 fn test_the_same_currencies_are_present() {
-    let (src, py) = tables();
+    let (src, lib) = tables();
     let missing: BTreeSet<&str> = src
         .iter()
-        .filter(|(i, _)| !py.contains_key(i))
+        .filter(|(i, _)| !lib.contains_key(i))
         .map(|(_, c)| c.code.as_str())
         .collect();
-    let extra: BTreeSet<&str> = py
+    let extra: BTreeSet<&str> = lib
         .iter()
         .filter(|(i, _)| !src.contains_key(i))
         .map(|(_, c)| c.code.as_str())
@@ -96,8 +95,8 @@ fn test_the_same_currencies_are_present() {
         extra.is_empty(),
         "the binding has these, currencies.bvnr does not: {extra:?}"
     );
-    assert_eq!(src.len(), py.len());
-    assert_eq!(py.len(), 216);
+    assert_eq!(src.len(), lib.len());
+    assert_eq!(lib.len(), 216);
 }
 
 #[test]
@@ -126,12 +125,12 @@ fn test_every_field_matches_the_source() {
         ),
         ("name", |c| c.name.clone(), |i| i.name.clone()),
     ];
-    let (src, py) = tables();
-    for (name, from_src, from_py) in fields {
+    let (src, lib) = tables();
+    for (name, from_src, from_lib) in fields {
         let mut bad = Vec::new();
         for (base, s) in &src {
-            let Some(p) = py.get(base) else { continue };
-            let (want, got) = (from_src(s), from_py(p));
+            let Some(p) = lib.get(base) else { continue };
+            let (want, got) = (from_src(s), from_lib(p));
             if want != got {
                 bad.push(format!(
                     "  {:<5} (id {base}): currencies.bvnr={want:?}  binding={got:?}",

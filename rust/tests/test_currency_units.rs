@@ -1,10 +1,5 @@
-//! Port of `python/tests/test_currency_units.py`: the currency/crypto unit
-//! extension (id blocks, catalogue metadata, predicates, code lookup).
-//!
-//! Not ported:
-//! - `TestCurrencyInfoImmutable::test_frozen_dataclass_raises_on_mutation`:
-//!   it checks that a frozen dataclass raises at run time when assigned to;
-//!   Rust enforces immutability at compile time, so there is nothing to run.
+//! The currency/crypto unit extension (id blocks, catalogue metadata,
+//! predicates, code lookup).
 
 use std::collections::BTreeSet;
 
@@ -681,8 +676,8 @@ fn test_native_units_are_one_contiguous_run() {
 
 #[test]
 fn test_every_member_is_none_a_unit_or_a_currency() {
-    // Rust's BaseUnit also covers the profiles' opaque ids (Python's does
-    // not): each is a unit only a profile notation can spell.
+    // BaseUnit also covers the profiles' opaque ids: each is a unit only a
+    // profile notation can spell.
     let profile_only = |b| bovnar::Unit::si(b, SIPrefix::None, Exponent::LINEAR).is_profile_only();
     for &(name, b) in BaseUnit::MEMBERS {
         assert!(
@@ -784,7 +779,7 @@ fn test_rejects_malformed_tokens() {
 // ── TestBvnrFormatExamples ────────────────────────────────────────────────
 
 /// The currency codes in the unit annotations of `snippet`: a hand-written
-/// equivalent of the Python pattern
+/// equivalent of the pattern
 /// `<[^>]*,\s*(?:[a-zA-Z]+~)?([A-Z]{3,4})(?:[/·][^>]*)?>`, trying the same
 /// alternatives in the same (greedy, backtracking) order.
 fn extract_currency_codes(snippet: &str) -> Vec<String> {

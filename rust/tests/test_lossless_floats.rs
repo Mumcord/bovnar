@@ -1,24 +1,12 @@
-//! Port of python/tests/test_lossless_floats.py: float128 / float256 /
-//! float_fix / float_dec carried at full precision -- exact `Decimal` and
-//! rational accessors, bit-exact IEEE materialisation, and exact writes.
+//! float128 / float256 / float_fix / float_dec carried at full precision --
+//! exact `Decimal` and rational accessors, bit-exact IEEE materialisation,
+//! and exact writes.
 //!
-//! Python's `Fraction` is `BigRational`, its `Decimal` is [`Decimal`].
-//! Where a Python test checks a result against Python's `decimal` module in
-//! a context (`Context(prec, Emax, Emin, rounding).create_decimal`),
-//! `create_decimal` below is a port of what that does (`_fix` in CPython's
-//! `_pydecimal.py`) for the three roundings the tests use.
-//!
-//! Skipped (NumPy is not mirrored, README "Not mirrored"):
-//! - TestNumpyScalarInputs: test_from_number_numpy_float,
-//!   test_numpy_scalar_object_array_write
-//! - TestNumpyLossless: test_float_dec_array_to_decimal,
-//!   test_float128_array_to_decimal, test_float64_escape_is_lossy_numbers,
-//!   test_decimal_object_array_write_roundtrip,
-//!   test_float128_object_array_write, test_float_fix_object_array_write,
-//!   test_currency_decimal_roundtrip_with_unit,
-//!   test_ambiguous_object_array_rejected,
-//!   test_dom_path_default_raises_points_at_typed (each goes through
-//!   `to_numpy` / `from_numpy` / `array_to_bvnr` and NumPy arrays)
+//! Exact rationals are `BigRational` and exact decimals [`Decimal`]. Where a
+//! test checks a result against decimal rounding in a context (precision,
+//! exponent limits, rounding mode), `create_decimal` below performs that
+//! rounding of a finite value (the General Decimal Arithmetic `_fix` step)
+//! for the three roundings the tests use.
 
 use bovnar::bvnfloat::{
     decimal_stored_value, decimal_to_interchange_bits, fraction_to_binary_bits,
@@ -108,7 +96,7 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// The deterministic LCG step the Python tests use.
+/// A deterministic LCG step, so the sampled values are reproducible.
 fn lcg(x: u64) -> u64 {
     x.wrapping_mul(6_364_136_223_846_793_005)
         .wrapping_add(1_442_695_040_888_963_407)
@@ -122,7 +110,7 @@ enum Rounding {
 }
 
 /// `Context(prec, Emax, Emin, rounding, traps off).create_decimal(d)` for a
-/// finite `d` (CPython's `Decimal._fix`, clamp 0).
+/// finite `d` (the General Decimal Arithmetic `_fix` step, clamp 0).
 fn create_decimal(d: &Decimal, prec: i64, emax: i64, emin: i64, rounding: Rounding) -> Decimal {
     let neg = d.is_signed();
     let (coeff, exp) = (d.coefficient().unwrap(), d.exponent().unwrap());
@@ -146,7 +134,7 @@ fn create_decimal(d: &Decimal, prec: i64, emax: i64, emin: i64, rounding: Roundi
     }
     let keep = n + exp - exp_min;
     let (kept, rest) = if keep < 0 {
-        // Every digit goes: Python stands a single 1 just below the place
+        // Every digit goes: a single 1 stands just below the place
         // kept (the value is below half of it, and not zero).
         (String::new(), "1".to_string())
     } else {
@@ -389,7 +377,7 @@ fn test_decimal_near_emax_full_coefficient_exact() {
             .unwrap(),
         stored(&q)
     );
-    // and it equals decimal128 rounding in Python's decimal module
+    // and it equals decimal128 rounding
     assert_eq!(
         stored(&q),
         create_decimal(&dec(s), 34, 6144, -6143, Rounding::HalfEven)
@@ -652,7 +640,7 @@ fn test_strtodec_bits_still_reads_numbers() {
 
 #[test]
 fn test_from_number_negative_infinity_is_ninf() {
-    // Python's repr of -inf is '-inf'; the format spells it 'ninf', and the
+    // -inf is spelled 'ninf' in the format, and the
     // writer refused the Quantity from_number had just built.
     let q = from_number(f64::NEG_INFINITY, F::FloatDec, 64, None).unwrap();
     assert_eq!(q.raw.as_deref(), Some("ninf"));

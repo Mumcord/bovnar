@@ -1,19 +1,9 @@
-//! Port of `python/tests/test_array_roundtrip_fidelity.py`.
+//! Arrays and nested values survive a write/parse roundtrip: units, element
+//! precision, declared widths, null holes, datetime fractions and multi-chunk
+//! payloads.
 //!
-// Skipped Python tests:
-// - test_numpy_shape_survives_a_roundtrip: the NumPy bridge is not mirrored
-//   (README "Not mirrored").
-// - test_bytearray_and_memoryview: Python buffer types; a Rust `Value` holds
-//   bytes only as `Vec<u8>`.
-// - test_non_str_key_is_an_argument_error: a Python type error; a Rust
-//   `Value::Struct` key is always a `String`.
-//
-// Partly expressible: test_array_element_precision_survives reads 2**128-1
-// through `Quantity::decimal` (it does not fit the `i128` of `Value::Int`);
-// test_datetime_fraction_is_part_of_equality counts distinct values by
-// equality (no Python set); test_typed_loads_does_not_pin_the_reader_snapshot
-// checks unit equality and the serialised output (Python object identity and
-// ctypes buffer ownership have no Rust counterpart).
+//! test_array_element_precision_survives reads 2^128 - 1 through
+//! `Quantity::decimal`, since it does not fit the `i128` of `Value::Int`.
 
 use bovnar::stream::embed_document;
 use bovnar::{Error, Quantity, Value, parse, parse_typed, to_string};

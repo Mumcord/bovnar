@@ -1,13 +1,9 @@
-//! Port of `python/tests/test_reader.py`.
+//! The callback-driven `Reader`: event order and payloads, type annotations,
+//! untyped defaults, nesting, limits, callback results and panics, and
+//! reading from memory, paths and open files.
 //!
-// Skipped Python tests:
-// - test_context_manager: Python `with` and the private `_ptr`; a Rust reader
-//   is released when dropped.
-// - test_closed_read_raises: a dropped Rust reader cannot be used again (the
-//   compiler rejects it), so there is no closed-reader error.
-// - test_non_bytes_raises: a Python type error; `read_mem` takes `&[u8]`.
-// - test_library_loads_without_attribute_error: checks the ctypes loader of
-//   the Python binding; the Rust crate links the library at build time.
+//! A reader is released when dropped and cannot be used afterwards, and
+//! `read_mem` takes `&[u8]`.
 
 use bovnar::{
     DomDoc, Error, ErrorCode, Event, EventData, ReadOptions, Reader, Value, ValueTypeFamily,
@@ -275,7 +271,7 @@ fn test_false_return_raises() {
     assert_eq!(err.code(), Some(ErrorCode::ScannerCallbackFailed));
 }
 
-/// Python's exception raised in the callback is a panic here: it must reach
+/// A panic in the callback must reach
 /// the caller of `read_mem`, not unwind into C.
 #[test]
 fn test_exception_in_callback_raises() {
@@ -312,7 +308,7 @@ fn keys_of_file(path: &std::path::Path) -> Result<Vec<String>, Error> {
 
 #[test]
 fn test_read_file_by_path() {
-    // Python's read_file(path) is read_reader over the opened File.
+    // A file is read with read_reader over the opened File.
     let path = std::env::temp_dir().join(format!("bovnar-test-reader-{}.bvnr", std::process::id()));
     std::fs::write(&path, SIMPLE_SCALAR_UINT).unwrap();
     let keys = keys_of_file(&path);
@@ -322,7 +318,7 @@ fn test_read_file_by_path() {
 
 #[test]
 fn test_read_fd() {
-    // Python reads an fd opened on a temporary file; Rust reads the File.
+    // Reads an opened temporary file.
     let path =
         std::env::temp_dir().join(format!("bovnar-test-reader-fd-{}.bvnr", std::process::id()));
     std::fs::write(&path, SIMPLE_SCALAR_UINT).unwrap();
@@ -470,9 +466,8 @@ impl std::io::Read for InvalidFd {
 
 #[test]
 fn test_invalid_fd() {
-    // Python refuses fd -1 before reading (BovnarArgumentError). Rust has no
-    // fd to refuse, so the input fails instead; the read is refused with the
-    // code the C library gives an fd it cannot read from.
+    // An input that fails to read is refused with the code the C library
+    // gives an fd it cannot read from.
     let err = Reader::new()
         .unwrap()
         .read_reader(InvalidFd, &ReadOptions::default(), None, None)
@@ -537,8 +532,8 @@ fn test_loads_is_streaming_not_dom_validation() {
     }
 }
 
-/// Python kept a callback's payload past the callback and read freed reader
-/// memory. In Rust an `EventData` borrows the reader, so keeping it is a
+/// A callback's payload must not outlive the reader's memory. An
+/// `EventData` borrows the reader, so keeping it is a
 /// compile error; what can be kept is what its accessors return. Those must
 /// give, after the reader is gone, the answers they gave inside the callback.
 #[test]

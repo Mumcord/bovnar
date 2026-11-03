@@ -1,24 +1,18 @@
-//! Port of `python/tests/test_writer.py`. Each Python test class is a module
-//! here so the test names stay the same.
+//! The `Writer`: its lifecycle, every scalar and container write, emit,
+//! buffer limits, pretty output and the regressions around annotations.
+//! Tests are grouped in one module per subject.
 //!
-//! Skipped Python tests:
-//! - `TestWriterLifecycle::test_destroy_idempotent`: Rust has no `destroy`;
-//!   the handle is released exactly once when the writer is dropped.
-//!
-//! `TestWriteBvni::test_wide_uint` writes 2**128 - 1, which does not fit the
+//! `write_bvni::test_wide_uint` writes 2^128 - 1, which does not fit the
 //! `i128` value `write_bvni` takes, so it writes the same `uint:128` scalar
 //! through `write_quantity` with the exact literal.
 //!
-//! Partly expressible: in `test_uint_out_of_range_raises_not_truncates` and
-//! `test_sint_out_of_range_raises_not_truncates` the out-of-range values
-//! (2**64 + 5, -1, 2**63, -(2**63) - 1) cannot be passed to the `u64`/`i64`
-//! parameters at all; only the boundary halves are ported.
+//! The out-of-range values in `test_uint_out_of_range_raises_not_truncates`
+//! and `test_sint_out_of_range_raises_not_truncates` cannot be passed to the
+//! `u64`/`i64` parameters at all, so those tests check only the boundaries.
 //!
-//! Python's `write_uint`/`write_float` unit keywords map to `write_quantity`
-//! with a parsed `Unit`; `emit`'s `vu` argument has no Rust counterpart (the
-//! tests pass a unitless one).
+//! A unit is written with `write_quantity` and a parsed `Unit`.
 
-// 3.14 is the Python suite's literal input, not an approximation of pi.
+// 3.14 is a literal test input, not an approximation of pi.
 #![allow(clippy::approx_constant)]
 
 use bovnar::units::UnitFlags;
@@ -28,10 +22,10 @@ use bovnar::{
     Value, ValueTypeFamily, ValueTypeSpec, Writer, parse, spec_version, to_string,
 };
 
-/// Python's `DEFAULT_MEM_CAP`.
+/// The memory writer's buffer cap.
 const CAP: usize = 4 * 1024 * 1024;
 
-/// `Writer.to_mem()` with Python's defaults.
+/// A memory writer with the default settings.
 fn mem() -> Writer {
     Writer::to_mem(CAP, true).unwrap()
 }
@@ -67,7 +61,7 @@ fn field<'a>(doc: &'a Value, key: &str) -> &'a Value {
     &entries.iter().find(|(k, _)| k == key).unwrap().1
 }
 
-/// Python's `out.split(b'>')[1] if b'>' in out else out`.
+/// What follows the first `>` in `out`, or all of `out` without one.
 fn after_bracket(out: &[u8]) -> &[u8] {
     out.split(|&b| b == b'>').nth(1).unwrap_or(out)
 }
@@ -124,8 +118,7 @@ mod writer_lifecycle {
 
     #[test]
     fn test_to_fd() {
-        // Python writes to an fd opened on a temporary file; Rust writes to
-        // the File.
+        // Writes to an opened temporary file.
         let path =
             std::env::temp_dir().join(format!("bovnar-test-writer-fd-{}.bvnr", std::process::id()));
         let file = std::fs::File::create(&path).unwrap();
@@ -439,8 +432,8 @@ mod bytes_written {
 
     #[test]
     fn test_zero_initially() {
-        // `bytes_written` is unsigned; Python's `>= 0` holds by type. Reading
-        // it on a fresh writer must still work.
+        // `bytes_written` is unsigned, so `>= 0` holds by type. Reading it on
+        // a fresh writer must still work.
         written(|w| {
             let _ = w.bytes_written();
         });
@@ -1257,7 +1250,7 @@ mod writer_flags_keywords {
 
     #[test]
     fn test_to_file_takes_them_too() {
-        // Python's to_file(path, ...) is to_writer_with over the created File.
+        // A file is written with to_writer_with over the created File.
         let path =
             std::env::temp_dir().join(format!("bovnar-test-writer-o-{}.bvnr", std::process::id()));
         let file = std::fs::File::create(&path).unwrap();

@@ -1,18 +1,6 @@
-//! Port of `python/tests/test_unit_source.py`: the unit's own spelling
-//! (`bvnr_data_t.unit_source`) through the bindings: the reader hands it
-//! over, a typed parse keeps it on the `Quantity`, `to_string` writes it back,
-//! and the DOM exposes it.
-//!
-//! `loads`/`loads(typed=True)`/`dumps` are `parse`/`parse_typed`/`to_string`.
-//!
-//! Skipped:
-//! - `test_array_to_bvnr_writes_a_profile_only_unit`: exercises the NumPy
-//!   bridge (`array_to_bvnr`), which is not mirrored.
-//!
-//! In `test_a_spelling_that_disagrees_with_the_unit_is_refused`, the Python
-//! check that a non-string `unit_source` (`unit_source=5`) is refused has no
-//! runtime counterpart: `Quantity::unit_source` is an `Option<String>`, so
-//! the compiler refuses it.
+//! The unit's own spelling (`bvnr_data_t.unit_source`) through the bindings:
+//! the reader hands it over, a typed parse keeps it on the `Quantity`,
+//! `to_string` writes it back, and the DOM exposes it.
 
 use bovnar::{
     DomDoc, Error, ErrorCode, Event, EventData, Quantity, ReadOptions, Reader, Unit, Value,

@@ -1,13 +1,9 @@
-//! Port of python/tests/test_enums.py: the core enums carry the C values,
-//! and the token-type and error-code enums agree with include/bovnar.h.
+//! The core enums carry the C values, and the token-type and error-code enums
+//! agree with include/bovnar.h.
 //!
 //! Rust enums cannot be iterated, so "every member" is every raw value
-//! `from_raw` accepts, scanned over a range far wider than any enum.
-//!
-//! Python's `len(SIPrefix)` and `len(IECPrefix)` count a `_SENTINEL`
-//! member; the Rust enums have none, so their counts are one lower.
-//!
-//! Every Python test is ported.
+//! `from_raw` accepts, scanned over a range far wider than any enum. The
+//! enums have no sentinel member, so the counts include only real values.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -290,8 +286,7 @@ mod si_prefix {
         assert!(all_unique(&values));
     }
 
-    // Python's 26 counts the `_SENTINEL` member (25); the Rust enum has no
-    // sentinel variant, and 25 is refused as a value.
+    // The enum has no sentinel variant, and 25 is refused as a value.
     #[test]
     fn test_count() {
         assert_eq!(members(SIPrefix::from_raw).len(), 25);
@@ -324,7 +319,7 @@ mod iec_prefix {
         assert_eq!(IECPrefix::Quebi as i32, 10);
     }
 
-    // Python's 12 counts the `_SENTINEL` member (11), as for SIPrefix.
+    // No sentinel variant, and 11 is refused as a value, as for SIPrefix.
     #[test]
     fn test_count() {
         assert_eq!(members(IECPrefix::from_raw).len(), 11);
@@ -483,10 +478,10 @@ mod base_unit {
         assert_eq!(CURRENCY_COUNT as usize, codes.len());
     }
 
-    /// Nothing but NONE lives between or beyond the two blocks. The Rust enum
-    /// also names the unit profiles' opaque ids (`UCUM_IU`, blocks 20..80 of
-    /// include/bovnar.h, 200000..899999), which Python's BaseUnit leaves out;
-    /// they are the one other range allowed here.
+    /// Nothing but NONE lives between or beyond the two blocks. The enum also
+    /// names the unit profiles' opaque ids (`UCUM_IU`, blocks 20..80 of
+    /// include/bovnar.h, 200000..899999); they are the one other range
+    /// allowed here.
     #[test]
     fn test_no_members_outside_the_two_blocks() {
         let stray: Vec<&str> = BaseUnit::MEMBERS

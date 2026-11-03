@@ -1,10 +1,10 @@
-//! Port of python/tests/test_stream.py: multi-document framing, octet
-//! multiplexing and document-in-document embedding.
+//! Multi-document framing, octet multiplexing and document-in-document
+//! embedding.
 //!
-//! Nothing skipped. test_mux_channel_out_of_range_is_refused keeps only its
-//! last case: channels are `u64` here, so -1 and 2**64 cannot be passed.
-//! test_mux_load_names_the_demux_error checks the error's C name: a Rust
-//! parse error carries no free-text message, so "desync" is never in it.
+//! Channels are `u64`, so test_mux_channel_out_of_range_is_refused checks
+//! only an out-of-range channel a `u64` can hold. test_mux_load_names_the_demux_error
+//! checks the error's C name, since a parse error carries no free-text
+//! message.
 
 use bovnar::stream::{self, BVNR_DOC_DEFAULT_MAX, BVNR_FILESIZE_UNLIMITED, BVNR_MUX_DEFAULT_MAX};
 use bovnar::{Error, ErrorCode, Value, parse, to_string};

@@ -1,5 +1,5 @@
-//! Port of `python/tests/test_array_parser.py`: the dict parser driven by
-//! hand-built event sequences, without the C reader.
+//! The dict parser driven by hand-built event sequences, without the C
+//! reader.
 
 use bovnar::dict_parser::{ArrScope, DictParser};
 use bovnar::{Event, EventData, Value, ValueTypeFamily, ValueTypeSpec};
@@ -15,7 +15,7 @@ fn uint(n: u64) -> Option<(String, ValueTypeFamily, u32)> {
     d(&n.to_string(), ValueTypeFamily::Uint, 10)
 }
 
-/// The literal as Python's `repr(float)` writes it.
+/// A float literal in its shortest round-trip spelling.
 fn float(v: &str) -> Option<(String, ValueTypeFamily, u32)> {
     d(v, ValueTypeFamily::Float, 0)
 }

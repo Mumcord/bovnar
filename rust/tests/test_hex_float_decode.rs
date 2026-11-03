@@ -1,5 +1,4 @@
-//! Port of `python/tests/test_hex_float_decode.py`: float carriers written in
-//! base 16 decode in base 16.
+//! Float carriers written in base 16 decode in base 16.
 
 use bovnar::{Value, parse, parse_typed};
 

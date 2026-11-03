@@ -1,9 +1,8 @@
-//! Port of `python/tests/test_roundtrip_property.py`: a typed parse and
-//! serialise cycle keeps every value's family, width, unit and literal.
+//! A typed parse and serialise cycle keeps every value's family, width, unit
+//! and literal.
 //!
-//! The Python test filters its random documents through the `bovnar
-//! validate` CLI; here the same full validation is `DomDoc::parse`, so the
-//! test needs no CLI build.
+//! Random documents are filtered through `DomDoc::parse`, the full
+//! validation, so the test needs no CLI build.
 
 use bovnar::{DomDoc, Value, parse_typed, to_string};
 

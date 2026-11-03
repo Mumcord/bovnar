@@ -1,5 +1,5 @@
-//! Port of `python/tests/test_dom_vs_loads_parity.py`: the DOM tier and the
-//! streaming tier read the same document to the same value.
+//! The DOM tier and the streaming tier read the same document to the same
+//! value.
 
 use bovnar::{DomDoc, Value, parse};
 

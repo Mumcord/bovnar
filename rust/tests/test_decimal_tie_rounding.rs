@@ -1,32 +1,31 @@
-//! Port of `python/tests/test_decimal_tie_rounding.py`: an exact decimal tie
-//! must round half to even, as IEEE 754 requires.
+//! An exact decimal tie must round half to even, as IEEE 754 requires.
 //!
 //! The decimal-interchange helpers used to encode the parsed `bvn_float`, a
 //! value already rounded into binary; a decimal tie is in general not exact
 //! in binary, so the decimal rounding followed whichever side the binary
 //! landed on. They now go straight from the literal (`bvn_float_strtodec`).
 //!
-//! The Python test draws its ties from `random.Random(3)`; `PyRandom` below
-//! reproduces that generator (MT19937 with CPython's seeding, `random()` and
-//! `randrange()`), so the port checks the same 2000 literals. Python's
-//! `Context(prec=16, rounding=ROUND_HALF_EVEN).create_decimal` is
-//! `round_half_even` (the exponents stay far from the context's limits).
+//! The ties come from `Mt19937` below (MT19937 seeded as below, with
+//! `random()` and `randrange()` draws) with seed 3, so the 2000 literals are
+//! reproducible. The expected value is `round_half_even` to 16 significant
+//! digits (the exponents stay far from any limit).
 
 use bovnar::{Decimal, Quantity, Value, parse_typed};
 use num_bigint::BigUint;
 use num_integer::Integer;
 
-/// CPython's `random.Random`, as far as `_ties` uses it.
-struct PyRandom {
+/// An MT19937 generator with `random()` and `randrange()` draws, as far as
+/// `ties` uses it.
+struct Mt19937 {
     mt: [u32; 624],
     index: usize,
 }
 
-impl PyRandom {
+impl Mt19937 {
     /// `random.Random(seed)` for a small non-negative int: `init_by_array`
     /// over its 32-bit words.
     fn new(seed: u32) -> Self {
-        let mut r = PyRandom {
+        let mut r = Mt19937 {
             mt: [0; 624],
             index: 624,
         };
@@ -119,7 +118,7 @@ impl PyRandom {
 /// Literals with a 17-digit coefficient ending in 5: exactly half a unit in
 /// decimal64's last kept place.
 fn ties(n: usize, seed: u32) -> Vec<String> {
-    let mut rnd = PyRandom::new(seed);
+    let mut rnd = Mt19937::new(seed);
     (0..n)
         .map(|_| {
             let coeff = rnd.randrange(10i64.pow(15), 10i64.pow(16)) * 10 + 5;
@@ -167,8 +166,7 @@ fn stored_value(lit: &str) -> Decimal {
 #[test]
 fn test_exact_decimal64_ties_round_half_to_even() {
     let lits = ties(2000, 3);
-    // random.Random(3)'s first draws, as CPython makes them: the generator
-    // above is the one the Python test uses.
+    // Seed 3's first draws pin the generator above to a known sequence.
     assert_eq!(lits[0], "63380354856222695e-13");
     let mut bad = Vec::new();
     let mut n = 0;

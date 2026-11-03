@@ -1,8 +1,5 @@
-//! Port of `python/tests/test_example_consistency.py`: the numbers inside
-//! the shipped examples agree with each other.
-//!
-//! Python does the arithmetic with `decimal.Decimal` on the literals; here a
-//! small exact decimal (mantissa and scale) does the same.
+//! The numbers inside the shipped examples agree with each other. A small
+//! exact decimal (mantissa and scale) does the arithmetic on the literals.
 
 use std::path::PathBuf;
 

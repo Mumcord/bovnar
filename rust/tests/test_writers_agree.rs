@@ -1,6 +1,6 @@
-//! Port of `python/tests/test_writers_agree.py`: the C writer (the CLI's
-//! `pretty-print`) and this crate's `to_string` write documents that read
-//! back alike, for every catalogue unit in every unit-carrying shape.
+//! The C writer (the CLI's `pretty-print`) and this crate's `to_string`
+//! write documents that read back alike, for every catalogue unit in every
+//! unit-carrying shape.
 //!
 //! The sweep compares against the CLI built at `<repo>/build/bovnar`, so it is
 //! `#[ignore]`d by default and fails, rather than passing silently, when run
@@ -57,7 +57,7 @@ fn catalogue() -> std::io::Result<Vec<String>> {
     Ok(out)
 }
 
-/// What Python's `Quantity.__eq__` compares: literal, fraction, type and the
+/// What two read-back values are compared by: literal, fraction, type and the
 /// canonical unit spelling.
 #[derive(Debug, PartialEq)]
 enum Cmp {

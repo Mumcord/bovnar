@@ -1,15 +1,14 @@
-//! Port of `python/tests/test_unicode_normalisation.py`: a unit symbol must
-//! survive Unicode normalisation.
+//! A unit symbol must survive Unicode normalisation.
 //!
 //! Three of the symbols are characters Unicode declares equivalent to another:
 //! U+2126 OHM SIGN -> U+03A9 (all forms), U+212B ANGSTROM SIGN -> U+00C5 (NFD:
 //! U+0041 U+030A), U+00B5 MICRO SIGN -> U+03BC (NFKC/NFKD). A document passed
 //! through any normalising step must still parse.
 //!
-//! Python uses `unicodedata`; with no dependency for it here, `normalize`
-//! below carries the decompositions of exactly the non-ASCII characters the
-//! unit catalogue uses, and fails loudly on any other character so a new
-//! symbol cannot slip past the sweep untested.
+//! With no Unicode-normalisation dependency, `normalize` below carries the
+//! decompositions of exactly the non-ASCII characters the unit catalogue
+//! uses, and fails loudly on any other character so a new symbol cannot slip
+//! past the sweep untested.
 
 use bovnar::units::parse_unit;
 use bovnar::{Value, parse};

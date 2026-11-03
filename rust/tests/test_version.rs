@@ -1,5 +1,4 @@
-//! Port of `python/tests/test_version.py`: the spec version directive
-//! (`#!bovnar M.N`).
+//! The spec version directive (`#!bovnar M.N`).
 
 use bovnar::{
     Error, ErrorCode, EventData, ReadOptions, Reader, Value, parse, peek_version, spec_version,

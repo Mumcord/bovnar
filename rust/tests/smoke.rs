@@ -75,7 +75,7 @@ fn malformed_input_reports_the_c_error_name() {
     assert!(err.to_string().contains("incomplete_bvnr_stream"), "{err}");
 }
 
-/// What Python's `dumps(loads(x)) == x` promises, for both parse modes.
+/// `to_string(parse(x))` reads back as `x`, for both parse modes.
 #[test]
 fn every_parse_result_round_trips_through_to_string() {
     let doc = br#"#!bovnar 1.1

@@ -1,24 +1,9 @@
-//! Port of `python/tests/test_unit_object.py`: the `Unit` object, its
-//! equality and hashing, and the unit functions taking it.
+//! The `Unit` object, its equality and hashing, and the unit functions taking
+//! it.
 //!
-//! Not ported:
-//! - `test_constructor_rejects_nonsense`: `Unit(42)` cannot be written in
-//!   Rust; the type system refuses it.
-//! - `test_calling_one_is_a_typeerror`: a property-versus-method mistake has
-//!   no Rust counterpart.
-//! - `test_rejects_bad_vtype`, `test_rejects_bad_raw`, `test_rejects_bad_frac`:
-//!   `Quantity::new` takes a typed `&str`, `ValueTypeSpec` and `Unit`, so
-//!   these arguments cannot be of the wrong type.
-//! - `test_accepts_a_unit_string_for_convenience`: `Quantity::new` takes a
-//!   `Unit`, never a string.
-//! - `test_comparison_with_a_foreign_type_is_false_not_an_error`: it checks
-//!   that Python's raw `ValueUnit` is never equal to a string or `None`. Rust
-//!   has no separate raw `ValueUnit`: `parse_unit` returns a `Unit`, which
-//!   compares with a string by its spelling as Python's `Unit` does, and
-//!   comparing it with `None` (or any other type) does not compile.
-//!
-//! The raw `ValueUnit` and the `Unit` object are one type in Rust, so the
-//! tests that check the two agree compare a parsed unit with `Unit::parse`.
+//! `parse_unit` returns a `Unit`, which compares equal to a string by its
+//! spelling; the tests that check a parsed unit compare it with
+//! `Unit::parse`.
 
 use std::collections::{HashMap, HashSet};
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -398,8 +383,8 @@ fn test_want_unit_may_return_one() {
 
 #[test]
 fn test_repr_of_a_profile_only_unit_does_not_raise() {
-    // Python checks the repr names the opaque atom id and LITER; Rust's
-    // components carry the BaseUnit, and BaseUnit::name gives the member name.
+    // The components carry the opaque atom id and LITER as `BaseUnit`s, and
+    // `BaseUnit::name` gives the member name.
     let vu = parse_unit("ucum:[IU]/mL").unwrap();
     let comps = vu.components();
     assert!(comps.iter().any(|c| c.base as i32 == 200000));

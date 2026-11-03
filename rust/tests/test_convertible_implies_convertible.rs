@@ -1,10 +1,7 @@
-//! Port of `python/tests/test_convertible_implies_convertible.py`.
-//!
 //! `units_convertible` may answer true for a pair that `convert_value` then
 //! refuses only in two documented shapes: an affine scale inside a compound,
-//! and a factor too large for any representation. The sweep below uses a
-//! small deterministic generator in place of Python's `random.Random`; the
-//! seed is the same, the sequence is not.
+//! and a factor too large for any representation. The sweep below draws its
+//! pairs from a small deterministic generator with a fixed seed.
 
 use bovnar::units::{convert_value, parse_unit, units_convertible};
 

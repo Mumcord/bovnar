@@ -1,10 +1,8 @@
-//! Port of `python/tests/test_unit_policy.py`: the reader-side unit policy,
-//! its DOM and writer halves, and the unit predicates it builds on.
+//! The reader-side unit policy, its DOM and writer halves, and the unit
+//! predicates it builds on.
 //!
-//! Every Python test is ported. `DomDoc.parse_file(path, policy)` is
-//! `DomDoc::parse_reader_with_policy` over the opened file. `Writer.write_float(..., unit_str=...)` is
-//! `Writer::write_quantity` with a float `Quantity` in that unit, and a
-//! `UnitPolicy` target given as a bare string is `(unit, 0)`.
+//! Files are parsed with `DomDoc::parse_reader_with_policy` over the opened
+//! file, and a float in a unit is written with `Writer::write_quantity`.
 
 use bovnar::units::{unit_si_normal_form, unit_to_str, units_compatible, units_convertible};
 use bovnar::{
@@ -111,7 +109,7 @@ fn u(text: &str) -> Unit {
     Unit::parse(text).unwrap()
 }
 
-/// Python's `Writer.write_float(key, value, unit_str=unit)`.
+/// Writes `value` as a float under `key`, in `unit` when one is given.
 fn write_float(w: &mut Writer, key: &str, value: f64, unit: Option<&str>) -> Result<(), Error> {
     let vt = ValueTypeSpec {
         family: ValueTypeFamily::Float as i32,

@@ -1,9 +1,9 @@
-//! Port of `python/tests/test_unit_physics.py`: SI factors, compatibility,
-//! conversion factors, dimension vectors, reduction and value conversion.
+//! SI factors, compatibility, conversion factors, dimension vectors,
+//! reduction and value conversion.
 //!
-//! Every python test is ported. The `test_return_type_is_frozen` /
-//! `test_reduced_is_frozen` cases check that the result is a value: changing
-//! a copy cannot change what the library reports.
+//! The `test_return_type_is_frozen` / `test_reduced_is_frozen` cases check
+//! that the result is a value: changing a copy cannot change what the
+//! library reports.
 
 use std::f64::consts::PI;
 

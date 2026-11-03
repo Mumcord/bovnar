@@ -1,6 +1,6 @@
-//! Port of `python/tests/test_datetime_oracle.py`: ISO-8601 datetime literals
-//! checked against an independent reference written in this file (proleptic
-//! Gregorian civil-day arithmetic plus the IERS leap-second table).
+//! ISO-8601 datetime literals checked against an independent reference
+//! written in this file (proleptic Gregorian civil-day arithmetic plus the
+//! IERS leap-second table).
 
 use bovnar::{Value, parse};
 
@@ -95,13 +95,13 @@ fn civil_from_days(z: i64) -> (i64, i64, i64) {
     )
 }
 
-/// Python's `calendar.timegm`: linear in every field, so second 60 is
+/// Seconds since the Unix epoch, ignoring leap seconds: linear in every field, so second 60 is
 /// simply the next second.
 fn timegm(y: i64, mo: i64, d: i64, h: i64, mi: i64, s: i64) -> i64 {
     days_from_civil(y, mo, d) * 86400 + h * 3600 + mi * 60 + s
 }
 
-/// Python's `time.gmtime`: (year, month, day, hour, minute, second).
+/// The inverse of `timegm`: (year, month, day, hour, minute, second).
 fn gmtime(t: i64) -> (i64, i64, i64, i64, i64, i64) {
     let (y, mo, d) = civil_from_days(t.div_euclid(86400));
     let s = t.rem_euclid(86400);

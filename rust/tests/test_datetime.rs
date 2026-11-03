@@ -1,5 +1,5 @@
-//! Port of `python/tests/test_datetime.py`: the spec 1.1 native time family
-//! (`<datetime:width,epoch>`) through the bindings.
+//! The spec 1.1 native time family (`<datetime:width,epoch>`) through the
+//! bindings.
 
 use bovnar::{
     DomDoc, Error, ErrorCode, Event, EventData, Quantity, ReadOptions, Reader, Value,

@@ -1,14 +1,9 @@
-//! Port of `python/tests/test_dumps_directive.py`: `to_string`'s spec 1.1
-//! directive detection, and a string carrying a unit round-tripping.
+//! `to_string`'s spec 1.1 directive detection, and a string carrying a unit
+//! round-tripping.
 //!
-//! The directive check is private here (Python calls `_uses_spec_1_1`
-//! directly), so these tests observe it through `to_string`: a document that
-//! needs no 1.1 feature gains no `#!bovnar` directive.
-//!
-//! Skipped:
-//! - test_quantity_rejects_non_spec_vtype, test_quantity_rejects_none_vtype:
-//!   they pass a non-`ValueTypeSpec` (a string, `None`) to the `Quantity`
-//!   constructor; Rust's type system rules that out at compile time.
+//! The directive check is private, so these tests observe it through
+//! `to_string`: a document that needs no 1.1 feature gains no `#!bovnar`
+//! directive.
 
 use bovnar::{Quantity, Unit, Value, ValueTypeFamily, ValueTypeSpec, parse_typed, to_string};
 

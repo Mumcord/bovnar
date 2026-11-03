@@ -1,7 +1,6 @@
-//! Port of `python/tests/test_base_rendering_property.py`: an exact
-//! read-time conversion renders in a base exactly when the arithmetic says
-//! its expansion terminates there, and every rendering decodes back to the
-//! exact rational.
+//! An exact read-time conversion renders in a base exactly when the
+//! arithmetic says its expansion terminates there, and every rendering
+//! decodes back to the exact rational.
 
 use std::collections::BTreeMap;
 

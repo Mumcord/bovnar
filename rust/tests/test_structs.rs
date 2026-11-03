@@ -1,41 +1,11 @@
-//! Port of python/tests/test_structs.py, as far as the public API reaches.
+//! The public struct types: `ValueTypeSpec` (built with a struct literal),
+//! `Unit` (which wraps `value_unit_t`) with its `Unit::default` /
+//! `Unit::dimensionless` / `Unit::si` / `Unit::iec` / `Unit::compound`
+//! constructors, `UnitComponent` and `ReadOptions`.
 //!
-//! Python's `structs.py` (the ctypes mirrors and their `make_*` helpers) is
-//! the private `ffi` module here; its layouts are checked against the C
-//! compiler by the test_abi tests in src/ffi.rs (`abi_tests`). The public
-//! pieces are `ValueTypeSpec` (built with a struct literal) and `Unit`
-//! (which wraps `value_unit_t`).
-//!
-//! Python's `make_type_spec` is a `ValueTypeSpec` struct literal here,
-//! `make_unit_none` / `make_unit_dimensionless` / `make_unit_si` /
-//! `make_unit_iec` / `make_unit_compound` are `Unit::default` /
-//! `Unit::dimensionless` / `Unit::si` / `Unit::iec` / `Unit::compound`, a
-//! `ValueUnitComponent` is a `UnitComponent`, and `BvnrReadFlags` is
-//! `ReadOptions`.
-//!
-//! Skipped (the C struct mirror or helper is private, and these tests check
-//! its raw ctypes form, which has no public Rust counterpart):
-//! - TestConstants: test_opaque_bytes (the opaque blob size is private)
-//! - TestValueUnitComponent: test_size_reasonable (ctypes size),
-//!   test_zero_init (`UnitComponent` has no zeroed form: a struct literal
-//!   names every field), test_union_overlap (the raw prefix-id C union),
-//!   test_repr (Python `repr`)
-//! - TestValueUnit: test_size (ctypes size), test_active_components (writes
-//!   the raw `num_components` field; `Unit::compound` sets it, see
-//!   TestMakeUnitCompound::test_active_components_matches_num)
-//! - TestValueTypeSpec: test_repr (Python's repr names the family; the Rust
-//!   `Debug` prints the raw field values)
-//! - TestBvnrData: test_zero_init, test_raw_bytes, test_raw_bytes_empty,
-//!   test_repr, test_has_spec_1_1_frac_fields,
-//!   test_has_spec_1_2_unit_source_fields (`BvnrData` is private; its field
-//!   order is checked by the test_abi tests in src/ffi.rs)
-//! - TestOpaqueTypes: test_source_size, test_sink_size,
-//!   test_source_zero_init, test_sink_zero_init (private opaque blobs)
-//! - TestBvnrReadFlags: test_size_reasonable (ctypes size)
-//! - TestBvnrWriteFlags: test_zero_init (private; the writer takes no flags)
-//! - TestMakeDataKey: test_ascii, test_unicode, test_data_pointer_valid
-//! - TestMakeDataTyped: test_returns_bvnr_data (`make_data_*` build the
-//!   private `BvnrData`)
+//! The raw C struct mirrors live in the private `ffi` module; their layouts
+//! are checked against the C compiler by the test_abi tests in src/ffi.rs
+//! (`abi_tests`).
 
 use bovnar::{
     BaseUnit, Exponent, IECPrefix, MAX_UNIT_COMPONENTS, PrefixSystem, ReadOptions, SIPrefix, Unit,
@@ -308,8 +278,8 @@ mod make_unit_compound {
         assert_eq!(c.prefix, IECPrefix::Gibi);
     }
 
-    // Python's `make_unit_compound` fills in a linear exponent and no prefix
-    // for a missing key; `plain` is that default spelled out.
+    // `Unit::compound` fills in a linear exponent and no prefix for a
+    // missing key; `plain` is that default spelled out.
     #[test]
     fn test_default_exp_is_linear() {
         let vu = Unit::compound(&[plain(BaseUnit::Meter)]).unwrap();

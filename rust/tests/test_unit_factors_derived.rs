@@ -1,17 +1,8 @@
-//! Port of `python/tests/test_unit_factors_derived.py`.
-//!
 //! Conversion factors, re-derived from each unit's definition and compared
 //! against `src/gendata/units.bvnr`, which is read here with the crate's own
-//! parser (Python reads it with the repository helper `bvnr_data`). Exact
-//! rationals use a small `i128` fraction type in place of Python's
-//! `Fraction`. The generated C tables are read from this crate's build
-//! output instead of CMake's `build/generated`.
-//!
-//! Not ported:
-//! - `test_the_derivation_set_covers_the_self_defined_units`: its roster is
-//!   computed from the pint bridge table (`_pint_units.BASE_UNIT_TO_PINT`) and
-//!   the Python-only `check_profile_factors`/`gen_profiles` helpers; the pint
-//!   bridge is not mirrored.
+//! parser. Exact rationals use a small `i128` fraction type. The generated C
+//! tables are read from this crate's build output instead of CMake's
+//! `build/generated`.
 
 use std::f64::consts::PI;
 

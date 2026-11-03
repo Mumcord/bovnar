@@ -1,22 +1,17 @@
-//! Port of `python/tests/test_write_array.py`. Each Python test class is a
-//! module here so the test names stay the same.
+//! `write_array` and the arrays `to_string` writes: flat, multi-row, struct
+//! and nested elements, annotations, special floats, booleans and big
+//! integers. Tests are grouped in one module per subject.
 //!
-//! Skipped Python tests:
-//! - `TestWriteArrayHeldToAnnotation::test_generator_rows_keep_their_first_element`:
-//!   `write_array` takes a slice; Rust has no one-shot generator argument
-//!   whose head a probe could consume.
-//!
-//! In `TestDumpsBigInt::test_scalar_bigint_roundtrip` the cases 2**255 and
-//! -(2**255) do not fit `Value::Int` (`i128`): they are written as the
-//! `uint:256` / `sint:257` scalars Python's `dumps` writes for them and read
-//! back exactly through `parse_typed`.
+//! In `dumps_big_int::test_scalar_bigint_roundtrip` the cases 2^255 and
+//! -(2^255) do not fit `Value::Int` (`i128`): they are written as `uint:256` /
+//! `sint:257` scalars and read back exactly through `parse_typed`.
 
 use bovnar::{
     Error, Quantity, Unit, Value, ValueTypeFamily, ValueTypeSpec, Writer, parse, parse_typed,
     to_string, write_array,
 };
 
-/// Python's `DEFAULT_MEM_CAP`.
+/// The memory writer's buffer cap.
 const CAP: usize = 4 * 1024 * 1024;
 
 /// A plain value for the `v!` macro.
@@ -60,7 +55,7 @@ impl Lit for Value {
     }
 }
 
-/// A Python literal as a `Value`: `v!([1, [2, -3], null, "s"])`.
+/// A literal as a `Value`: `v!([1, [2, -3], null, "s"])`.
 macro_rules! v {
     (@items [$($done:expr,)*]) => { vec![$($done),*] };
     (@items [$($done:expr,)*] [$($inner:tt)*] $(, $($rest:tt)*)?) => {
@@ -76,7 +71,7 @@ macro_rules! v {
     ($e:expr) => { Lit::lit($e) };
 }
 
-/// A Python dict as a `Value::Struct`.
+/// Named fields as a `Value::Struct`.
 fn st(fields: Vec<(&str, Value)>) -> Value {
     Value::Struct(fields.into_iter().map(|(k, v)| (k.into(), v)).collect())
 }
@@ -115,7 +110,7 @@ fn written(key: &str, rows: Value, spec: Option<ValueTypeSpec>, unit: Option<&Un
     w.get_output().to_vec()
 }
 
-/// Python's `_roundtrip`: write `rows` as `.data`, parse, return `.data`.
+/// Writes `rows` as `.data`, parses, and returns `.data`.
 fn roundtrip(rows: Value) -> Value {
     let out = written("data", rows, None, None);
     field(&parse(&out).unwrap(), "data").clone()
@@ -411,7 +406,7 @@ mod dumps_big_int {
             assert_eq!(rt("x", Value::Int(v)), Value::Int(v), "{v}");
         }
         let two_255: num_bigint::BigInt = num_bigint::BigInt::from(1) << 255u32;
-        // Python's widths: bit_length, one more for a negative number.
+        // Widths: the bit length, one more for a negative number.
         for (v, family, width) in [
             (two_255.clone(), ValueTypeFamily::Uint, 256),
             (-two_255, ValueTypeFamily::Sint, 257),
@@ -667,7 +662,7 @@ mod array_shapes_survive_dumps {
 mod typed_arrays_survive_dumps {
     use super::*;
 
-    /// Python's `_again`: (typed doc, compact output, typed re-read).
+    /// (typed doc, compact output, typed re-read).
     fn again(src: &[u8]) -> (Value, Vec<u8>, Value) {
         let doc = parse_typed(src).unwrap();
         let out = to_string(&doc, false).unwrap();
@@ -753,7 +748,7 @@ mod typed_arrays_survive_dumps {
 mod write_array_held_to_annotation {
     use super::*;
 
-    /// Python's `_write`: a compact `.p` array under `spec`.
+    /// A compact `.p` array under `spec`.
     fn write(rows: Value, spec: ValueTypeSpec, unit: Option<&Unit>) -> bovnar::Result<Vec<u8>> {
         let mut w = Writer::to_mem(CAP, false)?;
         write_array(&mut w, "p", &items(rows), Some(spec), unit, None)?;
@@ -769,7 +764,6 @@ mod write_array_held_to_annotation {
     /// The refusal used to come at the bad element, after `.p=<uint:16>[80,443,`
     /// was already out: the writer was left inside an open array and every
     /// later write failed with it. Now the whole array is checked first.
-    /// (Python's `10 ** 5000` and `object()` rows have no `Value` form.)
     #[test]
     fn test_a_refusal_writes_nothing() {
         let u16_ = vt(ValueTypeFamily::Uint, 16, 0);
