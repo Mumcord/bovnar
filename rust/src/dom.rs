@@ -142,8 +142,13 @@ impl<'a> DomNode<'a> {
         self.0.value_type()
     }
 
-    /// The canonical unit string, empty when the value has none.
+    /// The canonical unit string, empty when the value has none, the same
+    /// contract as [`crate::Quantity::unit_str`]. (The C formatter spells no
+    /// unit `no_unit`; that literal must not come through here.)
     pub fn unit_str(self) -> String {
+        if self.unit().is_dimensionless() {
+            return String::new();
+        }
         self.0.unit_string()
     }
 

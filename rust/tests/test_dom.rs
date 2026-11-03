@@ -694,3 +694,27 @@ fn test_empty_rows_keep_their_count() {
         ])
     );
 }
+
+/// doc/09 §13.3 promises an empty unit string for a value with no unit, as
+/// `Quantity::unit_str` gives; the DOM must not return the C formatter's
+/// literal `no_unit`.
+#[test]
+fn test_unit_str_agrees_with_quantity() {
+    let src: &[u8] =
+        b".a = 1; .b = <uint:32,no_unit> 7; .s = \"x\"; .m = 5 m; .p = 5 %; .t = { .q = 1; };";
+    let doc = DomDoc::parse(src).unwrap();
+    let Value::Struct(typed) = bovnar::parse_typed(src).unwrap() else {
+        panic!("not a struct");
+    };
+    let unit_of = |key: &str| doc.get(key).unwrap().unit_str();
+    for (k, v) in &typed {
+        if let Value::Quantity(q) = v {
+            assert_eq!(unit_of(k), q.unit_str(), "{k}");
+        }
+    }
+    assert_eq!(unit_of("a"), "");
+    assert_eq!(unit_of("b"), "");
+    assert_eq!(unit_of("m"), "m");
+    assert_eq!(unit_of("p"), "%");
+    assert_eq!(unit_of("t"), "");
+}
