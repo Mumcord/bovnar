@@ -47,6 +47,20 @@ pub struct DomDoc {
     handle: ffi::DocHandle,
 }
 
+/// The most input [`DomDoc::parse_reader`] reads: the C library's
+/// `BVN_DOM_FD_MAX_BYTES`, the cap of `bvn_dom_parse_fd`.
+pub const DOM_READ_MAX_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Reads a DOM document from `input`, refusing one over
+/// [`DOM_READ_MAX_BYTES`].
+fn read_dom_input(input: impl std::io::Read) -> Result<Vec<u8>> {
+    let data = crate::io::read_capped(input, Some(DOM_READ_MAX_BYTES))?;
+    if data.len() as u64 > DOM_READ_MAX_BYTES {
+        return Err(Error::parse_code(ErrorCode::FileTooLong.into()));
+    }
+    Ok(data)
+}
+
 impl DomDoc {
     /// Parses BVNR bytes into a DOM tree; a malformed document is an
     /// [`Error::Parse`] carrying the C error code.
@@ -78,6 +92,28 @@ impl DomDoc {
                 e
             }
         })
+    }
+
+    /// [`DomDoc::parse`] over any [`std::io::Read`]: Python's
+    /// `DomDoc.parse_fd` (and, given a [`std::fs::File`], its `parse_file`).
+    ///
+    /// Reads `input` to its end and parses it, as `bvn_dom_parse_fd` does, up
+    /// to the same cap of [`DOM_READ_MAX_BYTES`] (256 MiB). A longer input is
+    /// an [`Error::Parse`] with `file_too_long`, where the C function returns
+    /// no document and Python raises `MemoryError`. A failing `input` is an
+    /// [`Error::Io`] with `reading_from_source_fd`.
+    pub fn parse_reader(input: impl std::io::Read) -> Result<Self> {
+        Self::parse(&read_dom_input(input)?)
+    }
+
+    /// [`DomDoc::parse_with_policy`] over any [`std::io::Read`]: Python's
+    /// `DomDoc.parse_fd` with a policy. Reads `input` as
+    /// [`DomDoc::parse_reader`] does.
+    pub fn parse_reader_with_policy(
+        input: impl std::io::Read,
+        policy: &crate::reader::UnitPolicy,
+    ) -> Result<Self> {
+        Self::parse_with_policy(&read_dom_input(input)?, policy)
     }
 
     /// `handle` is `None` when the input is over the C API's 4 GiB (a

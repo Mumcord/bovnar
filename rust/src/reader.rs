@@ -346,6 +346,12 @@ impl From<&EventData<'_>> for EventPayload {
     }
 }
 
+/// The most input a read keeps in memory: `max_file_size`, or no limit when
+/// it is 0, as for the C reader.
+fn file_size_cap(options: &ReadOptions) -> Option<u64> {
+    (options.max_file_size != 0).then_some(options.max_file_size)
+}
+
 /// A `want_unit` hook: the unit (and output base) to deliver a numeric value
 /// in, or `None` to deliver it as written.
 pub type WantUnit<'h> = &'h mut dyn FnMut(&EventData<'_>) -> Option<(Unit, u32)>;
@@ -388,6 +394,41 @@ impl Reader {
         on_verified: Option<EventHandler<'h>>,
     ) -> Result<()> {
         self.read(data, options, on_verified, None, Some(want_unit))
+    }
+
+    /// [`Reader::read_mem`] over any [`std::io::Read`]: Python's
+    /// `Reader.read_fd` (and, given a [`std::fs::File`], its `read_file`).
+    ///
+    /// The input is read to its end first, or to the first byte over
+    /// `options.max_file_size` when that is set, and then parsed as
+    /// `read_fd` parses it: the same events, and `file_too_long` at the same
+    /// offset for a document over the cap. A failing `input` is an
+    /// [`Error::Io`] with `reading_from_source_fd`, the code an unreadable fd
+    /// gives; since nothing is parsed before the input is read, no event is
+    /// delivered then.
+    pub fn read_reader<'h>(
+        &mut self,
+        input: impl std::io::Read,
+        options: &ReadOptions,
+        on_verified: Option<EventHandler<'h>>,
+        on_unverified: Option<EventHandler<'h>>,
+    ) -> Result<()> {
+        let data = crate::io::read_capped(input, file_size_cap(options))?;
+        self.read(&data, options, on_verified, on_unverified, None)
+    }
+
+    /// [`Reader::read_mem_want_unit`] over any [`std::io::Read`]: Python's
+    /// `Reader.read_fd` with `want_unit`. Reads `input` as
+    /// [`Reader::read_reader`] does.
+    pub fn read_reader_want_unit<'h>(
+        &mut self,
+        input: impl std::io::Read,
+        options: &ReadOptions,
+        want_unit: WantUnit<'h>,
+        on_verified: Option<EventHandler<'h>>,
+    ) -> Result<()> {
+        let data = crate::io::read_capped(input, file_size_cap(options))?;
+        self.read(&data, options, on_verified, None, Some(want_unit))
     }
 
     /// Installs a unit policy for every following read; `None` clears it.

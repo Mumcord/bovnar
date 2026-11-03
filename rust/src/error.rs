@@ -44,6 +44,16 @@ pub enum Error {
     /// The library could not allocate (Python's `MemoryError`); names the
     /// call that failed.
     OutOfMemory(&'static str),
+    /// The `std::io::Read` or `std::io::Write` behind a `*_reader` /
+    /// `to_writer` entry point failed. `code` is what the C library reports
+    /// for an unreadable fd or an unwritable fd sink in Python's `read_fd`,
+    /// `parse_fd` and `to_fd` (`reading_from_source_fd`, `writing_to_sink`);
+    /// `io_kind` and `message` keep what the I/O error said.
+    Io {
+        code: ErrorKind,
+        io_kind: std::io::ErrorKind,
+        message: String,
+    },
 }
 
 impl Error {
@@ -63,6 +73,16 @@ impl Error {
         }
     }
 
+    /// An I/O error of the caller's reader or writer, under the library's
+    /// `code` for that failure.
+    pub(crate) fn io(code: ErrorKind, err: &std::io::Error) -> Self {
+        Error::Io {
+            code,
+            io_kind: err.kind(),
+            message: err.to_string(),
+        }
+    }
+
     /// A parse error the library reported without a position.
     pub(crate) fn parse_code(code: i32) -> Self {
         Error::Parse {
@@ -76,6 +96,7 @@ impl Error {
         match self {
             Error::Parse { code, .. } | Error::Write { code, .. } => Some(*code),
             Error::Argument { code, .. } => code.map(i32::from),
+            Error::Io { code, .. } => Some(i32::from(*code)),
             Error::OutOfMemory(_) => None,
         }
     }
@@ -128,6 +149,11 @@ impl fmt::Display for Error {
             ),
             Error::Argument { message, .. } => f.write_str(message),
             Error::OutOfMemory(call) => write!(f, "out of memory: {call} failed"),
+            Error::Io { code, message, .. } => write!(
+                f,
+                "I/O error: {} ({message})",
+                ffi::error_name(i32::from(*code))
+            ),
         }
     }
 }
