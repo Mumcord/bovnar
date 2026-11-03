@@ -10,7 +10,7 @@ use bovnar::enums::ValueTypeFamily;
 use bovnar::units::{
     UnitFlags, available_profiles, exponent_to_int, int_to_exponent, parse_unit, prefix_unit_valid,
     unit_convert_factor, unit_error_code, unit_factor, unit_prefix_exponent, unit_prefix_factor,
-    unit_to_str, unit_to_str_ex, unit_valid, units_compatible,
+    unit_to_si_factor, unit_to_str, unit_to_str_ex, unit_valid, units_compatible,
 };
 use bovnar::{
     BaseUnit, Error, ErrorCode, Event, EventData, Exponent, IECPrefix, MAX_UNIT_COMPONENTS, Prefix,
@@ -803,6 +803,32 @@ mod unit_factor_tests {
     #[test]
     fn test_invalid_unit_raises() {
         assert!(is_arg_err(unit_factor("XYZ")));
+    }
+
+    // unit_factor wraps bvn_unit_prefix_factor: only the prefixes count, so a
+    // unit with no prefix is 1.0 however far it is from SI.
+    #[test]
+    fn test_unprefixed_non_si_unit_is_one() {
+        assert_eq!(unit_factor("in").unwrap(), 1.0);
+        assert_eq!(unit_factor("h").unwrap(), 1.0);
+    }
+
+    #[test]
+    fn test_prefix_only_not_si_scale() {
+        assert_eq!(unit_factor("M~Hz").unwrap(), 1_000_000.0);
+        assert_eq!(unit_factor("k~m").unwrap(), 1000.0);
+        assert_eq!(unit_factor("k~in").unwrap(), 1000.0);
+    }
+
+    #[test]
+    fn test_affine_unit_has_prefix_factor() {
+        assert_eq!(unit_factor("°C").unwrap(), 1.0);
+    }
+
+    #[test]
+    fn test_full_si_factor_stays_on_unit() {
+        assert_eq!(p("in").factor().unwrap(), 0.0254);
+        assert_eq!(unit_to_si_factor(&p("h")).unwrap().factor, 3600.0);
     }
 }
 

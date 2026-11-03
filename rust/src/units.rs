@@ -55,9 +55,12 @@ pub fn unit_error_code(text: &str) -> i32 {
     ffi::unit_error_code(text)
 }
 
-/// The SI factor of a unit string.
+/// The scale the prefixes of a unit string contribute, and nothing about the
+/// base unit itself: this is `bvn_unit_prefix_factor`, so `M~Hz` is 1e6 while
+/// `in` and `h` are 1.0. For the full factor to coherent SI use
+/// [`Unit::factor`] or [`unit_to_si_factor`].
 pub fn unit_factor(text: &str) -> Result<f64> {
-    Unit::parse(text)?.factor()
+    Ok(unit_prefix_factor(&Unit::parse(text)?))
 }
 
 /// The canonical spelling of `unit`.
