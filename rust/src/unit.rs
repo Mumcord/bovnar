@@ -1,6 +1,7 @@
 //! A physical unit, mirroring `python/bovnar/unit.py`.
 
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 use crate::enums::{Exponent, PrefixSystem, SIPrefix};
 use crate::error::{Error, Result};
@@ -10,8 +11,9 @@ pub use crate::ffi::MAX_UNIT_COMPONENTS;
 
 /// One factor of a unit (`value_unit_component_t`): a base unit with its
 /// prefix and exponent. Python's `ValueUnitComponent`; `prefix` is the SI or
-/// IEC prefix id, as `prefix_system` says.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+/// IEC prefix id, as `prefix_system` says. Components compare by value; an
+/// unprefixed component equals whatever its prefix system, as in Python.
+#[derive(Clone, Copy, Debug)]
 pub struct UnitComponent {
     pub base: i32,
     pub exponent: i32,
@@ -38,6 +40,19 @@ impl UnitComponent {
             prefix_system: PrefixSystem::IEC,
             prefix,
         }
+    }
+
+    /// The prefix as compared: `(system, id)`, or `(0, 0)` without a prefix.
+    pub fn prefix_key(&self) -> (i32, i32) {
+        if self.prefix == 0 {
+            (0, 0)
+        } else {
+            (self.prefix_system, self.prefix)
+        }
+    }
+
+    fn key(&self) -> (i32, i32, (i32, i32)) {
+        (self.base, self.exponent, self.prefix_key())
     }
 
     fn raw(self) -> ValueUnitComponent {
@@ -155,7 +170,13 @@ impl Unit {
         let conv = crate::units::unit_to_si_factor(self)?;
         if conv.is_affine {
             return Err(Error::Argument(format!(
-                "{self} is an affine unit: its SI value is value * factor + offset, not a factor"
+                "{} is an affine unit: its SI value is value * factor + offset, not a factor. \
+                 Use unit_to_si_factor() for both, or convert_value() to convert a value.",
+                if self.is_dimensionless() {
+                    "this".to_string()
+                } else {
+                    self.to_string()
+                }
             )));
         }
         Ok(conv.factor)
@@ -172,7 +193,8 @@ impl Unit {
         let conv = crate::units::unit_convert_factor(self, other)?;
         if conv.requires_affine && conv.factor == 0.0 {
             return Err(Error::Argument(format!(
-                "{self} -> {other} is an affine conversion and has no multiplicative factor"
+                "{self} -> {other} is an affine conversion and has no multiplicative factor; \
+                 use convert_value()"
             )));
         }
         Ok(conv.factor)
@@ -204,6 +226,46 @@ impl fmt::Display for Unit {
 impl fmt::Debug for Unit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Unit({:?})", self.to_string())
+    }
+}
+
+impl PartialEq for UnitComponent {
+    fn eq(&self, other: &Self) -> bool {
+        self.key() == other.key()
+    }
+}
+
+impl Eq for UnitComponent {}
+
+impl Hash for UnitComponent {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.key().hash(state);
+    }
+}
+
+/// Consistent with `==` (`bvn_unit_equal`), which ignores component order:
+/// the components' keys, sorted.
+impl Hash for Unit {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut keys: Vec<_> = self.components().iter().map(UnitComponent::key).collect();
+        keys.sort_unstable();
+        keys.dedup();
+        keys.hash(state);
+    }
+}
+
+impl Eq for Unit {}
+
+/// Compares with a unit string; one that does not parse is simply unequal.
+impl PartialEq<str> for Unit {
+    fn eq(&self, other: &str) -> bool {
+        Unit::parse(other).is_ok_and(|u| *self == u)
+    }
+}
+
+impl PartialEq<&str> for Unit {
+    fn eq(&self, other: &&str) -> bool {
+        *self == **other
     }
 }
 

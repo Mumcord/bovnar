@@ -67,7 +67,7 @@ pub struct ValueUnit {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ValueTypeSpec {
     pub family: c_int,
     pub width: u32,
