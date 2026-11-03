@@ -24,6 +24,18 @@ impl Writer {
     /// A writer into a memory buffer of `cap` bytes; `pretty` indents the
     /// output. Writing past `cap` fails with `sink_buffer_exhausted`.
     pub fn to_mem(cap: usize, pretty: bool) -> Result<Self> {
+        Self::to_mem_with(cap, pretty, 0, false)
+    }
+
+    /// [`Writer::to_mem`] with the remaining keywords of Python's `to_mem`:
+    /// `unit_flags` ([`crate::units::UnitFlags`]) rewrite units on output,
+    /// and `emit_version` leads the document with `#!bovnar <major>.<minor>`.
+    pub fn to_mem_with(
+        cap: usize,
+        pretty: bool,
+        unit_flags: u32,
+        emit_version: bool,
+    ) -> Result<Self> {
         let handle = ffi::WriterHandle::new()
             .ok_or_else(|| Error::Argument("bvnr_writer_create() returned NULL".into()))?;
         let mut w = Writer {
@@ -36,6 +48,8 @@ impl Writer {
         // directions, where zero would select the C default of 64.
         flags.max_struct_nesting = 255;
         flags.max_array_nesting = 255;
+        flags.unit_flags = unit_flags;
+        flags.emit_version = emit_version;
         if !w.handle.open_mem(cap, pretty, flags) {
             return Err(w.error());
         }
@@ -150,9 +164,17 @@ impl Writer {
     }
 
     /// `.key = <uint|sint:width[,_base]> value;` for an integer of any width
-    /// up to 128 bits; negative values are written as sint.
-    pub fn write_bvni(&mut self, key: &str, value: i128, width: u32, base: u32) -> Result<()> {
-        let family = if value < 0 {
+    /// up to 128 bits; `signed` picks sint or uint, and `None` writes negative
+    /// values as sint.
+    pub fn write_bvni(
+        &mut self,
+        key: &str,
+        value: i128,
+        width: u32,
+        base: u32,
+        signed: Option<bool>,
+    ) -> Result<()> {
+        let family = if signed.unwrap_or(value < 0) {
             refuse_signed_high_base(base)?;
             ValueTypeFamily::Sint
         } else {
@@ -334,8 +356,9 @@ impl Writer {
         self.event(Event::Data, token, vt, text.as_bytes())
     }
 
-    /// A type annotation: `<family:width[,_base|,qN|,epoch][,unit]>`.
-    pub(crate) fn annotation(
+    /// A type annotation: `<family:width[,_base|,qN|,epoch][,unit]>`, like
+    /// Python's `_emit_annotation`; `unit_source` is the unit's spelling.
+    pub fn annotation(
         &mut self,
         vt: ValueTypeSpec,
         unit: &Unit,
@@ -440,7 +463,9 @@ impl Writer {
         self.check(|h| h.write_event_full(event as i32, token as i32, vt, &unit.0, parts))
     }
 
-    pub(crate) fn event(
+    /// Sends one raw event with an explicit token type, like Python's direct
+    /// `bvnr_write_event` call.
+    pub fn event(
         &mut self,
         event: Event,
         token: TokenType,
@@ -517,7 +542,7 @@ fn refuse_signed_high_base(base: u32) -> Result<()> {
 }
 
 /// Python's `_format_bigint`: `value` in any bovnar base (2..62, 64, 85).
-pub(crate) fn format_bigint(value: i128, base: u32) -> Result<String> {
+pub fn format_bigint(value: i128, base: u32) -> Result<String> {
     const B64: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     if !(2..=62).contains(&base) && base != 64 && base != 85 {
         return Err(Error::Argument(format!("unsupported integer base {base}")));
@@ -588,7 +613,7 @@ mod tests {
         let out = written(|w| {
             w.write_float_fix("fx", 1.5, 32, 16)?;
             w.write_float_dec("fd", 0.1, 64)?;
-            w.write_bvni("big", -(1i128 << 100), 102, 10)?;
+            w.write_bvni("big", -(1i128 << 100), 102, 10, None)?;
             w.write_bvnf_base("hx", "1.8p1", 64, 16)?;
             let km = Unit::parse("k~m").unwrap();
             w.write_quantity(

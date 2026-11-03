@@ -81,6 +81,12 @@ fn parse_with(data: &[u8], typed: bool) -> Result<Value> {
     Ok(parser.result())
 }
 
+/// The BVNR spec version (major, minor) the library implements, like
+/// Python's `spec_version`.
+pub fn spec_version() -> (u16, u16) {
+    ffi::spec_version()
+}
+
 /// Serialises a [`Value::Struct`] to a BVNR document, like Python's `dumps`.
 ///
 /// Returns bytes rather than `String`: an octet stream is written raw.
@@ -135,7 +141,7 @@ fn emit_value(w: &mut Writer, key: &str, value: &Value) -> Result<()> {
             } else if let Ok(s) = i64::try_from(*i) {
                 w.write_sint(key, s, 64, 10)
             } else {
-                w.write_bvni(key, *i, int_width(*i), 10)
+                w.write_bvni(key, *i, int_width(*i), 10, None)
             }
         }
         Value::Float(f) => w.write_float(key, *f, 64),
