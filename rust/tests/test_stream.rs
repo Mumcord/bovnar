@@ -3,6 +3,8 @@
 //!
 //! Nothing skipped. test_mux_channel_out_of_range_is_refused keeps only its
 //! last case: channels are `u64` here, so -1 and 2**64 cannot be passed.
+//! test_mux_load_names_the_demux_error checks the error's C name: a Rust
+//! parse error carries no free-text message, so "desync" is never in it.
 
 use bovnar::stream::{self, BVNR_DOC_DEFAULT_MAX, BVNR_FILESIZE_UNLIMITED, BVNR_MUX_DEFAULT_MAX};
 use bovnar::{Error, ErrorCode, Value, parse, to_string};
@@ -273,4 +275,36 @@ fn test_parse_embedded_reports_the_real_error() {
     let err = stream::parse_embedded(b".a={.b=1;", false).unwrap_err();
     assert!(matches!(err, Error::Parse { .. }));
     assert_eq!(err.code(), Some(ErrorCode::GotIncompleteBvnrStream));
+}
+
+/// Every demux error used to read as a desync, including a stream that ends
+/// part-way through a message, which bovnar_stream.h keeps distinct from a
+/// framing desync. The error now names its code.
+#[test]
+fn test_mux_load_names_the_demux_error() {
+    let named = |r: bovnar::Result<Vec<(u64, Vec<u8>)>>, code: ErrorCode, name: &str| {
+        let e = r.unwrap_err();
+        assert_eq!(e.code(), Some(code));
+        assert!(e.to_string().contains(name), "{e}");
+    };
+    // 5 bytes declared, 2 sent
+    named(
+        stream::mux_load(b".mux=\x00\x01\x04\x00\x02\x05ab\x00;", 0, None),
+        ErrorCode::OctetStreamTruncated,
+        "octet_stream_truncated",
+    );
+    named(
+        stream::mux_load(&mux_dump(&[(1, b"abcdef".to_vec())]), 3, None),
+        ErrorCode::ValueOutOfRange,
+        "value_out_of_range",
+    );
+    // an overlong message-length varint is a real desync
+    let mut blob = b".mux=\x00\x01\x0c\x00\x01".to_vec();
+    blob.extend_from_slice(&[0xff; 11]);
+    blob.extend_from_slice(b"\x00;");
+    named(
+        stream::mux_load(&blob, 0, None),
+        ErrorCode::OctetStreamOutOfSync,
+        "octet_stream_out_of_sync",
+    );
 }
