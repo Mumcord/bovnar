@@ -61,7 +61,7 @@ fn test_dimension_rows_keep_their_shape() {
     ];
     for (body, expected) in cases {
         let doc = format!("#!bovnar 1.1\n{body}").into_bytes();
-        let dom = DomDoc::parse(&doc).unwrap().to_value();
+        let dom = DomDoc::parse(&doc).unwrap().to_value().unwrap();
         assert_eq!(norm(get(dom, "a")), expected, "dom: {body}");
         assert_eq!(
             norm(get(parse(&doc).unwrap(), "a")),
@@ -89,7 +89,7 @@ fn test_the_two_tiers_agree_on_rich_documents() {
     for body in rich {
         let doc = format!("#!bovnar 1.1\n{body}").into_bytes();
         assert_eq!(
-            norm(DomDoc::parse(&doc).unwrap().to_value()),
+            norm(DomDoc::parse(&doc).unwrap().to_value().unwrap()),
             norm(parse(&doc).unwrap()),
             "{body}"
         );

@@ -110,15 +110,29 @@ impl DomDoc {
         to_entries(self.handle.entries())
     }
 
-    /// The whole document as a [`Value::Struct`] (Python's `to_dict`).
-    pub fn to_value(&self) -> Value {
-        Value::Struct(
-            self.entries()
-                .into_iter()
-                .map(|(k, n)| (k, n.to_value()))
-                .collect(),
-        )
+    /// The whole document as a [`Value::Struct`] (Python's `to_dict`). Fails,
+    /// as Python raises, where a node cannot be read as its kind; see
+    /// [`DomNode::to_value`].
+    pub fn to_value(&self) -> Result<Value> {
+        strict_entries(self.handle.entries()).map(Value::Struct)
     }
+}
+
+/// `(key, value)` pairs for a [`Value::Struct`]: a key that is not UTF-8 is an
+/// error, not replaced, so two distinct keys cannot collapse into one.
+fn strict_entries(raw: Vec<(&[u8], ffi::Node<'_>)>) -> Result<Vec<(String, Value)>> {
+    raw.into_iter()
+        .map(|(k, n)| {
+            let key = std::str::from_utf8(k)
+                .map_err(|_| Error::Argument(format!("DOM key {k:?} is not valid UTF-8")))?;
+            Ok((key.to_owned(), DomNode(n).to_value()?))
+        })
+        .collect()
+}
+
+/// The error for a node [`DomNode::to_value`] cannot read as its kind.
+fn unreadable(what: &str) -> Error {
+    Error::Argument(format!("DOM node cannot be read: {what}"))
 }
 
 fn to_entries<'a>(raw: Vec<(&'a [u8], ffi::Node<'a>)>) -> Vec<(String, DomNode<'a>)> {
@@ -274,30 +288,42 @@ impl<'a> DomNode<'a> {
     }
 
     /// The node as a plain [`Value`]; type and unit are dropped (Python's
-    /// `to_python`).
-    pub fn to_value(self) -> Value {
-        match self.dom_type() {
-            None | Some(DomType::Null) => Value::Null,
-            Some(DomType::Int) => self.int_value(),
-            Some(DomType::Float) => self.as_float().map_or(Value::Null, Value::Float),
-            Some(DomType::Bool) => self.as_bool().map_or(Value::Null, Value::Bool),
-            Some(DomType::String | DomType::Symbol | DomType::Reference) => {
-                Value::String(self.as_str().unwrap_or_default().to_owned())
-            }
-            Some(DomType::OctetStream) => {
-                Value::Bytes(self.as_bytes().unwrap_or_default().to_vec())
-            }
-            Some(DomType::Struct) => Value::Struct(
-                self.entries()
-                    .into_iter()
-                    .map(|(k, n)| (k, n.to_value()))
-                    .collect(),
+    /// `to_python`). Where Python raises, this fails instead of defaulting:
+    /// text or a key that is not UTF-8, a float or bool node without its
+    /// value, an unknown node kind.
+    pub fn to_value(self) -> Result<Value> {
+        let raw = self.0.node_type();
+        Ok(match DomType::from_raw(raw) {
+            None => return Err(unreadable(&format!("unknown node type {raw}"))),
+            Some(DomType::Null) => Value::Null,
+            Some(DomType::Int) => self.int_value()?,
+            Some(DomType::Float) => Value::Float(
+                self.as_float()
+                    .ok_or_else(|| unreadable("a float node without a float value"))?,
             ),
+            Some(DomType::Bool) => Value::Bool(
+                self.as_bool()
+                    .ok_or_else(|| unreadable("a bool node without a bool value"))?,
+            ),
+            Some(DomType::String | DomType::Symbol | DomType::Reference) => Value::String(
+                self.as_str()
+                    .ok_or_else(|| unreadable("text that is not valid UTF-8"))?
+                    .to_owned(),
+            ),
+            Some(DomType::OctetStream) => Value::Bytes(
+                self.as_bytes()
+                    .ok_or_else(|| unreadable("an octet stream without a payload"))?
+                    .to_vec(),
+            ),
+            Some(DomType::Struct) => Value::Struct(strict_entries(self.0.struct_entries())?),
             Some(DomType::Array) => {
-                let flat: Vec<Value> = (0..self.len())
-                    .filter_map(|i| self.at(i))
-                    .map(|n| n.to_value())
-                    .collect();
+                let flat = (0..self.len())
+                    .map(|i| {
+                        self.at(i)
+                            .ok_or_else(|| unreadable(&format!("array element {i} is missing")))?
+                            .to_value()
+                    })
+                    .collect::<Result<Vec<Value>>>()?;
                 let rows = self.array_dims();
                 if rows > 1 && flat.len().is_multiple_of(rows) {
                     // Index by row rather than chunking: rows of zero
@@ -312,10 +338,10 @@ impl<'a> DomNode<'a> {
                     Value::Array(flat)
                 }
             }
-        }
+        })
     }
 
-    fn int_value(self) -> Value {
+    fn int_value(self) -> Result<Value> {
         let family = ValueTypeFamily::from_raw(self.value_type().family);
         let signed_first = matches!(
             family,
@@ -331,18 +357,34 @@ impl<'a> DomNode<'a> {
                 .or_else(|| self.as_i64().map(i128::from))
         };
         if let Some(v) = native {
-            return Value::Int(v);
+            return Ok(Value::Int(v));
         }
         // Wider than 64 bits: go through the digits. Past i128 the digits are
         // all this binding can carry so far.
-        let digits = self.as_int_str(10).unwrap_or_default();
-        digits.parse().map_or(Value::String(digits), Value::Int)
+        let digits = self
+            .as_int_str(10)
+            .ok_or_else(|| unreadable("an integer node without digits"))?;
+        Ok(digits.parse().map_or(Value::String(digits), Value::Int))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_key_that_is_not_utf8_is_an_error_not_replaced() {
+        // The reader refuses such keys, so no document carries one; the
+        // check is fed a real node under a forged key instead.
+        let doc = DomDoc::parse(b".a = 1;").unwrap();
+        let (_, node) = doc.handle.entries()[0];
+        let err = strict_entries(vec![(b"\xffa", node)]).unwrap_err();
+        assert!(err.to_string().contains("not valid UTF-8"), "{err}");
+        assert_eq!(
+            strict_entries(vec![(b"a", node)]).unwrap(),
+            vec![("a".to_owned(), Value::Int(1))]
+        );
+    }
 
     #[test]
     fn policy_parse_converts_and_exposes_units() {

@@ -177,13 +177,13 @@ fn test_iter_yields_tuples() {
 
 #[test]
 fn test_to_dict_scalar() {
-    assert_eq!(doc(SCALAR_INT).to_value(), obj(&[("x", int(42))]));
+    assert_eq!(doc(SCALAR_INT).to_value().unwrap(), obj(&[("x", int(42))]));
 }
 
 #[test]
 fn test_to_dict_multi() {
     assert_eq!(
-        doc(MULTI_KEY).to_value(),
+        doc(MULTI_KEY).to_value().unwrap(),
         obj(&[("x", int(1)), ("y", int(2)), ("z", int(3))])
     );
 }
@@ -376,18 +376,22 @@ fn test_to_python_uint64_high_bit() {
     ];
     for (want, src) in cases {
         let d = doc(src);
-        assert_eq!(d.get("x").unwrap().to_value(), int(want), "to_python");
-        assert_eq!(d.to_value(), obj(&[("x", int(want))]), "to_dict");
+        assert_eq!(
+            d.get("x").unwrap().to_value().unwrap(),
+            int(want),
+            "to_python"
+        );
+        assert_eq!(d.to_value().unwrap(), obj(&[("x", int(want))]), "to_dict");
     }
 }
 
 #[test]
 fn test_to_python_sint_and_bignum() {
     let d = doc(b".x = <sint:64> -5;\n");
-    assert_eq!(d.get("x").unwrap().to_value(), int(-5));
+    assert_eq!(d.get("x").unwrap().to_value().unwrap(), int(-5));
     for want in [1i128 << 100, -(1i128 << 70)] {
         let src = to_string(&obj(&[("x", int(want))]), true).unwrap();
-        assert_eq!(doc(&src).get("x").unwrap().to_value(), int(want));
+        assert_eq!(doc(&src).get("x").unwrap().to_value().unwrap(), int(want));
     }
 }
 
@@ -395,9 +399,9 @@ fn test_to_python_sint_and_bignum() {
 fn test_to_python_datetime_is_signed() {
     // datetime is a signed epoch-seconds carrier: a pre-1970 date is negative.
     let d = doc(b"#!bovnar 1.1\n.t = 1960-01-01;\n");
-    assert_eq!(d.get("t").unwrap().to_value(), int(-315619200));
+    assert_eq!(d.get("t").unwrap().to_value().unwrap(), int(-315619200));
     let d2 = doc(b"#!bovnar 1.1\n.t = <datetime:64,unix> 1750000000;\n");
-    assert_eq!(d2.get("t").unwrap().to_value(), int(1750000000));
+    assert_eq!(d2.get("t").unwrap().to_value().unwrap(), int(1750000000));
 }
 
 // TestDomNodeFloatAccessor
@@ -603,12 +607,15 @@ fn test_getitem_str_key_on_array_raises() {
 
 #[test]
 fn test_int_scalar() {
-    assert_eq!(doc(SCALAR_INT).get("x").unwrap().to_value(), int(42));
+    assert_eq!(
+        doc(SCALAR_INT).get("x").unwrap().to_value().unwrap(),
+        int(42)
+    );
 }
 
 #[test]
 fn test_float_scalar() {
-    match doc(SCALAR_FLOAT).get("v").unwrap().to_value() {
+    match doc(SCALAR_FLOAT).get("v").unwrap().to_value().unwrap() {
         Value::Float(v) => assert!(is_close(v, 9.81, 1e-9), "{v}"),
         other => panic!("{other:?}"),
     }
@@ -617,20 +624,20 @@ fn test_float_scalar() {
 #[test]
 fn test_string_scalar() {
     assert_eq!(
-        doc(SCALAR_STRING).get("s").unwrap().to_value(),
+        doc(SCALAR_STRING).get("s").unwrap().to_value().unwrap(),
         Value::String("hello".into())
     );
 }
 
 #[test]
 fn test_null() {
-    assert_eq!(doc(NULL).get("n").unwrap().to_value(), Value::Null);
+    assert_eq!(doc(NULL).get("n").unwrap().to_value().unwrap(), Value::Null);
 }
 
 #[test]
 fn test_struct() {
     assert_eq!(
-        doc(STRUCT).get("obj").unwrap().to_value(),
+        doc(STRUCT).get("obj").unwrap().to_value().unwrap(),
         obj(&[("a", int(1)), ("b", int(2))])
     );
 }
@@ -638,7 +645,7 @@ fn test_struct() {
 #[test]
 fn test_array() {
     assert_eq!(
-        doc(ARRAY_1D).get("arr").unwrap().to_value(),
+        doc(ARRAY_1D).get("arr").unwrap().to_value().unwrap(),
         ints(&[1, 2, 3])
     );
 }
@@ -646,7 +653,7 @@ fn test_array() {
 #[test]
 fn test_nested_struct() {
     assert_eq!(
-        doc(NESTED_STRUCT).get("outer").unwrap().to_value(),
+        doc(NESTED_STRUCT).get("outer").unwrap().to_value().unwrap(),
         obj(&[("inner", obj(&[("val", int(99))]))])
     );
 }
@@ -654,7 +661,7 @@ fn test_nested_struct() {
 #[test]
 fn test_struct_in_array() {
     assert_eq!(
-        doc(STRUCT_ARRAY).get("recs").unwrap().to_value(),
+        doc(STRUCT_ARRAY).get("recs").unwrap().to_value().unwrap(),
         Value::Array(vec![obj(&[("a", int(10)), ("b", int(20))])])
     );
 }
@@ -684,7 +691,7 @@ fn test_empty_rows_keep_their_count() {
     // an empty matrix too.
     let src = b".a=[]/[];.b=[];.c=[]/[]/[];";
     let empty = || Value::Array(vec![]);
-    assert_eq!(doc(src).to_value(), parse(src).unwrap());
+    assert_eq!(doc(src).to_value().unwrap(), parse(src).unwrap());
     assert_eq!(
         parse(src).unwrap(),
         obj(&[

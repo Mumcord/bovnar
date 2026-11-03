@@ -284,7 +284,7 @@ fn test_iso_fraction_is_visible_and_roundtrips() {
     // the verbatim sub-second digits as a string.
     let doc = DomDoc::parse(b"#!bovnar 1.1\n.t = 2026-06-15T12:00:00.000000123Z;\n").unwrap();
     let node = doc.lookup("t").unwrap();
-    assert_eq!(node.to_value(), Value::Int(1781524800)); // carrier = whole second
+    assert_eq!(node.to_value().unwrap(), Value::Int(1781524800)); // carrier = whole second
     assert_eq!(node.datetime_fraction(), Some("000000123")); // fraction verbatim
 
     // a datetime given as an integer carrier (or with no fraction) exposes none

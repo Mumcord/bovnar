@@ -60,7 +60,7 @@ fn to_string_round_trips_through_parse_and_dom() {
         let text = to_string(&value, pretty).unwrap();
         assert_eq!(parse(&text).unwrap(), value, "pretty={pretty}");
         assert_eq!(
-            DomDoc::parse(&text).unwrap().to_value(),
+            DomDoc::parse(&text).unwrap().to_value().unwrap(),
             value,
             "pretty={pretty}"
         );
