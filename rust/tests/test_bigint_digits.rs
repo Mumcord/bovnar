@@ -7,14 +7,28 @@
 //!   `int_max_str_digits`; Rust has no such limit and no such helpers.
 //! - `test_loads_dumps_round_trip`, `test_array_round_trip`,
 //!   `test_dom_to_python`, `test_write_array_under_a_wide_annotation`,
-//!   `test_write_uint_refusal_message_does_not_raise_valueerror`,
-//!   `test_quantity_from_number`: their values are Python ints of thousands of
-//!   digits; a Rust `Value::Int` is an `i128`, so no such value can be built.
+//!   `test_write_uint_refusal_message_does_not_raise_valueerror`: their values
+//!   are Python ints of thousands of digits; a Rust `Value::Int` is an `i128`,
+//!   so no such value can be built. (`test_quantity_from_number` passes them
+//!   to `Quantity::from_number`, which takes a `BigInt`.)
 //! - `test_numpy_object_array`: NumPy is not mirrored (README).
 
 use bovnar::{
-    BaseUnit, Event, EventData, Exponent, ReadOptions, Reader, SIPrefix, Unit, Value, parse_typed,
+    BaseUnit, Decimal, Error, Event, EventData, Exponent, Quantity, ReadOptions, Reader, SIPrefix,
+    Unit, Value, ValueTypeFamily, parse_typed, to_string,
 };
+use num_bigint::BigInt;
+use num_traits::{One, Pow};
+
+/// Python's `BIG`: 10**4300 + 12345, -(10**9000) + 1, 2**32767 - 1.
+fn big() -> [BigInt; 3] {
+    let ten = BigInt::from(10);
+    [
+        Pow::pow(&ten, 4300u32) + 12345,
+        -Pow::pow(&ten, 9000u32) + 1,
+        (BigInt::one() << 32767) - 1,
+    ]
+}
 
 /// A wide literal written by hand keeps every digit through the typed parse.
 #[test]
@@ -68,4 +82,31 @@ fn test_converted_rational_of_a_wide_result() {
     let (rational, text) = &seen[0];
     assert_eq!(rational, &Some((want_digits.clone(), "1".into())));
     assert_eq!(text, &want_digits);
+}
+
+#[test]
+fn test_quantity_from_number() {
+    let from_number = |n: &BigInt, width| {
+        Quantity::from_number(
+            n.clone(),
+            ValueTypeFamily::FloatDec,
+            width,
+            None,
+            Unit::default(),
+        )
+    };
+    for n in big() {
+        let q = from_number(&n, 256).unwrap();
+        assert_eq!(q.decimal().unwrap(), Some(Decimal::from(n.clone())));
+        let doc = Value::Struct(vec![("q".into(), Value::Quantity(Box::new(q)))]);
+        let Value::Struct(fields) = parse_typed(&to_string(&doc, true).unwrap()).unwrap() else {
+            panic!("not a struct");
+        };
+        let Value::Quantity(back) = &fields[0].1 else {
+            panic!("not a quantity: {:?}", fields[0].1);
+        };
+        assert_eq!(back.decimal().unwrap(), Some(Decimal::from(n.clone())));
+        // decimal64 cannot hold it: a range refusal
+        assert!(matches!(from_number(&n, 64), Err(Error::Argument { .. })));
+    }
 }

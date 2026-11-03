@@ -4,8 +4,6 @@
 //! Not ported:
 //! - `test_constructor_rejects_nonsense`: `Unit(42)` cannot be written in
 //!   Rust; the type system refuses it.
-//! - `test_numeric_accessors`, `test_fixed_point`: the `decimal`, `fraction`
-//!   and `fixed_point` accessors are not mirrored (see the README).
 //! - `test_calling_one_is_a_typeerror`: a property-versus-method mistake has
 //!   no Rust counterpart.
 //! - `test_rejects_bad_vtype`, `test_rejects_bad_raw`, `test_rejects_bad_frac`:
@@ -30,9 +28,11 @@ use bovnar::units::{
     units_convertible, units_equal,
 };
 use bovnar::{
-    BaseUnit, Error, Event, Exponent, IECPrefix, Quantity, ReadOptions, Reader, Unit, Value,
-    ValueTypeFamily, ValueTypeSpec, parse_typed,
+    BaseUnit, Decimal, Error, Event, Exponent, IECPrefix, Quantity, ReadOptions, Reader, Unit,
+    Value, ValueTypeFamily, ValueTypeSpec, parse_typed,
 };
+use num_bigint::BigInt;
+use num_rational::BigRational;
 
 fn q(src: &[u8]) -> Quantity {
     let Value::Struct(fields) = parse_typed(src).unwrap() else {
@@ -140,6 +140,35 @@ fn test_profile_only() {
 fn test_raw_still_reaches_the_struct() {
     let q = q(b".x = <float:64,m/s> 1.0;");
     assert_eq!(unit_to_str(&q.unit).unwrap(), "m/s");
+}
+
+// TestAccessorsAreProperties: value, decimal, fraction, fixed_point,
+// stored_value, ieee_bits and unit_str are one kind of accessor.
+
+#[test]
+fn test_numeric_accessors() {
+    let q = q(b".x = <float_dec:64> 3.25;");
+    assert_eq!(q.value(), Value::Float(3.25));
+    assert_eq!(
+        q.decimal().unwrap(),
+        Some("3.25".parse::<Decimal>().unwrap())
+    );
+    assert_eq!(
+        q.fraction().unwrap(),
+        Some(BigRational::new(BigInt::from(13), BigInt::from(4)))
+    );
+    assert_eq!(q.unit_str(), "");
+}
+
+#[test]
+fn test_fixed_point() {
+    let q = q(b".x = <float_fix:32,q8> 3.26953125;");
+    let (mantissa, bits) = q.fixed_point().unwrap();
+    assert_eq!(bits, 8);
+    assert_eq!(
+        BigRational::new(mantissa, BigInt::from(1) << bits),
+        BigRational::new(BigInt::from(326_953_125), BigInt::from(100_000_000))
+    );
 }
 
 // TestQuantityValidation

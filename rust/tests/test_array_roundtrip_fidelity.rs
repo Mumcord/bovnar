@@ -8,9 +8,8 @@
 // - test_non_str_key_is_an_argument_error: a Python type error; a Rust
 //   `Value::Struct` key is always a `String`.
 //
-// Partly expressible: test_array_element_precision_survives reads the exact
-// literals through `Quantity::raw` (the `Decimal` accessor is not mirrored,
-// and 2**128-1 does not fit the `i128` of `Value::Int`);
+// Partly expressible: test_array_element_precision_survives reads 2**128-1
+// through `Quantity::decimal` (it does not fit the `i128` of `Value::Int`);
 // test_datetime_fraction_is_part_of_equality counts distinct values by
 // equality (no Python set); test_typed_loads_does_not_pin_the_reader_snapshot
 // checks unit equality and the serialised output (Python object identity and
@@ -78,12 +77,16 @@ fn test_array_unit_survives_a_typed_roundtrip() {
 fn test_array_element_precision_survives() {
     let back = typed_roundtrip(DOC);
     assert_eq!(
-        first(&back, "exact").raw.as_deref(),
-        Some("1.2345678901234567890123456789")
+        first(&back, "exact")
+            .decimal()
+            .unwrap()
+            .unwrap()
+            .to_string(),
+        "1.2345678901234567890123456789"
     );
     assert_eq!(
-        first(&back, "big").raw.as_deref(),
-        Some("340282366920938463463374607431768211455")
+        first(&back, "big").decimal().unwrap().unwrap().to_string(),
+        "340282366920938463463374607431768211455"
     );
 }
 
