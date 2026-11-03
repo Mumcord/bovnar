@@ -17,6 +17,8 @@ mod event;
 mod limits;
 pub(crate) mod num;
 mod reader;
+#[cfg(feature = "serde")]
+pub mod serde;
 pub mod stream;
 mod types;
 pub mod units;
