@@ -110,6 +110,7 @@ pub struct EventData<'a> {
     pub converted_base: u32,
     /// The unit of `converted_text`.
     pub converted_unit: Unit,
+    rational: Option<ffi::ConvRational<'a>>,
 }
 
 impl<'a> EventData<'a> {
@@ -132,7 +133,28 @@ impl<'a> EventData<'a> {
             converted_unit: d
                 .filter(|d| d.converted)
                 .map_or(Unit::default(), |d| Unit(d.conv.unit)),
+            rational: d.and_then(ffi::ConvRational::of),
         })
+    }
+
+    /// The exact converted value as a reduced (numerator, denominator) pair
+    /// of decimal digit strings, or `None` when nothing was converted. The
+    /// only carrier of the value when `converted_text` is empty because the
+    /// result has no terminating expansion
+    /// (`want_unit_allow_nonterminating`).
+    pub fn converted_rational(&self) -> Option<(String, String)> {
+        self.rational.and_then(|r| r.decimal_pair())
+    }
+
+    /// The exact converted value rendered in `base` (2..62, 64 or 85);
+    /// `None` when nothing was converted or the value does not terminate in
+    /// that base. Fails for a base bovnar cannot write.
+    pub fn converted_in_base(&self, base: u32) -> Result<Option<String>> {
+        let Some(r) = self.rational else {
+            return Ok(None);
+        };
+        r.in_base(base)
+            .map_err(|()| Error::Argument(format!("base {base} is not one bovnar can write")))
     }
 
     /// The payload as text, with invalid UTF-8 replaced.

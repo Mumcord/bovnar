@@ -581,6 +581,80 @@ impl<'a> EventView<'a> {
     }
 }
 
+/// The exact result of a read-time conversion as a reduced fraction of
+/// reader-owned bignums (`conv.num` / `conv.den`), valid only while the
+/// callback that received it runs.
+#[derive(Clone, Copy)]
+pub struct ConvRational<'a>(&'a BvnrConverted);
+
+impl std::fmt::Debug for ConvRational<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ConvRational")
+    }
+}
+
+impl<'a> ConvRational<'a> {
+    /// The rational of a converted value, or `None` when there is none.
+    pub fn of(d: &'a BvnrData) -> Option<Self> {
+        (d.converted && !d.conv.num.is_null() && !d.conv.den.is_null())
+            .then_some(ConvRational(&d.conv))
+    }
+
+    /// Numerator and denominator as decimal digit strings.
+    pub fn decimal_pair(&self) -> Option<(String, String)> {
+        Some((int_to_decimal(self.0.num)?, int_to_decimal(self.0.den)?))
+    }
+
+    /// The value rendered in `base`: `Err` when bovnar cannot write that
+    /// base, `Ok(None)` when the value has no terminating expansion in it.
+    pub fn in_base(&self, base: u32) -> std::result::Result<Option<String>, ()> {
+        // SAFETY: num/den are live reader bignums for the callback's duration.
+        unsafe {
+            let size = bvn_rational_str_bufsize(self.0.num, self.0.den, base);
+            if size == 0 {
+                return Err(());
+            }
+            let mut buf = vec![0u8; size];
+            let mut exact = false;
+            let n = bvn_rational_to_str(
+                self.0.num,
+                self.0.den,
+                base,
+                buf.as_mut_ptr().cast(),
+                size,
+                &mut exact,
+            );
+            if n < 0 || !exact {
+                return Ok(None);
+            }
+            Ok(c_buf_to_string(&buf))
+        }
+    }
+}
+
+/// A reader bignum in decimal.
+///
+/// SAFETY (internal): `n` must be a live bignum handle.
+fn int_to_decimal(n: *mut c_void) -> Option<String> {
+    // SAFETY: the caller passes a live bignum from a conversion result.
+    unsafe {
+        let bits = bvn_int_bitlen(n).max(1) as u32;
+        let size = bvn_int_str_bufsize(bits, 10);
+        let mut buf = vec![0u8; size];
+        if bvn_int_to_str(n, buf.as_mut_ptr().cast(), size, 10) < 0 {
+            return None;
+        }
+        c_buf_to_string(&buf)
+    }
+}
+
+fn c_buf_to_string(buf: &[u8]) -> Option<String> {
+    CStr::from_bytes_until_nul(buf)
+        .ok()
+        .and_then(|c| c.to_str().ok())
+        .map(str::to_owned)
+}
+
 /// A Rust event handler; returning false stops the read.
 pub type Handler<'h> = &'h mut dyn FnMut(&EventView<'_>) -> bool;
 
