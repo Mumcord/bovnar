@@ -59,7 +59,10 @@ fn main() {
 
     println!("cargo:rerun-if-changed={}", repo.join("src").display());
     println!("cargo:rerun-if-changed={}", repo.join("include").display());
-    println!("cargo:rerun-if-changed={}", repo.join("bvnr_data.py").display());
+    println!(
+        "cargo:rerun-if-changed={}",
+        repo.join("bvnr_data.py").display()
+    );
     for script in GENERATORS {
         println!("cargo:rerun-if-changed={}", repo.join(script).display());
     }
@@ -87,7 +90,9 @@ fn generate_tables(repo: &Path, gen_dir: &Path) {
             .status()
             .unwrap_or_else(|e| panic!("failed to run python3 {script}: {e}"));
         if !status.success() {
-            panic!("python3 {script} failed ({status}); the unit/prefix/currency tables were not generated");
+            panic!(
+                "python3 {script} failed ({status}); the unit/prefix/currency tables were not generated"
+            );
         }
     }
 }
@@ -106,14 +111,25 @@ fn compile_library(repo: &Path, gen_dir: &Path) {
         build
             .compiler(sdk.join("bin/clang"))
             .archiver(sdk.join("bin/llvm-ar"))
-            .flag(format!("--sysroot={}", sdk.join("share/wasi-sysroot").display()));
+            .flag(format!(
+                "--sysroot={}",
+                sdk.join("share/wasi-sysroot").display()
+            ));
     }
 
     build
         .include(repo.join("include"))
         .include(gen_dir)
         .include(repo.join("src"));
-    for sub in ["dom", "io", "lexer", "stream", "utils", "validator", "writer"] {
+    for sub in [
+        "dom",
+        "io",
+        "lexer",
+        "stream",
+        "utils",
+        "validator",
+        "writer",
+    ] {
         build.include(repo.join("src").join(sub));
     }
     for source in SOURCES {
