@@ -1,0 +1,905 @@
+k:a [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [	err array_nesting_too_high 65
+k:b [ d:astr:+1:: ] / [ ] ]	err array_row_size_mismatch 6
+k:x_1 [ [ ] / [ ] ] / [ ] se	err array_row_size_mismatch 10
+k:a [ { } [ ] / [ ] ] / [ ] se	err array_row_size_mismatch 12
+k:b [ ] / [ ] / [ d:astr:zz:: ]	err array_row_size_mismatch 9
+k:a [ d:bool:false:: ] / [ ] se	err array_row_size_mismatch 6
+ss k:a [ d:null:::cf%3AK ] / [ ]	err array_row_size_mismatch 7
+k:a d:num:-0:5: k:a [ ] / [ d:null::: ]	err array_row_size_mismatch 8
+ss k:a [ ] / [ d:anum:-1700000000:000: ]	err array_row_size_mismatch 7
+v:1.0 ss k:b [ ] / [ d:anum:255:: ] / [ ]	err array_row_size_mismatch 8
+v:1.0 k:x_1 [ [ ] / [ ] / [ d:null::: ] ]	err array_row_size_mismatch 11
+k:value [ d:null::: ] / [ ] / [ d:sym::: ]	err array_row_size_mismatch 6
+ss k:key_2 [ ] / [ [ ] / [ ] ] k:a { } k:b }	err array_row_size_mismatch 11
+v:1.2 k:b [ ] / [ ] / [ d:anum:256:: [ ] / [ ] ]	err array_row_size_mismatch 15
+k:x_1 [ ] / [ [ ] / [ a:float_dec:::::rad d:num:300:: ] ]	err array_row_size_mismatch 11
+k:b [ [ ] / [ ] ] / [ ] / [ ] k:a [ d:num:nan:000:m%20m ]	err array_row_size_mismatch 10
+v:1.2 k:x_1 [ d:null::: ] / [ ] / [ d:anum:1e99999:000: ]	err array_row_size_mismatch 7
+k:a [ d:anum:1e3:: ] / [ ] k:x_1 a:datetime::::: d:null:::	err array_row_size_mismatch 6
+k:x_1 [ d:astr:300:: ] / [ ] / [ [ ] ] k:b d:ref:a::no_unit	err array_row_size_mismatch 6
+k:x_1 [ ] / [ ] / [ d:anum:0.1:000: o( o) ] k:b d:num:inf:5:	err array_row_size_mismatch 11
+v:1.0 k:value o( o:zzz o) k:b [ o( o) ] / [ ] / [ o( o: o) ]	err array_row_size_mismatch 12
+k:x_1 [ ] / [ { } ] k:"a" d:bool:true:: k:a d:bool:1::m^101 se	err array_row_size_mismatch 7
+k:value { k:value [ ] / [ ] / [ d:bool:off:: o( o:z o:z o) ] }	err array_row_size_mismatch 15
+v:1.3 ss k:a o( o) k:b { } k:value [ ] / [ d:anum:1.:5: ] / [ ]	err array_row_size_mismatch 14
+v:1.2 ss k:value [ [ o( o) ] / [ [ ] / [ ] / [ [ ] ] k:x_1 [ [ ]	err array_row_size_mismatch 19
+v:1.0 k:b [ d:sym:uint::deg ] / [ d:anum:101:123: d:bool:false:: ]	err array_row_size_mismatch 9
+v:1.1 k:b [ ] / [ o( o) ] / [ / ] k:x_1 a:datetime::::: d:str:+1::	err array_row_size_mismatch 8
+ss k:value [ o( o) ] / [ ] k:value d:bool:off:: k:b d:num:nan:000:	err array_row_size_mismatch 8
+v:1.0 k:x_1 [ ] / [ ] / [ [ ] / [ ] ] k:x_1 d:null:::ucum%3Amm[Hg] se	err array_row_size_mismatch 14
+k:value d:str:hi:: k:x_1 [ ] / [ d:null::: d:anum:1e-400:5: ] / [ ] se	err array_row_size_mismatch 9
+v:2.0 ss k:b [ ] / [ a:float::10::: d:null::: ] / [ ] k:value d:null:::	err array_row_size_mismatch 9
+v:1.3 k:a [ ] / [ ] k:x_1 d:num:1E-3::no_unit k:a [ ] / [ [ ] / [ ] ] se	err array_row_size_mismatch 19
+ss k:a [ ] / [ ] / [ d:astr:-0:: ] k:b a:plain:512::::m*s^-1 d:num:1E-3::	err array_row_size_mismatch 10
+v:1.1 k:x_1 d:null::: k:b { k:a [ ] / [ ] / [ d:str:ff:: ] } k:x_1 d:num:1.::	err array_row_size_mismatch 14
+k:a [ d:astr:%C3%A9:: ] / [ ] / [ a:float_dec:2048:64:::m> d:sym:foo-bar:: ] se	err array_row_size_mismatch 6
+ss k:b [ d:anum:300:5: { k:b d:sym:foo:: } a:float_fix::::: d:null::: ] / [ ] se	err array_row_size_mismatch 13
+k:b [ a:sint::::: d:str:300:: ] / [ ] / [ a:float_fix:65::64::no_unit d:ref:a.:: ]	err array_row_size_mismatch 7
+k:a [ ] / [ ] k:value { k:nan d:null::: k:x_1 [ ] / [ d:num:1e99999:: ] } k:b d:null:::	err array_row_size_mismatch 16
+k:value [ ] / [ d:null::: ] / [ ] k:x_1 a:float_fix:16::::%25 d:sym:on:: k:a d:num:nan::	err array_row_size_mismatch 6
+k:value [ a:float_fix:16:::: d:anum:255:000: ] / [ ] / [ a:utf8:2048:36::: d:anum:3e::1 ]	err array_row_size_mismatch 7
+v:1.0 k:key_2 [ ] / [ d:astr:a"b:: ] k:a a:float_fix::::: d:num:-0::m*s^-1 k:b d:bool:TRUE::	err array_row_size_mismatch 7
+k:b a:sint::62::: d:num:..::	err base_requires_string_literal 2
+k:a a:uint:8:16:::: d:num:ff::	err base_requires_string_literal 2
+k:a a:uint:128:64:::K d:num:+::	err base_requires_string_literal 2
+k:a a:uint:8:16:::: d:num:%2B5::	err base_requires_string_literal 2
+v:1.1 k:b a:uint::85:::K d:num:z::	err base_requires_string_literal 3
+k:value a:uint::64:::rad d:num:1/2::	err base_requires_string_literal 2
+k:a a:uint:7:16:::m*s^-1 d:num:5%20m::	err base_requires_string_literal 2
+k:a a:float::16::: d:num:310EE::no_unit	err base_requires_string_literal 2
+v:1.2 ss k:a a:sint::36::: d:num:Zz:: /	err base_requires_string_literal 4
+v:1.1 k:value a:sint:4096:62::: d:num:z::	err base_requires_string_literal 3
+v:0.9 k:value a:uint:4096:16:::s d:num:+:x: se	err base_requires_string_literal 3
+ss k:b a:uint::85:::$EUR d:num:1e:: k:a d:str:0::	err base_requires_string_literal 3
+ss k:%C3%A9t%C3%A9 a:uint:32:62:::km d:num:1e:: se	err base_requires_string_literal 3
+v:2.0 k:b [ ] k:a a:uint:16:16:::no_unit d:num:..:x:	err base_requires_string_literal 6
+v:1.3 ss k:a { k:value a:sint::62::: d:num:FF:x: } se	err base_requires_string_literal 6
+k:a a:uint::36::: d:num:10000-01-01T00%3A00%3A00Z:: se	err base_requires_string_literal 2
+v:1.2 k:value a:uint::16::: d:num:3e:5: k:b d:str:-3::	err base_requires_string_literal 3
+k:a d:sym:%C3%A9:: k:b a:uint:0:62:::rad d:num:ff:123:	err base_requires_string_literal 4
+k:value a:uint::16::: d:num:2024-13-01T00%3A00%3A00Z::	err base_requires_string_literal 2
+ss k:nan a:uint::36::: d:num:1e:: k:value ] [ / [ se ]	err base_requires_string_literal 3
+k:a a:sint::62::: d:num:2024-01-01T00%3A00%3A00.5Z:000:	err base_requires_string_literal 2
+k:x_1 a:uint:512:62::: d:num:9999-12-31T23%3A59%3A59Z::	err base_requires_string_literal 2
+v:1.1 k:value a:uint::62::: d:num:2024-13-01T00%3A00%3A00Z::	err base_requires_string_literal 3
+k:b a:uint:8:16:::s d:num:2024-01-01T00%3A00%3A00Z:5: k:a { } se	err base_requires_string_literal 2
+v:1.0 k:a a:uint:128:36::: d:num:1_000:000: k:_ { d:num:inf:: } ]	err base_requires_string_literal 3
+k:x_1 a:uint:512:36:::kg*m^2 d:num:2024-01-01T00%3A00%3A00Z:5: se	err base_requires_string_literal 2
+ss k:a a:uint:4097:36:::m*s^-1 d:num:2024-01-01T00%3A00%3A00.5Z::	err base_requires_string_literal 3
+v:1.1 k:x_1 a:uint:64:36:::K d:num:-inf:: k:value d:num:inf:x: se	err base_requires_string_literal 3
+ss k:%F0%9F%98%80 d:null::: k:a a:uint:65:64:::m/s d:num:310EE:5:	err base_requires_string_literal 5
+k:b d:bool:off:: k:x_1 a:uint::36::: d:num:3e:: k:x_1 d:ref:0:: se	err base_requires_string_literal 4
+ss k:b a:sint:48:16:::m/s d:num:Zz:: k:_ a:uint::::: d:ref:%C3%A4::	err base_requires_string_literal 3
+ss k:x_1 a:uint:2048:36:::$EUR d:num:310EE:123: k:value [ ] / [ { / } ]	err base_requires_string_literal 3
+k:a d:str:back\slash:: k:b d:str:-0:: k:x_1 a:uint:512:36::: d:num:..:5:	err base_requires_string_literal 6
+v:1.2 k:a a:uint:8:62:::m*s^-1 d:num:ff:5: k:x_1 a:float:96:::: d:sym:::	err base_requires_string_literal 3
+k:x_1 a:uint:7:62:::%25 d:num:1/2:: k:a d:num:ff:x:m k:value d:null::: se	err base_requires_string_literal 2
+k:b [ a:sint:0:16:::$EUR d:anum:10000-01-01T00%3A00%3A00Z:x: ] / [ o( o) ]	err base_requires_string_literal 3
+v:1.3 ss k:value { k:a a:uint::64:::%25 d:num:2024-13-01T00%3A00%3A00Z:5: }	err base_requires_string_literal 6
+k:value d:sym:foo-bar::m; k:value { k:x_1 a:uint::64::: d:num:+:000:m*s^-1 }	err base_requires_string_literal 6
+k:value a:uint:48:36::: d:num:310EE:000: k:b k:value d:num:101:: d:num:101::	err base_requires_string_literal 2
+k:b a:uint::16::: d:num:..:123: k:value a:float_fix:128::64::s d:str:-3:: se	err base_requires_string_literal 2
+k:a a:uint::::: d:str:hi::	err digit_not_in_base 2
+k:b a:sint::::: d:str:18F::	err digit_not_in_base 2
+k:x_1 a:sint::::: d:str:ff::	err digit_not_in_base 2
+k:b a:sint::2::: d:num:0x10::	err digit_not_in_base 2
+k:a a:uint::2::: d:str:5%20::	err digit_not_in_base 2
+k:b a:uint::::: d:str:18F:: se	err digit_not_in_base 2
+k:b a:uint::8::: d:str:ff::m/s	err digit_not_in_base 2
+k:x_1 a:uint:0:::: d:str:1e3::	err digit_not_in_base 2
+k:x_1 a:uint::::: d:str:nan::K	err digit_not_in_base 2
+k:b a:uint:7:0::: d:str:5%20::	err digit_not_in_base 2
+ss k:b a:sint::::: d:str:1e3::	err digit_not_in_base 3
+k:b a:sint::::: d:str:18F:: se	err digit_not_in_base 2
+k:value a:sint::::: d:str:1.5::	err digit_not_in_base 2
+k:b a:uint:48:::: d:str:+1:: se	err digit_not_in_base 2
+k:x_1 a:uint:64:::: d:str:1.5::	err digit_not_in_base 2
+k:a a:uint::::: d:str:+1::m/s se	err digit_not_in_base 2
+k:x_1 a:uint::::: d:str:10.5e2::	err digit_not_in_base 2
+k:value a:uint::::: d:str:%205::	err digit_not_in_base 2
+k:a a:float::::: d:str:%205:: se	err digit_not_in_base 2
+k:b a:uint::::: d:str:%0B%0C%0D::	err digit_not_in_base 2
+k:b a:sint::::: d:str:10.5e2:: se	err digit_not_in_base 2
+k:a a:float_fix::::: d:str:5%20::	err digit_not_in_base 2
+ss k:b a:sint::::: d:str:1e3:: se	err digit_not_in_base 3
+ss k:a a:uint::64::: d:str:5%20::	err digit_not_in_base 3
+v:2.0 k:a a:uint::16::: d:str:zz::	err digit_not_in_base 3
+ss k:b a:uint::2:::K d:num:..:123:	err digit_not_in_base 3
+k:nan a:float_dec::::: d:str:nan::	err digit_not_in_base 2
+ss k:x_1 a:uint::2:::K d:num:..:x:	err digit_not_in_base 3
+k:a a:uint:512::::km d:str:hi:: se	err digit_not_in_base 2
+ss k:a a:float_dec::::: d:str:hi::	err digit_not_in_base 3
+k:a a:uint:2048:0:::$EUR d:str:zz::	err digit_not_in_base 2
+k:_ a:float_fix::::: d:str:nan:: se	err digit_not_in_base 2
+v:1.2 ss k:a a:sint::::: d:str:ff::	err digit_not_in_base 4
+v:1.1 k:b a:uint:::::k~m d:str:ff::	err digit_not_in_base 3
+v:1.3 k:b a:float::::: d:str:%205::	err digit_not_in_base 3
+k:value a:uint:::::s d:str:nan:: se	err digit_not_in_base 2
+k:x_1 a:float:::::kg*m^2 d:str:zz::	err digit_not_in_base 2
+k:value a:float_fix::::: d:str:zz::	err digit_not_in_base 2
+v:1.0 k:b a:uint::::: d:str:1e3:: se	err digit_not_in_base 3
+k:b a:sint:0:::: d:str:zz::m*s^-1 se	err digit_not_in_base 2
+k: k:	err empty_identifier 0
+k: { }	err empty_identifier 0
+k: { } se	err empty_identifier 0
+k:b d:sym:::	err empty_identifier 1
+k:a d:sym:::	err empty_identifier 1
+k:b d:sym:::	err empty_identifier 1
+k:b d:sym:::	err empty_identifier 1
+k:b d:sym:::	err empty_identifier 1
+k: d:null:::	err empty_identifier 0
+k:b d:sym:::	err empty_identifier 1
+k:a d:sym:::	err empty_identifier 1
+k:a d:sym:::	err empty_identifier 1
+k:a d:sym:::	err empty_identifier 1
+k: d:str:12::	err empty_identifier 0
+k: d:num:z:5:	err empty_identifier 0
+v:1.2 k: o( o)	err empty_identifier 1
+k: d:ref:0::m;	err empty_identifier 0
+k: d:bool:yes::	err empty_identifier 0
+k:a d:sym::: se	err empty_identifier 1
+k: d:null:::$EUR	err empty_identifier 0
+k:x_1 d:sym:::m;	err empty_identifier 1
+k:value d:sym:::	err empty_identifier 1
+k: { k:a o( o) se	err empty_identifier 0
+k:b d:sym:::kg*m^2	err empty_identifier 1
+v:2.0 k:a d:sym:::	err empty_identifier 2
+v:0.9 k:b d:sym:::	err empty_identifier 2
+k: d:num:-129:000:	err empty_identifier 0
+ss k:b d:sym::: se	err empty_identifier 2
+k:b d:sym::: se o)	err empty_identifier 1
+k: d:num:5:123: se	err empty_identifier 0
+k: d:num:-129:123:	err empty_identifier 0
+k:value d:sym::: se	err empty_identifier 1
+v:1.1 k:b d:sym:::s	err empty_identifier 2
+ss k: ss a:bool:::::	err empty_identifier 1
+v:1.2 k: d:sym:null::	err empty_identifier 1
+k: d:str:10.5e2::m%00	err empty_identifier 0
+ss k: d:ref:a.b::Ki~B	err empty_identifier 1
+v:0.9 k: d:sym:true::	err empty_identifier 1
+k: d:num:z:123:kg*m^2	err empty_identifier 0
+k: d:bool:on::no_unit	err empty_identifier 0
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk	err identifier_too_long 0
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk {	err identifier_too_long 0
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk ] [	err identifier_too_long 0
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk [ [ ]	err identifier_too_long 0
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk { } se	err identifier_too_long 0
+ss k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk { }	err identifier_too_long 1
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:null:::	err identifier_too_long 0
+v:1.3 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk { }	err identifier_too_long 1
+ss k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:num:5::	err identifier_too_long 1
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:sym:inf::s	err identifier_too_long 0
+v:1.3 ss k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk [ [ ]	err identifier_too_long 2
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:num:nan::k~m	err identifier_too_long 0
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:str:300:: se	err identifier_too_long 0
+v:1.1 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk [ ] / [ ]	err identifier_too_long 1
+ss k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk o( o:z o:z o)	err identifier_too_long 1
+v:2.0 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk o( o:zzz o)	err identifier_too_long 1
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk { } k:a d:num:z::	err identifier_too_long 0
+v:1.1 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:str:18F::	err identifier_too_long 1
+k:b { k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:num:1e:: }	err identifier_too_long 2
+v:1.1 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:num:+:: se	err identifier_too_long 1
+v:1.1 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:str:%C3%A9::	err identifier_too_long 1
+v:1.2 ss k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:num:ff:x:	err identifier_too_long 2
+k:x_1 d:num:256:: k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk ss	err identifier_too_long 2
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:num:1/2:5:kg*m^2 se	err identifier_too_long 0
+v:1.1 ss k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk { { { k:x_1 }	err identifier_too_long 2
+k:value { k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:str:-0:: }	err identifier_too_long 2
+ss k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:num:1e-400:000:m se	err identifier_too_long 1
+k:value { } k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:bool:TRUE::	err identifier_too_long 3
+v:1.0 ss k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:ref:0::$EUR se	err identifier_too_long 2
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk a:bool::64::: d:num:-1.5::	err identifier_too_long 0
+v:1.1 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk a:uint::::: d:sym:::	err identifier_too_long 1
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk { k:value d:bool:false:: }	err identifier_too_long 0
+k:value d:null:::xyz k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk { } se	err identifier_too_long 2
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:num:-:: k:uint { k:a se }	err identifier_too_long 0
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk a:plain::64::: d:num:0:: se	err identifier_too_long 0
+v:2.0 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk d:sym::: k:x_1 k:b { }	err identifier_too_long 1
+v:1.2 k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk a:plain:32::::rad o( o)	err identifier_too_long 1
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk v:1.3 d:sym:a.b:: a:sint:::::	err identifier_too_long 0
+k:value { } k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk [ ] / [ ] / [ ] se	err identifier_too_long 3
+k:kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk a:uint::::: d:ref:.a::m^101 se	err identifier_too_long 0
+k:b a:uint:96:86:::	err illegal_value_type 1
+k:a a:sint:128:64:::m>	err illegal_value_type 1
+k:x_1 a:utf8:1:::: { }	err illegal_value_type 1
+k:b a:bool:32::::km se	err illegal_value_type 1
+k:a a:utf8:8:64:::s { }	err illegal_value_type 1
+k:x_1 a:uint::1:::K [ ]	err illegal_value_type 1
+k:b a:sint:32:63::: [ ]	err illegal_value_type 1
+k:x_1 [ a:utf8::8:::K ]	err illegal_value_type 2
+k:b a:utf8::1::: [ ] se	err illegal_value_type 1
+k:x_1 a:uint::86::: { }	err illegal_value_type 1
+k:a a:utf8:64:16:::m> se	err illegal_value_type 1
+k:x_1 a:float_dec:1:0:::m	err illegal_value_type 1
+v:1.2 k:a a:utf8:0:::: se	err illegal_value_type 2
+k:b a:float:7::::$XXQ { }	err illegal_value_type 1
+k:x_1 a:utf8::1:::k~m { }	err illegal_value_type 1
+k:a a:float_fix:64::64::s	err illegal_value_type 1
+k:b a:bool:256::::m^0 { }	err illegal_value_type 1
+k:_ a:float_dec:0:36:::k~m	err illegal_value_type 1
+k:b a:float:4096:1:::K [ ]	err illegal_value_type 1
+k:a a:utf8:48:0:::$EUR [ ]	err illegal_value_type 1
+ss k:value a:utf8:2048::::	err illegal_value_type 2
+k:value a:utf8::8::: o( o)	err illegal_value_type 1
+k:value a:bool::16:::m [ ]	err illegal_value_type 1
+v:1.1 k:b a:bool:64:::: { }	err illegal_value_type 2
+k:a a:bool:32:::: d:null:::	err illegal_value_type 1
+k:a a:sint:99999:8:::cf%3AK	err illegal_value_type 1
+k:a a:uint::1::: d:str:hi::	err illegal_value_type 1
+k:a a:utf8::2::: d:str:zz::1	err illegal_value_type 1
+ss k:x_1 a:bool:16:::: o( o)	err illegal_value_type 2
+k:a a:float:512:8:::Ki~B [ ]	err illegal_value_type 1
+k:a a:bool:::::m^0 d:ref:1::	err illegal_value_type 1
+k:b a:bool:::::rad d:null:::	err illegal_value_type 1
+k:a a:utf8:::::k~m d:null:::	err illegal_value_type 1
+k:a a:utf8:8:62:::no_unit { }	err illegal_value_type 1
+k:a a:utf8::62::: d:str:%7F::	err illegal_value_type 1
+k:b a:float_dec:96:0:::m/s se	err illegal_value_type 1
+k:x_1 a:bool:65:::: [ ] / [ ]	err illegal_value_type 1
+ss k:x_1 a:utf8:4096:64::: se	err illegal_value_type 2
+k:b a:uint::1:::no_unit o:z [	err illegal_value_type 1
+k:x_1 a:bool:::::1 d:num:-:x:	err illegal_value_type 1
+k:a	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:A	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:a	err incomplete_bvnr_stream 1
+k:b	err incomplete_bvnr_stream 1
+k:on	err incomplete_bvnr_stream 1
+k:a {	err incomplete_bvnr_stream 2
+k:x_1	err incomplete_bvnr_stream 1
+k:b [	err incomplete_bvnr_stream 2
+k:x_1	err incomplete_bvnr_stream 1
+k:a {	err incomplete_bvnr_stream 2
+k:x_1	err incomplete_bvnr_stream 1
+k:x_1	err incomplete_bvnr_stream 1
+k:x_1	err incomplete_bvnr_stream 1
+k:x_1	err incomplete_bvnr_stream 1
+k:x_1	err incomplete_bvnr_stream 1
+k:a {	err incomplete_bvnr_stream 2
+k:b {	err incomplete_bvnr_stream 2
+k:x_1	err incomplete_bvnr_stream 1
+k:x_1	err incomplete_bvnr_stream 1
+k:x_1	err incomplete_bvnr_stream 1
+k:a-b	err incomplete_bvnr_stream 1
+ss ss	err invalid_argument 1
+k:<a>	err invalid_argument 0
+ss ss	err invalid_argument 1
+k:b ss	err invalid_argument 1
+k:a%09	err invalid_argument 0
+k:- { }	err invalid_argument 0
+k:1a { }	err invalid_argument 0
+k:1a { }	err invalid_argument 0
+k:a/b [ ]	err invalid_argument 0
+k:ab; { }	err invalid_argument 0
+k:a/b { }	err invalid_argument 0
+ss ss k:b	err invalid_argument 1
+k:%FF { }	err invalid_argument 0
+k:"a" { }	err invalid_argument 0
+k:0 o( o)	err invalid_argument 0
+k:a v:1.1	err invalid_argument 1
+k:1a k:1a	err invalid_argument 0
+k:b ss o)	err invalid_argument 1
+k:a.b { }	err invalid_argument 0
+k:1a } { }	err invalid_argument 0
+k:a ss { }	err invalid_argument 1
+k:0 { o) }	err invalid_argument 0
+ss k:- { }	err invalid_argument 1
+k:b ss { }	err invalid_argument 1
+k:- { } se	err invalid_argument 0
+k:a { ss }	err invalid_argument 2
+k:a%20b { }	err invalid_argument 0
+k:a=b o( o)	err invalid_argument 0
+k:a%20b { }	err invalid_argument 0
+k:%FF { ] }	err invalid_argument 0
+v:1.1 v:1.1	err invalid_argument 1
+k:a.b k:a.b	err invalid_argument 0
+k:b v:1.1 {	err invalid_argument 1
+k:%FF o( o)	err invalid_argument 0
+v:1.1 v:1.1	err invalid_argument 1
+k:<a> o( o)	err invalid_argument 0
+k:a%20b { }	err invalid_argument 0
+k:a/b o( o)	err invalid_argument 0
+ss k:a.b { }	err invalid_argument 1
+k:b d:ref:::	err invalid_argument 1
+v:1.1 k:a a:datetime::::tai: d:num:-62135596800:5:	err invalid_datetime_literal 3
+v:1.1 k:a a:datetime::::unix: d:num:300000000000:5:	err invalid_datetime_literal 3
+v:1.1 k:a a:datetime::::unix: d:num:-300000000000:5:	err invalid_datetime_literal 3
+k:a d:str:%C3::	err invalid_utf8_byte 1
+k:a d:str:%C3::	err invalid_utf8_byte 1
+k:b d:str:%FF::	err invalid_utf8_byte 1
+k:b d:str:%FF::	err invalid_utf8_byte 1
+k:x_1 d:str:%C3::	err invalid_utf8_byte 1
+k:b d:str:%C3::km	err invalid_utf8_byte 1
+k:x_1 d:str:%FF::	err invalid_utf8_byte 1
+k:a d:str:%C3:: se	err invalid_utf8_byte 1
+k:a d:str:%FF:: se	err invalid_utf8_byte 1
+ss k:b d:str:%C3::m	err invalid_utf8_byte 2
+k:value d:str:%FF::	err invalid_utf8_byte 1
+k:value d:str:%FF::	err invalid_utf8_byte 1
+k:b d:str:%FF::mmHg	err invalid_utf8_byte 1
+k:value d:str:%C3::	err invalid_utf8_byte 1
+k:value d:str:%FF::	err invalid_utf8_byte 1
+k:value d:str:%C3::	err invalid_utf8_byte 1
+k:a d:str:%C3:: k:b	err invalid_utf8_byte 1
+k:value d:str:%C3::	err invalid_utf8_byte 1
+k:x_1 d:str:%FF:: se	err invalid_utf8_byte 1
+k:a d:str:%ED%A0%80::	err invalid_utf8_byte 1
+v:1.2 k:b d:str:%C3::	err invalid_utf8_byte 2
+ss k:uint d:str:%FF::	err invalid_utf8_byte 2
+k:a d:str:%ED%A0%80::	err invalid_utf8_byte 1
+v:1.2 k:b d:str:%FF::	err invalid_utf8_byte 2
+k:b d:str:%C3::k~m se	err invalid_utf8_byte 1
+v:1.2 k:a d:str:%FF::	err invalid_utf8_byte 2
+v:1.2 k:a d:str:%FF::	err invalid_utf8_byte 2
+k:value d:str:%FF:: o)	err invalid_utf8_byte 1
+k:_x d:str:%ED%A0%80::	err invalid_utf8_byte 1
+ss k:value d:str:%C3::	err invalid_utf8_byte 2
+ss k:x_1 d:str:%C3:: se	err invalid_utf8_byte 2
+k:value d:str:%C3::K se	err invalid_utf8_byte 1
+k:x_1 d:str:%ED%A0%80::	err invalid_utf8_byte 1
+k:x_1 d:str:%ED%A0%80::K	err invalid_utf8_byte 1
+k:b d:str:%ED%A0%80:: se	err invalid_utf8_byte 1
+k:b d:str:%ED%A0%80::rad	err invalid_utf8_byte 1
+v:1.1 k:x_1 d:str:%FF::s	err invalid_utf8_byte 2
+k:b d:str:%ED%A0%80:: se	err invalid_utf8_byte 1
+v:1.3 k:b d:str:%FF:: se	err invalid_utf8_byte 2
+ss k:b d:str:%ED%A0%80::	err invalid_utf8_byte 2
+se	ok 
+se	ok 
+ss	ok 
+se	ok 
+v:1.1	ok 2321626f766e617220312e310a
+v:2.0	ok 2321626f766e617220322e300a
+v:0.9	ok 2321626f766e617220302e390a
+ss se	ok 
+v:1.2	ok 2321626f766e617220312e320a
+v:1.1	ok 2321626f766e617220312e310a
+ss se	ok 
+ss se	ok 
+v:1.2	ok 2321626f766e617220312e320a
+v:1.3	ok 2321626f766e617220312e330a
+v:1.1	ok 2321626f766e617220312e310a
+v:1.1	ok 2321626f766e617220312e310a
+k:a [ ]	ok 2e61203d205b5d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:b { }	ok 2e62203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:b { }	ok 2e62203d207b0a7d3b0a
+k:b { }	ok 2e62203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:b { }	ok 2e62203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a [ ]	ok 2e61203d205b5d3b0a
+k:b { }	ok 2e62203d207b0a7d3b0a
+k:a { }	ok 2e61203d207b0a7d3b0a
+k:a [ ]	ok 2e61203d205b5d3b0a
+k:b { }	ok 2e62203d207b0a7d3b0a
+k:a [ ]	ok 2e61203d205b5d3b0a
+k:b [ ]	ok 2e62203d205b5d3b0a
+k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a { k:a {	err struct_nesting_too_high 129
+k:b d:num:-::	err type_value_mismatch 1
+k:a d:bool:::	err type_value_mismatch 1
+k:a d:num:z::	err type_value_mismatch 1
+k:a d:bool:::	err type_value_mismatch 1
+k:a d:ref:1::	err type_value_mismatch 1
+k:b d:bool:::	err type_value_mismatch 1
+k:b d:ref:1::	err type_value_mismatch 1
+k:a d:bool:::	err type_value_mismatch 1
+k:b d:bool:::	err type_value_mismatch 1
+k:_ d:num:+::	err type_value_mismatch 1
+k:a d:ref:0::	err type_value_mismatch 1
+k:b d:ref:a::	err type_value_mismatch 1
+k:a d:num:+5::	err type_value_mismatch 1
+k:b d:ref:&a::	err type_value_mismatch 1
+k:a d:ref:_x::	err type_value_mismatch 1
+k:b d:sym:on::	err type_value_mismatch 1
+k:a d:num:1e::	err type_value_mismatch 1
+k:b d:ref:a.::	err type_value_mismatch 1
+k:a d:ref:a.::	err type_value_mismatch 1
+k:a d:num:z:5:	err type_value_mismatch 1
+k:a d:ref:_x::	err type_value_mismatch 1
+k:b d:ref:&a::	err type_value_mismatch 1
+k:b d:sym:on::	err type_value_mismatch 1
+k:b d:ref:&a::	err type_value_mismatch 1
+k:b d:num:ff::	err type_value_mismatch 1
+k:a d:ref:a.::	err type_value_mismatch 1
+k:a d:bool:1::	err type_value_mismatch 1
+k:a d:ref:a.::	err type_value_mismatch 1
+k:a d:ref:&a::	err type_value_mismatch 1
+k:a d:bool:1::	err type_value_mismatch 1
+k:a d:bool:::m	err type_value_mismatch 1
+k:a d:num:FF::	err type_value_mismatch 1
+k:a d:num:FF::	err type_value_mismatch 1
+k:a d:bool:1::	err type_value_mismatch 1
+k:b d:ref:a.::	err type_value_mismatch 1
+k:a d:bool:1::	err type_value_mismatch 1
+k:a d:ref:a;::	err type_value_mismatch 1
+k:b d:num:Zz::	err type_value_mismatch 1
+k:a d:ref:-1::	err type_value_mismatch 1
+k:b d:bool:1::	err type_value_mismatch 1
+k:a d:str:%01::	err unexpected_input_byte 1
+k:a d:str:%7F::	err unexpected_input_byte 1
+k:a d:str:%7F::	err unexpected_input_byte 1
+k:a d:str:%7F::	err unexpected_input_byte 1
+k:b d:str:%7F::	err unexpected_input_byte 1
+k:a d:str:%7F::	err unexpected_input_byte 1
+k:b d:str:%7F::	err unexpected_input_byte 1
+k:a1 d:str:%7F::	err unexpected_input_byte 1
+k:x_1 d:str:%7F::	err unexpected_input_byte 1
+k:x_1 d:str:%7F::	err unexpected_input_byte 1
+k:x_1 d:str:%01::	err unexpected_input_byte 1
+k:x_1 d:str:%7F::	err unexpected_input_byte 1
+k:x_1 d:str:%7F::	err unexpected_input_byte 1
+k:x_1 d:str:%01::	err unexpected_input_byte 1
+k:b d:str:%7F::m/s	err unexpected_input_byte 1
+ss k:b d:str:%7F::	err unexpected_input_byte 2
+k:b d:str:%01:: se	err unexpected_input_byte 1
+ss k:a d:str:%7F::	err unexpected_input_byte 2
+k:true d:str:%01::	err unexpected_input_byte 1
+k:value d:str:%01::	err unexpected_input_byte 1
+k:value d:str:%7F::	err unexpected_input_byte 1
+k:value d:str:%7F::	err unexpected_input_byte 1
+k:x_1 d:str:%7F:: se	err unexpected_input_byte 1
+k:a d:str:%01::kg*m^2	err unexpected_input_byte 1
+v:1.1 k:b d:str:%7F::	err unexpected_input_byte 2
+ss k:value d:str:%7F::	err unexpected_input_byte 2
+k:value d:str:%01:: se	err unexpected_input_byte 1
+k:value d:str:%01:: se	err unexpected_input_byte 1
+ss k:a d:str:%7F::K se	err unexpected_input_byte 2
+ss k:value d:str:%01::	err unexpected_input_byte 2
+k:value d:str:%01:: se	err unexpected_input_byte 1
+k:value d:str:%7F::mmHg	err unexpected_input_byte 1
+ss k:x_1 d:str:%7F:: se	err unexpected_input_byte 2
+v:1.2 k:x_1 d:str:%7F::	err unexpected_input_byte 2
+v:1.2 k:x_1 d:str:%7F::	err unexpected_input_byte 2
+v:1.2 k:x_1 d:str:%01::s	err unexpected_input_byte 2
+v:1.1 k:b d:str:%7F:: se	err unexpected_input_byte 2
+v:1.2 k:value d:str:%01::	err unexpected_input_byte 2
+ss k:value d:str:%7F:: se	err unexpected_input_byte 2
+k:b [ ] k:x_1 d:str:%7F::	err unexpected_input_byte 4
+k:a d:num:5::%2F	err unit_illegal 1
+k:a d:num:nan::m	err unit_illegal 1
+k:a1 d:str:0::m>	err unit_illegal 1
+k:b d:num:z:5:m;	err unit_illegal 1
+k:A d:num:::$XXQ	err unit_illegal 1
+k:a d:num:12::%FF	err unit_illegal 1
+k:x_1 d:str:hi::1	err unit_illegal 1
+k:b d:num:-5::m^0	err unit_illegal 1
+k:a d:num:3e::m^0	err unit_illegal 1
+k:b d:num:-0::m^0	err unit_illegal 1
+k:value d:str:0::1	err unit_illegal 1
+k:b d:num:0.1:x:m;	err unit_illegal 1
+k:a d:num:-:x:m%00	err unit_illegal 1
+k:b d:num:256::%FF	err unit_illegal 1
+ss k:a d:num:3e::1	err unit_illegal 2
+k:a [ d:anum:5::m ]	err unit_illegal 2
+k:x_1 d:num::000:m;	err unit_illegal 1
+k:value d:num:Zz::1	err unit_illegal 1
+k:b d:num:0.1::$XXQ	err unit_illegal 1
+k:a d:num:inf::$XXQ	err unit_illegal 1
+k:a d:str:::m%00 se	err unit_illegal 1
+k:x_1 d:num:::m%20m	err unit_illegal 1
+k:b d:num:101::m^101	err unit_illegal 1
+k:a d:str:1.5::m^101	err unit_illegal 1
+v:0.9 k:b d:str:::m;	err unit_illegal 2
+k:a d:num:310EE::%FF	err unit_illegal 1
+ss k:b d:str:%C3::m>	err unit_illegal 2
+k:x_1 d:str:5%20::%FF	err unit_illegal 1
+k:b d:num:5:000:m^101	err unit_illegal 1
+k:a d:num:inf::k~m se	err unit_illegal 1
+v:1.1 k:b d:num:+:5:1	err unit_illegal 2
+k:x_1 d:num:-0::m^101	err unit_illegal 1
+k:value d:str:+1::m^0	err unit_illegal 1
+ss k:x_1 d:str:0::%FF	err unit_illegal 2
+k:b d:num:5:000:m%20m	err unit_illegal 1
+k:a d:str:300::xyz se	err unit_illegal 1
+ss k:b d:str:%C3::m^0	err unit_illegal 2
+k:value d:num:FF::xyz	err unit_illegal 1
+k:x_1 d:str:300::1 se	err unit_illegal 1
+ss k:a1 d:num:inf::km	err unit_illegal 2
+k:a a:float:::::m d:num:5::s	err unit_mismatch 2
+k:a a:float:::::no_unit d:num:5::s	err unit_mismatch 2
+k:b a:float:1056::::K d:str:%FF::s	err unit_mismatch 2
+k:b a:sint::8:::K d:num:1e99999::k~m	err unit_mismatch 2
+ss k:b a:sint:0::::K d:num:1_000::$XXQ	err unit_mismatch 3
+k:a a:uint:128:16:::$EUR d:num:+::Ki~B	err unit_mismatch 2
+k:x_1 a:uint:1024:16:::K d:num:255:x:m;	err unit_mismatch 2
+k:key_2 a:sint:::::km d:num:ff:000:mmHg	err unit_mismatch 2
+k:a a:float_fix:256::::rad d:str:-3::m^0	err unit_mismatch 2
+v:1.1 k:b a:uint:::::k~m d:str:300::$EUR	err unit_mismatch 3
+ss k:b a:uint::10:::k~m d:str:ff::deg se	err unit_mismatch 3
+ss k:b a:float_dec:32::::m/s d:str:ff::m;	err unit_mismatch 3
+k:value a:uint:1024:62:::K d:str:18F::m^0	err unit_mismatch 2
+v:1.1 k:b a:float:1024::::s d:num:ninf:x:K	err unit_mismatch 3
+k:x_1 a:uint::16:::no_unit d:num:ninf::mmHg	err unit_mismatch 2
+v:1.2 k:value a:uint:128::::s d:str:zz::m/s	err unit_mismatch 3
+ss k:a a:uint:::::deg d:num:1e-400:000:$XXQ	err unit_mismatch 3
+k:a a:float:::::no_unit d:str:1.5::m%20m se	err unit_mismatch 2
+k:b a:float:::::m*s^-1 d:str:5%20::cf%3AK se	err unit_mismatch 2
+k:value a:uint:1024::::rad d:num:0x10:5:$EUR	err unit_mismatch 2
+v:1.3 k:a1 a:uint:48:64:::deg d:str:12::m se	err unit_mismatch 3
+k:x_1 a:uint:1024::::K d:str:%0B%0C%0D::$XXQ	err unit_mismatch 2
+ss k:x_1 a:float_fix:::::Ki~B d:num:-0:5:$EUR	err unit_mismatch 3
+k:b [ a:float_fix:::::s d:num:ninf::mmHg ] se	err unit_mismatch 3
+ss k:a a:float_fix:::::Ki~B d:num:-129:x:$XXQ	err unit_mismatch 3
+ss k:value a:uint:::::no_unit d:num:0x10::k~m	err unit_mismatch 3
+k:x_1 [ a:float_dec:::::deg d:astr:-3::mmHg ]	err unit_mismatch 3
+k:value a:float::0:::kg*m^2 d:str:10.5e2::$EUR	err unit_mismatch 2
+v:1.1 k:b a:sint::62:::no_unit d:str:10.5e2::xyz	err unit_mismatch 3
+v:1.2 k:value a:uint:::::$EUR d:num:1E-3::kg*m^2	err unit_mismatch 3
+k:b a:uint:::::kg*m^2 d:str:::deg k:a d:ref:.a::	err unit_mismatch 2
+k:b [ d:null::: a:sint::10:::K d:anum:ninf:x:km ]	err unit_mismatch 4
+k:value a:uint:::::mmHg d:anum:1.5::%25 o( o) ] se	err unit_mismatch 2
+k:value { } k:b a:float_dec:::::k~m d:num:-5:000:1	err unit_mismatch 5
+v:1.2 k:b a:sint::2:::kg*m^2 d:str:tab%09here::$EUR	err unit_mismatch 3
+v:1.2 k:x_1 [ a:datetime:1024:::unix: d:str:18F::s ]	err unit_mismatch 4
+k:a1 a:uint:512:64:::deg d:num:12:x:K k:<a> d:bool:::	err unit_mismatch 2
+v:1.2 ss k:b a:uint:96:85:::no_unit d:num:1e-400::$XXQ	err unit_mismatch 4
+k:x_1 a:uint:::::$EUR d:num:18446744073709551616::m%20m	err unit_mismatch 2
+v:1.1 k:b a:uint:1088:85:::m d:num:0x10::m; d:anum:+5::	err unit_mismatch 3
+k:a d:str:nan::cf%3AK	err unit_profile_unknown 1
+k:a d:num:-inf:5:cf%3AK	err unit_profile_unknown 1
+ss k:b d:num:1e::cf%3AK	err unit_profile_unknown 2
+k:value d:num:FF::cf%3AK	err unit_profile_unknown 1
+k:b d:num:0.1:000:cf%3AK	err unit_profile_unknown 1
+k:x_1 d:num:0::cf%3AK se	err unit_profile_unknown 1
+k:b d:num:256:000:cf%3AK	err unit_profile_unknown 1
+ss k:a d:num:-inf:x:cf%3AK	err unit_profile_unknown 2
+ss k:x_1 d:str:%C3::cf%3AK	err unit_profile_unknown 2
+k:value d:str:5%20::cf%3AK	err unit_profile_unknown 1
+k:x_1 d:str:::ucum%3Amm[Hg]	err unit_profile_unknown 1
+k:value d:num:-0::cf%3AK se	err unit_profile_unknown 1
+v:1.2 k:a d:num:-:000:cf%3AK	err unit_profile_unknown 2
+ss k:value d:num:0.1::cf%3AK	err unit_profile_unknown 2
+k:x_1 d:num:1e-400::cf%3AK se	err unit_profile_unknown 1
+k:a d:num:300:x:ucum%3Amm[Hg]	err unit_profile_unknown 1
+v:1.2 k:a a:uint:::::cf%3AK { }	err unit_profile_unknown 2
+k:value d:num:1e::ucum%3Amm[Hg]	err unit_profile_unknown 1
+k:value d:str:18F::ucum%3Amm[Hg]	err unit_profile_unknown 1
+ss k:a d:str:%205::ucum%3Amm[Hg]	err unit_profile_unknown 2
+ss k:x_1 d:str:-0::ucum%3Amm[Hg]	err unit_profile_unknown 2
+k:b o( o) k:x_1 d:str:%C3::cf%3AK	err unit_profile_unknown 4
+k:b a:sint:8:0:::cf%3AK d:sym:_s::	err unit_profile_unknown 1
+ss k:x_1 d:num:310EE::ucum%3Amm[Hg]	err unit_profile_unknown 2
+k:x_1 a:uint::::: d:str:1e3::cf%3AK	err unit_profile_unknown 2
+ss k:b a:uint:::::cf%3AK d:num:+:x:	err unit_profile_unknown 2
+k:value a:uint:::::cf%3AK d:null:::	err unit_profile_unknown 1
+k:a d:str:back\slash::ucum%3Amm[Hg]	err unit_profile_unknown 1
+k:a d:num:-0::cf%3AK k:x_1 d:ref:a::	err unit_profile_unknown 1
+k:x_1 a:uint:256::::cf%3AK d:null:::	err unit_profile_unknown 1
+ss k:x_1 d:str:300::ucum%3Amm[Hg] se	err unit_profile_unknown 2
+v:0.9 k:b { k:a d:str:5%20::cf%3AK }	err unit_profile_unknown 4
+v:1.1 k:x_1 d:num:0.1::ucum%3Amm[Hg]	err unit_profile_unknown 2
+ss k:a d:str:%C3%A9::ucum%3Amm[Hg] se	err unit_profile_unknown 2
+k:a d:num:.5::cf%3AK d:num:.5::cf%3AK	err unit_profile_unknown 1
+k:a a:float::16:::cf%3AK d:num::5: se	err unit_profile_unknown 1
+k:b { } k:x_1 d:num:.5::ucum%3Amm[Hg]	err unit_profile_unknown 4
+v:1.1 ss k:on { } k:a d:str:zz::cf%3AK	err unit_profile_unknown 6
+k:a d:num:-::cf%3AK k:value d:sym:inf::	err unit_profile_unknown 1
+k:a a:sint:::::cf%3AK d:str:%ED%A0%80::	err unit_profile_unknown 1
+v:1.3 k:b a:uint:4096::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:str:hi::	err unit_too_long 2
+ss k:x_1 a:uint:128:2:::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:-inf::	err unit_too_long 2
+v:1.1 k:b a:float_fix:::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm [ ] / [ ] se	err unit_too_long 2
+v:0.9 ss k:value a:float:512::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm o:z se	err unit_too_long 3
+v:0.9 k:x_1 a:float_dec:::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:ref:.a::	err unit_too_long 2
+v:2.0 k:a { } k:a a:float_fix:::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:-129:x:	err unit_too_long 5
+k:a-b a:uint::8:::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:12:: k:x_1 a:uint::::: d:null:::	err unit_too_long 1
+ss k:x_1 { } k:value a:float_dec:::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:1e:5:m%20m se	err unit_too_long 5
+ss k:a a:uint:4096::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:310EE::m*s^-1 k:a d:str:%7F::	err unit_too_long 2
+k:a a:uint:16:10:::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:.5:: k:x_1 a:uint::86::: d:bool:off::	err unit_too_long 1
+k:value a:float_fix:::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:null::: k:b a:utf8::::: d:bool::: d:bool:::	err unit_too_long 1
+v:1.1 k:a a:sint:4096::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:str:18F:: k:a a:sint:0:63:::m> d:sym:null::	err unit_too_long 2
+v:2.0 k:a1 a:sint:512::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:bool:1:: k:x_1 a:utf8:65:64:::$XXQ d:num:0.1:: k:a d:null:::	err unit_too_long 2
+k:b a:sint:7::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm { k:a d:num:2024-01-01T00%3A00%3A00.5Z:: } k:b d:null::: k:a d:bool:true:: se	err unit_too_long 1
+ss k:x_1 { k:b a:uint:4097::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:0.1:: k:a a:sint:99999:36::: d:ref:-1:: } k:%C3%A9t%C3%A9 d:str:+1:: se	err unit_too_long 4
+ss k:a a:uint:4096::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:str:10.5e2:: k:b a:float_dec::::: d:num:2024-01-01T00%3A00%3A00.5Z:000: k:x_1 d:num:1700000000::xyz se	err unit_too_long 2
+k:a a:sint:16::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:nan::$XXQ k:a { k:x_1 d:num:12:: } k:x_1 { k:a a:datetime::::: [ ] / [ ] / [ ] k:%C3%A9t%C3%A9 d:str:12:: } se	err unit_too_long 1
+k:x_1 a:float_dec:::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:num:18446744073709551616::K k:b a:utf8::::: { k:x_1 { k:a d:null::: k:on { k:"a" d:str::: k:a d:null::: } } }	err unit_too_long 1
+v:1.1 k:x_1 [ { k:b a:float_fix:::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:str:nan:: } [ ] o( o) ] / [ a:float_dec::::: d:anum:ninf:: a:bool:96::::k~m d:bool:TRUE:: { } ] k:x_1 { }	err unit_too_long 5
+[	err unknown_token_type 0
+[	err unknown_token_type 0
+{	err unknown_token_type 0
+o(	err unknown_token_type 0
+o(	err unknown_token_type 0
+{ }	err unknown_token_type 0
+{ }	err unknown_token_type 0
+{ {	err unknown_token_type 0
+{ }	err unknown_token_type 0
+[ ]	err unknown_token_type 0
+{ }	err unknown_token_type 0
+[ ]	err unknown_token_type 0
+{ }	err unknown_token_type 0
+} }	err unknown_token_type 0
+] ]	err unknown_token_type 0
+} se	err unknown_token_type 0
+k:b /	err unknown_token_type 1
+{ k:a	err unknown_token_type 0
+k:b }	err unknown_token_type 1
+k:a ]	err unknown_token_type 1
+se ss	err unknown_token_type 1
+o) o(	err unknown_token_type 0
+o( ss	err unknown_token_type 0
+o) o(	err unknown_token_type 0
+se se	err unknown_token_type 1
+o( o)	err unknown_token_type 0
+] [ [	err unknown_token_type 0
+] } {	err unknown_token_type 0
+} k:b	err unknown_token_type 0
+o) ss	err unknown_token_type 0
+} k:b	err unknown_token_type 0
+o( o)	err unknown_token_type 0
+[ ] [	err unknown_token_type 0
+/ k:_	err unknown_token_type 0
+{ / }	err unknown_token_type 0
+o) ss	err unknown_token_type 0
+o( o)	err unknown_token_type 0
+k:a se	err unknown_token_type 1
+k:a se	err unknown_token_type 1
+ss { }	err unknown_token_type 1
+k:a d:ref:.a[0]::	err unsupported_spec_version 1
+k:b a:datetime:1:::: ]	err unsupported_spec_version 1
+k:a d:ref:.a.b[12][3].c::	err unsupported_spec_version 1
+k:x_1 a:datetime::::: [ ]	err unsupported_spec_version 1
+ss k:a a:datetime::::: [ ]	err unsupported_spec_version 2
+k:x_1 a:datetime:64:::: o)	err unsupported_spec_version 1
+k:a a:datetime::::: [ ] se	err unsupported_spec_version 1
+k:b a:datetime:32::::km { }	err unsupported_spec_version 1
+k:a a:datetime::::: o( o: o)	err unsupported_spec_version 1
+k:b a:datetime::::: d:ref:0::	err unsupported_spec_version 1
+k:b a:datetime::::UNIX: o( o)	err unsupported_spec_version 1
+k:a a:datetime::::: d:null:::	err unsupported_spec_version 1
+k:null a:datetime::::: [ { } ]	err unsupported_spec_version 1
+ss k:b a:datetime::::tai:%25 {	err unsupported_spec_version 2
+k:a a:datetime::::: d:str:hi::	err unsupported_spec_version 1
+k:b a:datetime::::: d:str:-3::	err unsupported_spec_version 1
+k:b a:datetime::::: d:str:ff::	err unsupported_spec_version 1
+k:b a:datetime::::: d:num:0.1::	err unsupported_spec_version 1
+k:a a:datetime::::: d:str:nan::	err unsupported_spec_version 1
+k:b a:datetime::::: d:num:300::	err unsupported_spec_version 1
+k:x_1 a:datetime::::: d:str:+1::	err unsupported_spec_version 1
+k:a o( o) k:b a:datetime:::::k~m	err unsupported_spec_version 4
+k:value a:datetime::::: d:sym:::	err unsupported_spec_version 1
+k:a a:datetime::::: d:null::: se	err unsupported_spec_version 1
+k:a a:datetime::::: d:bool:off::	err unsupported_spec_version 1
+k:b a:datetime::::: d:null::: se	err unsupported_spec_version 1
+k:b a:datetime:::::m*s^-1 { } se	err unsupported_spec_version 1
+k:a a:datetime::::unix: d:num:5::	err unsupported_spec_version 1
+k:value a:datetime::::: d:str:0::	err unsupported_spec_version 1
+k:b a:datetime::::: d:num:+5:000:	err unsupported_spec_version 1
+k:x_1 a:datetime::::: d:num:-0:5:	err unsupported_spec_version 1
+k:a [ a:datetime::::: { } ] / [ ]	err unsupported_spec_version 2
+k:x_1 a:datetime::::: [ ] / [ ] ]	err unsupported_spec_version 1
+k:value a:datetime::::: d:num:+::	err unsupported_spec_version 1
+k:value a:datetime::::: d:null:::	err unsupported_spec_version 1
+k:b a:datetime::::gps: d:num:Zz::	err unsupported_spec_version 1
+k:x_1 a:datetime::::: d:sym:a;b::	err unsupported_spec_version 1
+k:a a:datetime:32:::: d:str:%01::	err unsupported_spec_version 1
+k:x_1 a:datetime:16:::mjd:xyz [ ]	err unsupported_spec_version 1
+k:a a:datetime::::: d:bool::: o:z	err unsupported_spec_version 1
+k:b a:uint::::: d:num:-inf::	err value_out_of_range 2
+ss k:b a:uint:7:::: d:str:-0::	err value_out_of_range 3
+k:x_1 a:uint:2048:::: d:num:-0::	err value_out_of_range 2
+k:a d:num:-9223372036854775809::	err value_out_of_range 1
+k:b d:num:-9223372036854775809::	err value_out_of_range 1
+k:a d:num:-9223372036854775809::	err value_out_of_range 1
+k:a d:num:18446744073709551616::	err value_out_of_range 1
+k:b d:num:-9223372036854775809::	err value_out_of_range 1
+k:a d:num:18446744073709551616::	err value_out_of_range 1
+k:a d:num:-9223372036854775809::	err value_out_of_range 1
+k:a d:num:-9223372036854775809::	err value_out_of_range 1
+k:a d:num:-9223372036854775809:5:	err value_out_of_range 1
+k:a a:uint:1:36::: d:num:101:123:	err value_out_of_range 2
+k:b d:num:-9223372036854775809:x:	err value_out_of_range 1
+k:b d:num:18446744073709551616:5:	err value_out_of_range 1
+k:x_1 d:num:18446744073709551616::	err value_out_of_range 1
+k:x_1 a:uint:4096:2::: d:num:1e3::	err value_out_of_range 2
+k:a d:num:99999999999999999999999::	err value_out_of_range 1
+k:b d:num:99999999999999999999999::	err value_out_of_range 1
+k:x_1 d:num:18446744073709551616:x:	err value_out_of_range 1
+k:a d:num:18446744073709551616::%25	err value_out_of_range 1
+k:b d:num:99999999999999999999999::	err value_out_of_range 1
+ss k:a d:num:-9223372036854775809::	err value_out_of_range 2
+ss k:b d:num:-9223372036854775809::	err value_out_of_range 2
+ss k:a a:uint:64:62:::s d:num:.5:5:	err value_out_of_range 3
+k:b d:num:99999999999999999999999:x:	err value_out_of_range 1
+k:b d:num:99999999999999999999999:5:	err value_out_of_range 1
+k:value d:num:-9223372036854775809::	err value_out_of_range 1
+ss k:b d:num:18446744073709551616:: ]	err value_out_of_range 2
+k:x_1 d:num:-9223372036854775809:123:	err value_out_of_range 1
+ss k:value a:uint:7:::: d:num:-inf:5:	err value_out_of_range 3
+k:x_1 d:num:18446744073709551616:123:	err value_out_of_range 1
+ss k:b d:num:18446744073709551616:5:s	err value_out_of_range 2
+k:a d:num:99999999999999999999999::km	err value_out_of_range 1
+k:x_1 d:num:99999999999999999999999::	err value_out_of_range 1
+k:x_1 d:num:18446744073709551616:123:	err value_out_of_range 1
+k:x_1 d:num:18446744073709551616:000:	err value_out_of_range 1
+k:x_1 d:num:99999999999999999999999::	err value_out_of_range 1
+k:a a:uint:1088::::Ki~B d:num:-129:x:	err value_out_of_range 2
+k:x_1 d:num:18446744073709551616:000:	err value_out_of_range 1
+v:1.2 ss k:x_1 [ d:anum:1700000000:: ] / [ [ ] / [ ] / [ ] ] / [ { } ] k:a a:float:::::kg*m^2 d:num:1.7976931348623157e309:123: k:a a:uint:16:62:::m/s d:num:Zz:: se	err array_row_size_mismatch 16	err base_requires_string_literal 27
+v:1.3 k:value [ d:anum:300:x: ] / [ a:uint::2:::rad [ ] ] k:value a:sint::63::: [ d:num:ff:123: ] / [ ] se	err array_row_size_mismatch 10	err illegal_value_type 12
+ss k:a [ [ [ ] / [ ] ] / [ { } ] / [ d:null::: ] a:float_fix:99999:::: d:anum:1_000:: ] / [ a:sint::36:::1 d:bool:off:: a:datetime::::: { k:on a:sint::::: d:str:%01:: } ]	err array_row_size_mismatch 14	err illegal_value_type 19
+v:1.2 k:b a:float_dec:::::s [ a:float::16:::Ki~B d:astr:0:: ] / [ [ ] / [ ] ] / [ a:utf8:32:2:::m^0 [ [ o( o:zzz o) ] ] / [ a:uint:48:16:::m%20m d:anum:256:: ] ] k:x_1 a:utf8:8:1:::$XXQ d:bool:off::	err array_row_size_mismatch 14	err illegal_value_type 17
+k:x_1 [ d:anum:-0:: ] / [ [ ] ] / [ { k:a%0A { } } ]	err array_row_size_mismatch 8	err invalid_argument 12
+k:value [ a:float::::: [ ] / [ ] ] / [ d:null:::xyz ] / [ d:null::: ] k:a%20b { k:value d:null::: k:b d:str:back\slash:: }	err array_row_size_mismatch 12	err invalid_argument 17
+v:1.1 k:value a:bool::::: [ a:float_dec::::: [ ] ] / [ d:null::: ] / [ a:float_fix:::::s d:anum:1E-3:123: [ [ o( o: o) d:anum:10000-01-01T00%3A00%3A00Z:: ] ] ] k:value [ a:utf8:7:1:::m%00 [ ] [ { k:ab; a:sint::0:::$EUR d:num::5: } d:anum:1e-400:: ] / [ a:sint:96:1:::m d:str:%0B%0C%0D:: d:anum:310EE:: ] ] k:x_1 o( o: o)	err array_row_size_mismatch 11	err invalid_argument 19
+k:b [ [ [ ] ] ] / [ d:astr:12:: ]	err array_row_size_mismatch 10	ok 2e62203d205b5b5b5d5d5d202f205b223132225d3b0a
+k:a [ d:anum:1:: ] / [ [ d:anum:2:: ] ]	err array_row_size_mismatch 9	ok 2e61203d205b315d202f205b5b325d5d3b0a
+ss k:a [ { } ] / [ [ ] / [ ] ] k:x_1 { } k:value { }	err array_row_size_mismatch 13	ok 2e61203d205b7b0a7d5d202f205b5b5d202f205b5d5d3b0a2e785f31203d207b0a7d3b0a2e76616c7565203d207b0a7d3b0a
+v:1.2 ss k:x_1 o( o) k:a [ [ ] / [ ] ] / [ d:null::: ] k:x_1 d:num:1e:123:	err array_row_size_mismatch 16	err type_value_mismatch 18
+v:1.3 k:b [ d:anum:101:: ] / [ [ ] ] k:b d:str:+1:: k:%C3%A9t%C3%A9 d:num:5%20m:123:	err array_row_size_mismatch 9	err type_value_mismatch 13
+v:1.3 k:x_1 [ [ ] / [ ] ] / [ d:num:-0:: ] / [ d:null::: d:ref:a%20b:: ] k:b a:float::36:::m/s d:str:12::	err array_row_size_mismatch 12	err type_value_mismatch 16
+ss k:value a:utf8::::: d:null::: k:a [ [ ] / [ ] ] / [ { } ] / [ [ o( o:zzz o) d:astr:zz:: d:anum:-1.5:5:$EUR ] ]	err array_row_size_mismatch 16	err unit_illegal 24
+k:a [ [ d:astr:18F:: ] / [ [ ] ] / [ { k:b o( o) k:value [ d:anum:7:123: ] / [ [ a:sint:48:::gps:cf%3AK d:sym:foo:: v:1.1 ] / [ d:null:::m/s ] } ] ] / [ [ o( o) ] ] / [ [ ] / ] / [ ] ]	err array_row_size_mismatch 9	err unit_illegal 23
+v:1.1 k:value [ ] / [ ] / [ ] k:a { k:value [ [ [ ] / [ ] ] / [ { } ] / [ [ d:null::: d:str:%205::rad a:utf8:0:85:::k~m d:sym:x%00::k~m ] / [ a:float_fix:4097::31::$XXQ d:anum:255:x: d:null:::m d:num:310EE:: ] ] a:uint::::: d:null::: ] / [ d:anum:Zz:: [ ] / [ ] / [ ] ] k:x_1 { k:b a:uint:512:0:::kg*m^2 d:ref:a.b::deg k:a d:num:1.5:000: } }	err array_row_size_mismatch 25	err unit_illegal 30
+k:a a:uint::::: [ [ ] ] / [ [ ] / [ ] ] ] / [ a:float_dec::2:::m^101 d:bool:yes:: ]	err array_row_size_mismatch 13	err unknown_token_type 14
+ss k:value [ d:null::: ] / [ [ ] ] / [ { a:float_fix:8::8::cf%3AK k:value d:num:5:: k:b a:float::::: [ ] } ] k:value d:str:-0::	err array_row_size_mismatch 9	err unknown_token_type 13
+k:value d:num:1e3:5: k:value a:bool::0::: [ ] / [ d:null:::m/s ] k:b a:utf8::::: d:str:-3::	err array_row_size_mismatch 9	err illegal_value_type 3
+v:1.2 k:a [ [ a:utf8:::::no_unit d:astr:1e3:: ] / [ ] a:float:::::km d:null::: a:uint::2::: d:null::: ] / [ { k:value d:num:12:: k:b { k:x_1 d:null::: } } o( o: o) { } ] k:b d:str:tab%09here:: k:value a:utf8::::: d:num:5%20m::no_unit	err array_row_size_mismatch 9	err illegal_value_type 4
+v:1.1 k:a { k:x_1 { } k:b a:float_dec::::: [ { } ] / [ [ ] / [ ] ] }	err array_row_size_mismatch 19	err type_value_mismatch 9
+v:1.0 k:a [ [ a:uint:0:2:::km { } ] / [ ] a:uint:99999:2:::m*s^-1 d:num:.5:: a:datetime:96:::: { } ] k:b a:float_fix:::::deg [ ] / [ ] / [ ] se	err array_row_size_mismatch 10	err type_value_mismatch 5
+v:2.0 k:b a:float_dec::::: [ [ [ a:uint:128:2:::m/s d:null:::xyz { } ] / [ ] / [ a:datetime:48:::unix:no_unit d:str:ff:: a:datetime:0:::mjd:xyz d:sym:true::deg a:utf8::::: d:anum:5%20m::rad ] d:anum:-9223372036854775809:000: d:anum:1.7976931348623157e309:123: ] / [ d:null::: a:utf8:4097:85:::1 d:null::: o) d:null::: ] / ]	err array_row_size_mismatch 13	err type_value_mismatch 8
+v:1.2 k:a d:num:1e3::rad k:a { k:a%00 [ d:anum:1e3:000: ] / [ [ ] / [ ] d:null:::no_unit ] k:a o( o) } k:x_1 a:uint:4097:::: d:num:12::	err array_row_size_mismatch 17	err unexpected_input_byte 5
+ss k:b { k:value a:plain::::: [ ] / [ ] / [ o( o) ] } k:_x d:num:1.7976931348623157e309:123: k:b { k:x_1 d:str:a"b:: k:x_1 [ a:datetime::::: d:sym:on:: d:num:5%20m:000: ] } se	err array_row_size_mismatch 14	err unexpected_input_byte 4
+v:1.2 k:x_1 [ d:sym:x%00:: ] / [ [ d:null::: ] ] k:a a:bool:64::::1 d:str:nan::m; k:x_1 a:datetime:0:8:::m^0 [ { k:b a:datetime:65::::rad d:num:0:000: k:a a:uint:1024:2:::mmHg d:str:0:: } ] se	err array_row_size_mismatch 10	err unexpected_input_byte 3
+k:value o( o) k:x_1 a:uint:4096::::kg*m^2 [ { } a:sint:16:16::: d:num:1/2:: ] / [ d:bool:on:: a:float_fix:96::::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm d:ref:-1:: d:ref:-1:: ]	err base_requires_string_literal 9	err type_value_mismatch 6
+ss k:%C3%A9t%C3%A9 a:plain::::: d:num::: k:x_1 a:uint:64:16:::$EUR d:num:+:5:	err base_requires_string_literal 6	err unexpected_input_byte 2
+k:a%00 a:float_fix:32::1::deg [ [ [ ] / [ ] / [ a:uint:512:16:::deg d:anum:9999-12-31T23%3A59%3A59Z:000: d:astr:zz::ucum%3Amm[Hg] ] a:uint::::: d:str:nan::kg*m^2 d:astr:::m/s ] a:datetime:1:::mjd:deg d:astr:nan:: { } ] k:b [ d:bool:false:: ] k:x_1 a:uint:1088:62:::m> d:null:::	err base_requires_string_literal 12	err unexpected_input_byte 0
+ss k:value o( o:zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz o) k:b d:num:256:: k:a%00 a:uint:64:16:::$EUR d:num:1_000:5: se	err base_requires_string_literal 9	err unexpected_input_byte 7
+v:1.3 k:a a:uint::::: d:str:::rad k:a a:uint:4097:0:::k~m d:str:+1:: k:a { }	err digit_not_in_base 6	err digit_not_in_base 3
+k:b { k:x_1 a:float::::: d:str::: k:value a:float_fix::::: d:str:%205:: } k:a a:float:::8:: d:str:1e3:: se	err digit_not_in_base 7	err digit_not_in_base 4
+ss k:a a:float_dec::0:::s d:str:%0B%0C%0D::	err digit_not_in_base 3	err illegal_value_type 2
+ss k:value a:uint:512::31:: d:str:tab%09here:: se	err digit_not_in_base 3	err illegal_value_type 2
+v:1.1 k:value d:str:%0B%0C%0D:: k:value a:float_dec:256:0::: d:str:back\slash::	err digit_not_in_base 5	err illegal_value_type 4
+ss k:x_1 a:uint::::: [ { } ] / [ d:astr:ff:: ]	err digit_not_in_base 9	err type_value_mismatch 4
+v:0.9 k:x_1 a:float_dec:64::::$EUR [ { } a:uint:::::kg*m^2 d:str:1.5:: ] k:a a:datetime::::: d:null::: se	err digit_not_in_base 7	err type_value_mismatch 4
+v:1.1 ss k:b [ a:float::::: [ { } a:utf8::::: d:str:1e3:: o( o:zzz o) ] / [ d:null:::m*s^-1 d:astr:nan:: d:sym:a.b:: ] d:astr:ff:: ] / [ ]	err digit_not_in_base 17	err type_value_mismatch 6
+v:1.2 ss k:a%00 a:uint::::: d:str:%0B%0C%0D::	err digit_not_in_base 4	err unexpected_input_byte 2
+k:a%00 a:float::::: d:str:back\slash:: k:a [ ] / [ ]	err digit_not_in_base 2	err unexpected_input_byte 0
+k:value d:sym:x%00:: k:value a:uint::::: d:str:%C3%A9::	err digit_not_in_base 4	err unexpected_input_byte 1
+ss k:value a:uint:::::deg d:str::: k: a:sint::8:::m^101 d:bool:1:: se	err empty_identifier 4	err digit_not_in_base 3
+k:value [ d:sym:x%00:: ] k:x_1 d:sym:::m/s se	err empty_identifier 5	err unexpected_input_byte 2
+v:1.0 ss k:a a:sint::::: d:str::: k:a a:datetime:8::::m^0 d:null::: k:value [ ]	err illegal_value_type 6	err digit_not_in_base 4
+v:1.2 k:a { k:a [ ] / [ ] k:value [ ] } k:a a:float_fix:::::no_unit d:str::: k:a { k:a a:datetime:32:::unix:xyz [ ] / [ ] }	err illegal_value_type 19	err digit_not_in_base 15
+ss k:value [ a:uint:::::$EUR d:str::: ] / [ { k:b a:float:4097:2::: d:num:255:x: } ] k:a o( o:zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz o) se	err illegal_value_type 10	err digit_not_in_base 4
+k:a a:uint:::0::%25 d:null:::m k:value a:float:1:64:::m%20m o( o) se	err illegal_value_type 4	err illegal_value_type 1
+v:1.0 k:b a:datetime:0:::tai: d:null:::deg k:value o( o) k:b a:datetime:::::deg d:sym:x%00::	err illegal_value_type 8	err illegal_value_type 2
+k:x_1 a:float_dec::0:::m*s^-1 d:null:::K k:a a:float_fix:8::63::%FF d:num:1/2:: k:value o( o:zzz o)	err illegal_value_type 4	err illegal_value_type 1
+k:a a:uint:48:::: { } k:b a:float:96:63:::%FF d:sym:foo-bar:: se	err illegal_value_type 5	err type_value_mismatch 2
+k:b a:uint::::: { } k:b a:float:::200:: d:num:12:5: k:a d:sym:on:: se	err illegal_value_type 5	err type_value_mismatch 2
+v:1.1 k:b a:datetime::::tai: d:bool:false:: k:value a:utf8::2:::K d:ref:a.b:: se	err illegal_value_type 5	err type_value_mismatch 3
+k:a%00 a:utf8:::::K d:sym:a.b:: se	err illegal_value_type 1	err unexpected_input_byte 0
+v:1.1 k:a%00 a:utf8:65:::: d:num:-0::	err illegal_value_type 2	err unexpected_input_byte 1
+ss k:a%00 a:utf8::62:::rad d:num:+5::$XXQ	err illegal_value_type 2	err unexpected_input_byte 1
+k:b a:float_dec::0::: d:num:.5:5: k:x_1 o(	err incomplete_bvnr_stream 5	err illegal_value_type 1
+v:1.1 ss k:x_1 d:str:5%20:: k:a1 a:float_fix:64::1:: {	err incomplete_bvnr_stream 7	err type_value_mismatch 6
+k:b a:plain:::31::	err incomplete_bvnr_stream 2	err unexpected_input_byte 1
+ss k:a a:plain::::: [	err incomplete_bvnr_stream 4	err unexpected_input_byte 2
+k:a%00 a:sint:16:0:::m	err incomplete_bvnr_stream 2	err unexpected_input_byte 0
+k:value a:bool:::::no_unit v:1.1 d:str:+1::	err invalid_argument 2	err illegal_value_type 1
+v:1.1 k:a a:float_dec::0::: v:1.1 [ v:1.1 a:float_fix:::::no_unit a:float_fix:::::no_unit d:anum:-9223372036854775809::deg ]	err invalid_argument 3	err illegal_value_type 2
+v:0.9 k:x_1 a:datetime::::: o( o:zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz o: o) k:value { k:value a:datetime:0::::m d:bool:1:: } k:x_1 d:sym:true:: se	err invalid_argument 5	err illegal_value_type 2
+k:value a:float:256::::K { } k:a%09 o( o) se	err invalid_argument 4	err type_value_mismatch 2
+v:2.0 k:b a:bool::::: { } k:a%09 d:sym:uint::	err invalid_argument 5	err type_value_mismatch 3
+v:1.2 k:b a:datetime:8:::unix: [ { } ] k:on d:str:back\slash:: k:a%0A d:num:1e-400:5:m/s	err invalid_argument 9	err type_value_mismatch 4
+v:1.1 k:a%00 ss { k:value d:num:-inf::m/s	err invalid_argument 2	err unexpected_input_byte 1
+k:a%00 v:1.3 k:a d:sym:foo-bar:: k:x_1 { }	err invalid_argument 1	err unexpected_input_byte 0
+v:1.3 k:a%00 a:float::::: { } k:0 d:num:+5::	err invalid_argument 5	err unexpected_input_byte 1
+k:x_1 { } k:b a:sint:::0:: d:str:%FF:: k:b a:float:2048::::%FF d:num:-0:000:	err invalid_utf8_byte 5	err illegal_value_type 4
+k:a [ a:sint:2048::8::m*s^-1 d:astr:%C3:: d:sym:a;b:: a:float_dec:4096:::: d:anum:1.:: ] / [ a:utf8:32:::: [ o( o:z o) a:uint:0::63:: d:num:-:123: { k:x_1 d:bool:off:: } ] / [ ] { } a:utf8:1056:85::: [ d:bool:1:: d:ref:a::$XXQ a:float_fix:16::8::m; d:sym:_s:: ] ] k:b [ d:ref:a;::m^101 ] / [ a:bool::::: [ d:anum:inf:x: ] d:anum:-129:: ]	err invalid_utf8_byte 3	err illegal_value_type 2
+v:1.1 k:a a:float::::: { } k:b a:utf8::::: d:str:%ED%A0%80::	err invalid_utf8_byte 7	err type_value_mismatch 3
+k:value a:uint:512::::$EUR { } k:b d:str:%C3:: k:value d:num:Zz::	err invalid_utf8_byte 5	err type_value_mismatch 2
+ss k:a%00 [ d:astr:%FF:: ] / [ ]	err invalid_utf8_byte 3	err unexpected_input_byte 1
+v:1.1 k:a-b a:plain::::: d:str:%FF:: k:"a" d:sym:1abc:: k:value [ ] / [ ] / [ ]	err invalid_utf8_byte 3	err unexpected_input_byte 2
+k:a%00 [ d:str:%FF:: ] / [ a:float_fix:::200::m%00 d:astr:%7F:: ] / [ d:num:101:: ]	err invalid_utf8_byte 2	err unexpected_input_byte 0
+k:a [ d:anum:1:: d:anum:2:: ] / [ [ d:anum:3:: ] ]	ok 2e61203d205b312c20325d202f205b5b335d5d3b0a	err array_row_size_mismatch 10
+k:value [ { k:a d:num:.5:: } o( o) ] / [ d:anum:101:: d:anum:-5:: ] / [ [ ] ] k:x_1 { k:x_1 [ ] }	ok 2e76616c7565203d205b7b0a092e61203d202e353b0a7d2c2000005d202f205b3130312c202d355d202f205b5b5d5d3b0a2e785f31203d207b0a092e785f31203d205b5d3b0a7d3b0a	err array_row_size_mismatch 18
+v:1.0 k:a a:sint:16:8:::K d:str:::	ok 2321626f766e617220312e300a2e61203d203c73696e743a31362c5f382c4b3e2022223b0a	err digit_not_in_base 3
+v:1.2 k:x_1 a:float_dec::::: d:str:::	ok 2321626f766e617220312e320a2e785f31203d203c666c6f61745f6465633e2022223b0a	err digit_not_in_base 3
+k:value { k:x_1 a:uint::::: d:str::: }	ok 2e76616c7565203d207b0a092e785f31203d203c75696e743e2022223b0a7d3b0a	err digit_not_in_base 4
+k:a a:uint:7::0::m/s [ ]	ok 2e61203d203c75696e743a372c71302c6d2f733e205b5d3b0a	err illegal_value_type 1
+ss k:b a:bool::0::: d:null:::	ok 2e62203d203c626f6f6c3a5f31303e203b0a	err illegal_value_type 2
+k:a a:utf8:::::no_unit d:str:x::	ok 2e61203d203c757466383a6e6f5f756e69743e202278223b0a	err illegal_value_type 1
+k:a a:uint::::: { }	ok 2e61203d203c75696e743e207b0a7d3b0a	err type_value_mismatch 2
+k:b a:uint::::: { }	ok 2e62203d203c75696e743e207b0a7d3b0a	err type_value_mismatch 2
+k:b a:bool::::: { }	ok 2e62203d203c626f6f6c3e207b0a7d3b0a	err type_value_mismatch 2
+ss k:a%00 o( o)	ok 2e6100203d2000003b0a	err unexpected_input_byte 1
+k:b d:sym:x%00::	ok 2e62203d2078003b0a	err unexpected_input_byte 1
+k:a d:sym:x%00::	ok 2e61203d2078003b0a	err unexpected_input_byte 1
+ss k:a a:uint:::::deg d:str::: k:a d:ref:a::	err type_value_mismatch 5	err digit_not_in_base 3
+ss k:value [ a:uint::::: d:astr::: d:astr:1e3:: d:num:310EE:: ] se	err type_value_mismatch 6	err digit_not_in_base 4
+k:value a:float_dec:::::K d:str::: k:x_1 [ ] / [ ] k:b d:bool:TRUE::km	err type_value_mismatch 10	err digit_not_in_base 2
+ss k:x_1 a:bool::0::: d:num:-5::	err type_value_mismatch 3	err illegal_value_type 2
+ss k:a a:utf8::0::: d:num:-:123:	err type_value_mismatch 3	err illegal_value_type 2
+ss k:value a:utf8::0::: d:ref:_x::	err type_value_mismatch 3	err illegal_value_type 2
+k:x_1 a:float::10::: { k:a { } }	err type_value_mismatch 3	err type_value_mismatch 2
+k:a a:uint:8:::: { k:b d:num:1:: }	err type_value_mismatch 3	err type_value_mismatch 2
+k:b a:sint:65::::m { } k:a d:num:+::	err type_value_mismatch 5	err type_value_mismatch 2
+k:a%00 d:bool:1::km se se	err type_value_mismatch 1	err unexpected_input_byte 0
+k:x_1 a:plain::::: d:ref:a::	err type_value_mismatch 2	err unexpected_input_byte 1
+k:a%00 d:bool:yes:: k:a.b o)	err type_value_mismatch 1	err unexpected_input_byte 0
+k:x_1 d:str:tab%09here:: k:x_1 { k:b { k:x_1 [ [ ] d:null::: / [ d:bool:1:: ] / [ a:float::1:::kg*m^2 d:anum:1e-400:123: ] ] / [ a:float:::::kg*m^2 d:anum:ff:123: ] k:x_1 a:utf8:7:0:::km d:num:1E-3:5:deg } k:x_1 d:num:-5:: } k:b a:bool:::::$EUR { k:b d:num:1.5:000: k:a d:num:2024-01-01T00%3A00%3A00.5Z:000: } se	err type_value_mismatch 13	err unknown_token_type 11
+v:1.1 k:a a:float_fix:128:10::: d:str:%01:: se	err unexpected_input_byte 3	err illegal_value_type 2
+k:value a:uint:16::64::deg d:str:%7F:: k:a a:sint:256:8:::m*s^-1 d:bool:true:: k:b { k:a%09 / a:uint:4096:36::: a:uint:4096:36::: d:num:5:: } se	err unexpected_input_byte 2	err illegal_value_type 1
+k:a a:plain:::::no_unit d:str:%7F::	err unexpected_input_byte 2	err unexpected_input_byte 1
+ss k:x_1 a:plain::::: d:str:10.5e2::k~m k:a d:str:%7F::	err unexpected_input_byte 5	err unexpected_input_byte 2
+v:1.2 ss k:value a:plain::::: d:str:%01:: k:a d:str:%205::kg*m^2	err unexpected_input_byte 4	err unexpected_input_byte 3
+k:b a:float_dec:::::kg*m^2 [ d:str::: [ ] a:plain::::: d:astr:%C3%A9::$XXQ ] / [ { k:a d:num:300:5: } d:ref:-1:: ] k:b a:float_dec::::: d:null::: k:a o( o)	err unit_illegal 7	err digit_not_in_base 3
+v:1.0 k:x_1 a:datetime::::: d:num:7:000:xyz se	err unit_illegal 3	err illegal_value_type 2
+v:0.9 k:b { } k:value a:datetime::::: d:num:0:123:K	err unit_illegal 6	err illegal_value_type 5
+v:1.3 ss k:value a:datetime:128:64::: d:num:-5:000:s k:a d:sym:inf::m>	err unit_illegal 4	err illegal_value_type 3
+v:1.2 k:x_1 a:sint:65::::Ki~B { } k:a a:float_fix:::::%FF d:bool:TRUE:: k:value	err unit_illegal 6	err type_value_mismatch 3
+v:0.9 k:x_1 a:utf8::::: { } k:value d:null:::%FF k:value a:uint:::::m; d:num:-:000:	err unit_illegal 8	err type_value_mismatch 3
+k:_ a:utf8::::: { } k:b a:bool::::: { } k:x_1 a:sint:64:8:::%FF d:num:1.7976931348623157e309:5:mmHg	err unit_illegal 9	err type_value_mismatch 2
+v:1.1 k:a%00 a:sint:::::1 se	err unit_illegal 2	err unexpected_input_byte 1
+v:1.1 k:a%00 d:str:300::m%20m	err unit_illegal 2	err unexpected_input_byte 1
+ss k:a%00 d:num:1/2:5:m^0 k:value { }	err unit_illegal 2	err unexpected_input_byte 1
+v:2.0 k:a a:float_dec::0:::mmHg d:str:::m*s^-1	err unit_mismatch 3	err illegal_value_type 2
+k:x_1 a:float_dec::0:::m*s^-1 d:num:-1700000000::K	err unit_mismatch 2	err illegal_value_type 1
+ss k:b a:uint:4097::8::mmHg d:num:0x10::Ki~B k:value d:null:::	err unit_mismatch 3	err illegal_value_type 2
+v:2.0 ss k:x_1 a:datetime:128:::: d:bool:true:: k:x_1 a:float:::::no_unit d:num:..::kg*m^2	err unit_mismatch 7	err type_value_mismatch 4
+k:value a:plain:64:64:::no_unit d:str:%FF::K	err unit_mismatch 2	err unexpected_input_byte 1
+ss k:x_1 a:uint::::: d:str::: k:a a:float_fix:::::ucum%3Amm[Hg] d:num:.5::	err unit_profile_unknown 5	err digit_not_in_base 3
+v:1.2 k:a d:null::: k:a { k:value a:float_dec::0::: d:str:300::ucum%3Amm[Hg] }	err unit_profile_unknown 7	err illegal_value_type 6
+k:a1 d:str:hi:: k:value a:float_dec:0::0:: d:num:-5:: k:value d:num:-5:000:cf%3AK se	err unit_profile_unknown 6	err illegal_value_type 3
+v:1.0 ss k:a [ a:datetime::::: [ a:uint:16:0:::cf%3AK d:sym:%C3%A9:: o( ] / [ d:anum:101:: ] / [ d:sym:a.b:: ] d:sym:on:: { } ] / [ d:anum:2024-13-01T00%3A00%3A00Z:: d:anum:1E-3:: a:uint:1:::: d:null::: d:sym:a.b:: ] ]	err unit_profile_unknown 6	err illegal_value_type 4
+v:1.2 k:value a:datetime::::: [ { } a:uint::36:::ucum%3Amm[Hg] [ { } ] ] k:x_1 a:datetime:16:::: d:ref:a.1::	err unit_profile_unknown 6	err type_value_mismatch 4
+ss k:a%00 a:float:1024:10:::cf%3AK d:num:-9223372036854775809::	err unit_profile_unknown 2	err unexpected_input_byte 1
+v:1.2 k:value a:plain::::: d:null::: k:x_1 a:float:::::cf%3AK d:str:0::	err unit_profile_unknown 5	err unexpected_input_byte 2
+k:a%00 d:str:a"b::K k:a a:uint:::::cf%3AK [ ] k:b a:plain:::::$EUR d:null:::	err unit_profile_unknown 3	err unexpected_input_byte 0
+k:x_1 a:sint:64:::: d:str::: k:x_1 k:uint d:sym:foo:: d:num:-9223372036854775809:x: o)	err unknown_token_type 4	err digit_not_in_base 2
+k:a a:uint:64:64:::m d:str::: k:a k:a a:bool:48:::: k:x_1 a:utf8:1088:::: d:bool:yes::	err unknown_token_type 4	err digit_not_in_base 2
+k:a a:float_dec::::: d:str::: k:a d:num:256:: a:utf8:64:::: k:a d:num:-1700000000:: a:uint:2048:86:::no_unit	err unknown_token_type 5	err digit_not_in_base 2
+v:1.0 k:x_1 a:datetime::::: [ ] ]	err unknown_token_type 5	err illegal_value_type 2
+v:1.1 ss k:b a:sint:2048::8::Ki~B se	err unknown_token_type 4	err illegal_value_type 3
+v:1.0 k:b a:datetime::::: o( o) k:b k:b d:num:-129:123:	err unknown_token_type 6	err illegal_value_type 2
+k:b a:float:::::K { } } }	err unknown_token_type 4	err type_value_mismatch 2
+k:b [ a:bool::::: { ] } } ] [ ]	err unknown_token_type 4	err type_value_mismatch 3
+ss k:value a:uint:32:64:::K [ { o:z ] k:x_1	err unknown_token_type 5	err type_value_mismatch 4
+k:a%00 [ ] [	err unknown_token_type 3	err unexpected_input_byte 0
+ss k:a%00 { } } se	err unknown_token_type 4	err unexpected_input_byte 1
+k:a%00 d:num:.5:: se se se	err unknown_token_type 3	err unexpected_input_byte 0
+ss k:value [ ] k:a / d:sym:::m%00	err unknown_token_type 6	err unknown_token_type 5
+k:b a:sint:4096:2:::Ki~B d:str::: k:x_1 a:datetime:48:::unix:cf%3AK d:null:::	err unsupported_spec_version 4	err digit_not_in_base 2
+k:value a:float_dec::::: d:str:::kg*m^2 k:b a:datetime:::::%25 [ [ d:anum:-inf:5:s a:float_dec:64:63:::deg d:anum:1.5:: d:ref:-1:: ] d:num:101:123: d:null::: ] / [ [ d:astr:%7F:: ] / [ { k:value [ d:bool::: ] k:value a:float_dec:32:86::: d:sym:a=b::m%20m } ] { } d:sym:a=b::no_unit ] / [ o( o:z o) d:anum:12::%FF d:astr:+1::deg ]	err unsupported_spec_version 4	err digit_not_in_base 2
+k:a a:float_dec::0::: [ [ a:datetime:::200:: d:astr:hi:: d:anum:300:000: a:uint:::::m^0 d:astr:%7F:: ] ] / [ ] / [ d:null::: ]	err unsupported_spec_version 4	err illegal_value_type 1
+k:_x a:utf8::::: { } k:b [ a:datetime:4096::::%25 d:sym:a;b::no_unit ]	err unsupported_spec_version 6	err type_value_mismatch 2
+k:a a:sint::10:::no_unit [ { } d:anum:-0:123: ] / [ a:datetime:2048:::unix:s d:ref:.a:: a:bool:1088:::: d:sym:on:: ] se	err unsupported_spec_version 9	err type_value_mismatch 3
+k:a a:utf8::::: [ { } ] / [ [ o( o:zzz o) a:datetime:256:::bogus:1 d:anum:-5:: [ a:float:1024:2:::Ki~B d:anum:1.::m/s ] / [ [ d:anum:nan:x: d:str:%C3::deg ] / [ d:anum:9999-12-31T23%3A59%3A59Z::%FF d:sym:a;b:: ] ] / [ ] ] ] k:x_1 d:num:9999-12-31T23%3A59%3A59Z:5:1 k:"a" a:float_fix:1024::::m/s d:str:line%0Abreak::	err unsupported_spec_version 12	err type_value_mismatch 3
+k:a%00 a:datetime:8::::K d:str:line%0Abreak::	err unsupported_spec_version 1	err unexpected_input_byte 0
+ss k:a%00 a:datetime:::::K o) / d:num:FF::m; se	err unsupported_spec_version 2	err unexpected_input_byte 1
+k:a%00 a:datetime:1088:::: d:num:2024-01-01T00%3A00%3A00.5Z:: se	err unsupported_spec_version 1	err unexpected_input_byte 0
+k:b d:bool:true:: k:x_1 { k:value a:uint:65::31::s d:num:-1.5:: k:value { } }	err value_out_of_range 6	err illegal_value_type 5
+k:value a:uint:::31:: d:num:-:: k:a1 [ a:bool::86:::m%20m { k:value d:str:1.5::m^0 } ]	err value_out_of_range 2	err illegal_value_type 1
+v:1.0 k:a a:datetime::::unix: d:num:18446744073709551616:5: k:value { k:a/b d:num:1_000:x: k:a%09 a:utf8:96:36:::m%00 d:ref:a::m^101 } k:_x d:str:-3::	err value_out_of_range 3	err illegal_value_type 2
+v:2.0 k:b { k:x_1 a:datetime:65:::tai: d:str:tab%09here:: k:a d:num:-9223372036854775809:000: }	err value_out_of_range 7	err type_value_mismatch 5
+ss k:x_1 a:uint::::: [ [ { } ] / [ d:anum:-5:123: ] d:anum:0:: { } ] k:a / [ a:uint:99999:2:::K d:bool:off:: { } ] k:b a:uint:99999::::%FF [ { [ a:utf8:128:62:::kg*m^2 { d:ref:1:: } ] k:x_1 a:uint:::::m> d:num:5%20m::m; } ] / [ ] k:x_1 a:float:256:16:::deg d:num:99999999999999999999999::	err value_out_of_range 10	err type_value_mismatch 5
+k:a%00 d:num:-9223372036854775809:5:	err value_out_of_range 1	err unexpected_input_byte 0
+k:a%00 d:num:99999999999999999999999:: k:a { }	err value_out_of_range 1	err unexpected_input_byte 0
+ss k:a%00 a:uint:16:85::: d:num:-9223372036854775809::	err value_out_of_range 3	err unexpected_input_byte 1
